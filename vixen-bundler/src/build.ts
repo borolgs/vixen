@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: the values are always set */
 import { rmSync } from 'node:fs';
 import { join, normalize, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';

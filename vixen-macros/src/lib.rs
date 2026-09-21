@@ -1,7 +1,7 @@
 //! The proc macros behind `vixen`.
 //!
 //! Use them through the `vixen` crate. Their expansions refer to `::vixen::`,
-//! so `vixen-macros` is not a standalone API.
+//! so `axum-vixen-macros` is not a standalone API.
 
 // User-facing docs live on the re-exports in `vixen/src/lib.rs`. Doctests here
 // cannot resolve `::vixen`, and rustdoc would append these docs to the ones on

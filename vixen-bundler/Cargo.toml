@@ -7,6 +7,8 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 description = "Build-script half of vixen: drives bun over the page entrypoints and hands rustc the manifest."
+keywords = ["axum", "bun", "bundler", "assets", "build-script"]
+categories = ["web-programming", "development-tools::build-utils"]
 
 [lib]
 name = "vixen_bundler"

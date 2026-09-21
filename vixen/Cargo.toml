@@ -6,6 +6,9 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
+description = "An axum-based library for rapid web development, currently focused on the view layer: axum + maud + htmx."
+keywords = ["axum", "htmx", "maud", "web", "ssr"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [lib]
 name = "vixen"

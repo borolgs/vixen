@@ -17,20 +17,21 @@ parts will still be reworked.
 
 2. **htmx 4 handles frontend interactivity.** vixen adds two basic
    abstractions:
-    - `#[action]` uses one type for the route, its form fields, and the markup
-      that calls it.
-    - `partial!` puts the main swap and any number of targeted HTML fragments
-      into one response.
+    - [`#[action]`][action] uses one type for the route, its form fields, and
+      the markup that calls it.
+    - [`partial!`][partial] puts the main swap and any number of targeted HTML
+      fragments into one response.
 
 3. **TS and CSS live next to the page they belong to.** The browser is a
    JavaScript platform, and vixen embraces that boundary. When custom
    client-side code is needed, it uses the JavaScript ecosystem directly — if
    we have to write JS, we might as well do it properly.
-    - `vixen::bundler::build` finds the entry points, bundles their TS and CSS
-      with Bun, and passes the asset manifest to Rust.
-    - `assets!` emits the `<script>` and `<link>` tags for the current page.
-    - `assets_router!` embeds the bundled files in the binary and returns an
-      axum router that serves them.
+    - [`vixen::bundler::build`][build] finds the entry points, bundles their TS
+      and CSS with Bun, and passes the asset manifest to Rust.
+    - [`assets!`][assets] emits the `<script>` and `<link>` tags for the current
+      page.
+    - [`assets_router!`][assets_router] embeds the bundled files in the binary
+      and returns an axum router that serves them.
     - For now, that bundler is Bun: simple and fast. Later there may be an
       option without an external runtime, possibly from the Oxc ecosystem.
 
@@ -75,8 +76,8 @@ fn router() -> Router {
 ```
 
 `Add` is the route, the form extractor, and what the buttons render. `CountId`
-is both the `id` in the page and the target in the response. `examples/counter`
-adds the surrounding page and bundles htmx.
+is both the `id` in the page and the target in the response.
+[`examples/counter`][counter] adds the surrounding page and bundles htmx.
 
 ## Installation
 
@@ -95,27 +96,40 @@ vixen = { git = "https://github.com/borolgs/vixen" }
 ```
 
 The build dependency is needed only when `build.rs` calls
-`vixen::bundler::build`. The bundler requires [Bun](https://bun.sh) to be
-installed and available on `PATH` while the app is built.
+[`vixen::bundler::build`][build]. The bundler requires [Bun](https://bun.sh) to
+be installed and available on `PATH` while the app is built.
 
 ## Crates
 
 | crate | what |
 |---|---|
-| `vixen` | the facade crate — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `vixen-bundler` as `bundler`, plus the macros |
-| `vixen-macros` | `#[action]`, `#[view_path]`, `#[id]`, `assets!` / `assets_router!` |
-| `vixen-bundler` | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
+| [`vixen`][vixen] | the facade crate — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `vixen-bundler` as `bundler`, plus the macros |
+| [`vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`assets!`][assets] / [`assets_router!`][assets_router] |
+| [`vixen-bundler`][vixen-bundler] | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
 
 ## Examples
 
-`examples/counter` — a counter in one `main.rs` that fits on a screen, with its
-`index.ts` and `index.css` beside it. Start here.
+[`examples/counter`][counter] — a counter in one `main.rs` that fits on a
+screen, with its `index.ts` and `index.css` beside it. Start here.
 
-`examples/todos` — a todo list on one page: every macro once, plus a per-page
-`index.ts`.
+[`examples/todos`][todos] — a todo list on one page: every macro once, plus a
+per-page `index.ts`.
 
 ```bash
 bun install                      # once, for the frontend deps
 cargo run -p counter             # http://127.0.0.1:4002/
 cargo run -p todos               # http://127.0.0.1:4001/
 ```
+
+[action]: https://borolgs.github.io/vixen/vixen/attr.action.html
+[view_path]: https://borolgs.github.io/vixen/vixen/attr.view_path.html
+[id]: https://borolgs.github.io/vixen/vixen/attr.id.html
+[partial]: https://borolgs.github.io/vixen/vixen/macro.partial.html
+[assets]: https://borolgs.github.io/vixen/vixen/macro.assets.html
+[assets_router]: https://borolgs.github.io/vixen/vixen/macro.assets_router.html
+[build]: https://borolgs.github.io/vixen/vixen_bundler/fn.build.html
+[vixen]: https://borolgs.github.io/vixen/vixen/
+[vixen-macros]: https://borolgs.github.io/vixen/vixen_macros/
+[vixen-bundler]: https://borolgs.github.io/vixen/vixen_bundler/
+[counter]: https://github.com/borolgs/vixen/tree/main/examples/counter
+[todos]: https://github.com/borolgs/vixen/tree/main/examples/todos

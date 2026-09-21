@@ -86,16 +86,17 @@ macros need to resolve in the calling crate:
 
 ```toml
 [dependencies]
-vixen = { git = "https://github.com/borolgs/vixen" }
+axum-vixen = { git = "https://github.com/borolgs/vixen" }
 axum = "0.8"
 axum-extra = "0.12"
 maud = "0.27"
 
 [build-dependencies]
-vixen = { git = "https://github.com/borolgs/vixen" }
+axum-vixen = { git = "https://github.com/borolgs/vixen" }
 ```
 
-The build dependency is needed only when `build.rs` calls
+The package is `axum-vixen`; the crate it provides is `vixen`, so code says
+`use vixen::…`. The build dependency is needed only when `build.rs` calls
 [`vixen::bundler::build`][build]. The bundler requires [Bun](https://bun.sh) to
 be installed and available on `PATH` while the app is built.
 
@@ -103,9 +104,9 @@ be installed and available on `PATH` while the app is built.
 
 | crate | what |
 |---|---|
-| [`vixen`][vixen] | the facade crate — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `vixen-bundler` as `bundler`, plus the macros |
-| [`vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`assets!`][assets] / [`assets_router!`][assets_router] |
-| [`vixen-bundler`][vixen-bundler] | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
+| [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `axum-vixen-bundler` as `bundler`, plus the macros |
+| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`assets!`][assets] / [`assets_router!`][assets_router] |
+| [`axum-vixen-bundler`][vixen-bundler] | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
 
 ## Examples
 

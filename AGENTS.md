@@ -7,6 +7,11 @@ experimental, opinionated, and still moving.
 Cargo workspace, resolver 3, edition 2024, stable toolchain, MSRV 1.97.
 syn is **3.x**.
 
+`vixen` is taken on crates.io, so the packages are `axum-vixen`,
+`axum-vixen-macros` and `axum-vixen-bundler` (what `-p` takes), each with
+`[lib] name` pinning the crate to `vixen`, `vixen_macros`, `vixen_bundler`.
+Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
+
 ## Layout
 
 - `vixen/` — the facade crate. Its own types (`HxPartial`, `HxAction`, …) and

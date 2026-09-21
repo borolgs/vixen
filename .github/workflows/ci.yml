@@ -29,7 +29,7 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
-      - run: cargo doc --no-deps --locked -p vixen -p vixen-macros -p vixen-bundler
+      - run: cargo doc --no-deps --locked -p axum-vixen -p axum-vixen-macros -p axum-vixen-bundler
         env:
           RUSTDOCFLAGS: -D warnings
       - run: bunx biome ci .

@@ -1,5 +1,5 @@
 [package]
-name = "vixen"
+name = "axum-vixen"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -7,12 +7,15 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[lib]
+name = "vixen"
+
 [lints]
 workspace = true
 
 [dependencies]
-vixen-macros = { path = "../vixen-macros" }
-vixen-bundler = { path = "../vixen-bundler" }
+axum-vixen-macros = { path = "../vixen-macros", version = "0.1.0" }
+axum-vixen-bundler = { path = "../vixen-bundler", version = "0.1.0" }
 
 axum = { workspace = true }
 axum-htmx = { workspace = true }

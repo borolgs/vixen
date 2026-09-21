@@ -16,7 +16,7 @@ maud = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 
-vixen = { path = "../../vixen" }
+axum-vixen = { path = "../../vixen" }
 
 [build-dependencies]
-vixen = { path = "../../vixen" }
+axum-vixen = { path = "../../vixen" }

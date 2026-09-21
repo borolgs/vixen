@@ -1,5 +1,5 @@
 [package]
-name = "vixen-bundler"
+name = "axum-vixen-bundler"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 description = "Build-script half of vixen: drives bun over the page entrypoints and hands rustc the manifest."
+
+[lib]
+name = "vixen_bundler"
 
 [lints]
 workspace = true

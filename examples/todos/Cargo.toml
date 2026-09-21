@@ -1,0 +1,22 @@
+[package]
+name = "todos"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+axum = { workspace = true }
+axum-extra = { workspace = true }
+maud = { workspace = true }
+tokio = { workspace = true }
+
+vixen = { path = "../../vixen" }
+
+[build-dependencies]
+vixen = { path = "../../vixen" }

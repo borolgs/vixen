@@ -1,0 +1,5 @@
+error[E0599]: no method named `into_response` found for struct `HxPartial<S, M>` in the current scope
+ --> tests/types/fail/empty_partial.rs:5:30
+  |
+5 |     let _ = HxPartial::new().into_response();
+  |                              ^^^^^^^^^^^^^ method not found in `HxPartial`

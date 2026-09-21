@@ -1,0 +1,8 @@
+{
+  "name": "todos",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "htmx.org": "4.0.0"
+  }
+}

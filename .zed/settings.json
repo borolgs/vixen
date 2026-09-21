@@ -1,0 +1,40 @@
+{
+  "lsp": {
+    "biome": {
+      "settings": {
+        "config_path": "biome.json"
+      }
+    },
+    "tailwindcss-language-server": {
+      "settings": {
+        "includeLanguages": {
+          "Rust": "html"
+        },
+        "experimental": {
+          "classRegex": ["class\\s*=\\s*\"([^\"]*)", "cn\\(\"([^\"]*)"]
+        }
+      }
+    },
+    "vscode-css-language-server": {
+      "settings": {
+        "css": {
+          "lint": {
+            "unknownAtRules": "ignore"
+          }
+        }
+      }
+    }
+  },
+  "code_actions_on_format": {
+    "source.organizeImports.biome": true,
+    "source.fixAll.biome": true
+  },
+  "languages": {
+    "Rust": { "language_servers": ["rust-analyzer", "tailwindcss-language-server"] },
+    "JavaScript": { "formatter": { "language_server": { "name": "biome" } } },
+    "TypeScript": { "formatter": { "language_server": { "name": "biome" } } },
+    "TSX": { "formatter": { "language_server": { "name": "biome" } } },
+    "JSON": { "formatter": { "language_server": { "name": "biome" } } },
+    "CSS": { "formatter": { "language_server": { "name": "biome" } } }
+  }
+}

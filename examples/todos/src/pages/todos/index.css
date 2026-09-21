@@ -1,0 +1,46 @@
+body {
+  max-width: 28rem;
+  margin: 3rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+form,
+nav {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+button,
+form input {
+  font: inherit;
+  padding: 0.25rem 0.75rem;
+}
+
+form input {
+  flex: 1;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+li:has(:checked) {
+  color: gray;
+  text-decoration: line-through;
+}
+
+[data-show="active"] li:has(:checked),
+[data-show="done"] li:not(:has(:checked)) {
+  display: none;
+}

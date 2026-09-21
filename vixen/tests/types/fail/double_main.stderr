@@ -1,0 +1,7 @@
+error[E0599]: no method named `main` found for struct `HxPartial<Filled, HasMain>` in the current scope
+ --> tests/types/fail/double_main.rs:5:52
+  |
+5 |     let _ = HxPartial::new().main(html! { "one" }).main(html! { "two" });
+  |                                                    ^^^^ method not found in `HxPartial<Filled, HasMain>`
+  |
+  = note: the method was found for `HxPartial<S>`

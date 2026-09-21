@@ -81,24 +81,35 @@ is both the `id` in the page and the target in the response.
 
 ## Installation
 
-vixen is not on crates.io yet. Add it from GitHub, together with the crates its
-macros need to resolve in the calling crate:
+Add vixen together with the crates its macros need to resolve in the calling
+crate:
 
 ```toml
 [dependencies]
-axum-vixen = { git = "https://github.com/borolgs/vixen" }
+axum-vixen = "0.1"
 axum = "0.8"
 axum-extra = "0.12"
 maud = "0.27"
 
 [build-dependencies]
-axum-vixen = { git = "https://github.com/borolgs/vixen" }
+axum-vixen = "0.1"
 ```
 
 The package is `axum-vixen`; the crate it provides is `vixen`, so code says
 `use vixen::…`. The build dependency is needed only when `build.rs` calls
 [`vixen::bundler::build`][build]. The bundler requires [Bun](https://bun.sh) to
 be installed and available on `PATH` while the app is built.
+
+## htmx 4 compatibility
+
+vixen targets htmx 4, but `vixen::hx` re-exports
+[axum-htmx](https://github.com/robertwayne/axum-htmx) 0.8 until
+[v4 support][axum-htmx-v4] ships. vixen's own output already uses htmx 4.
+
+- Morph `SwapOption`s, `HxSource` and `HxRequestType` are unavailable; use raw
+  attributes and headers instead.
+- `HxTrigger`, `HxTriggerName` and usually `HxPrompt` extract `None`; `HxTarget`
+  contains `tag#id` or `tag` rather than a bare id.
 
 ## Crates
 
@@ -122,15 +133,16 @@ cargo run -p counter             # http://127.0.0.1:4002/
 cargo run -p todos               # http://127.0.0.1:4001/
 ```
 
-[action]: https://borolgs.github.io/vixen/vixen/attr.action.html
-[view_path]: https://borolgs.github.io/vixen/vixen/attr.view_path.html
-[id]: https://borolgs.github.io/vixen/vixen/attr.id.html
-[partial]: https://borolgs.github.io/vixen/vixen/macro.partial.html
-[assets]: https://borolgs.github.io/vixen/vixen/macro.assets.html
-[assets_router]: https://borolgs.github.io/vixen/vixen/macro.assets_router.html
-[build]: https://borolgs.github.io/vixen/vixen_bundler/fn.build.html
-[vixen]: https://borolgs.github.io/vixen/vixen/
-[vixen-macros]: https://borolgs.github.io/vixen/vixen_macros/
-[vixen-bundler]: https://borolgs.github.io/vixen/vixen_bundler/
+[action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
+[view_path]: https://docs.rs/axum-vixen/latest/vixen/attr.view_path.html
+[id]: https://docs.rs/axum-vixen/latest/vixen/attr.id.html
+[partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html
+[assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
+[assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html
+[build]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/fn.build.html
+[vixen]: https://docs.rs/axum-vixen/latest/vixen/
+[vixen-macros]: https://docs.rs/axum-vixen-macros/latest/vixen_macros/
+[vixen-bundler]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/
+[axum-htmx-v4]: https://github.com/robertwayne/axum-htmx/pull/38
 [counter]: https://github.com/borolgs/vixen/tree/main/examples/counter
 [todos]: https://github.com/borolgs/vixen/tree/main/examples/todos

@@ -91,8 +91,9 @@ dependencies = [
 
 [[package]]
 name = "axum-htmx"
-version = "0.9.0"
-source = "git+https://github.com/borolgs/axum-htmx?branch=v4#6bdaeb5e178311d0be8d79561c186b313d1aa769"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2d4a162b7621482903309c0e8a990a866728b6312350147181230f840252314"
 dependencies = [
  "axum-core",
  "futures",

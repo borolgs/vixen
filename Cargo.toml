@@ -8,7 +8,7 @@ version = "0.1.0"
 rust-version = "1.97"
 license = "MIT"
 repository = "https://github.com/borolgs/vixen"
-publish = false
+publish = true
 
 [workspace.lints.rust]
 
@@ -20,13 +20,8 @@ bare_urls = "warn"
 [workspace.dependencies]
 axum = { version = "0.8.8", features = ["macros"] }
 axum-extra = { version = "0.12.5", features = ["form", "typed-routing"] }
-# htmx 4
-# https://github.com/robertwayne/axum-htmx/pull/38
-axum-htmx = { git = "https://github.com/borolgs/axum-htmx", branch = "v4", features = [
-  "v4",
-  "serde",
-  "auto-vary",
-] }
+# TODO: enable `v4` once https://github.com/robertwayne/axum-htmx/pull/38 ships.
+axum-htmx = { version = "0.8.1", features = ["serde", "auto-vary"] }
 maud = { version = "0.27.0", features = ["axum"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"

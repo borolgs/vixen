@@ -1,4 +1,4 @@
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 //!
 //! ## Quick reference
 //!
@@ -22,13 +22,11 @@
 //!   `TypedPath`, derived by [`#[view_path]`](macro@view_path) and
 //!   [`#[action]`](macro@action), and `RouterExt`, whose `typed_get` and
 //!   `typed_post` methods register their handlers.
-//! - `hx` re-exports `axum_htmx`: htmx header extractors and responders, plus
-//!   the `SwapOption` used by [`Part::swap`] and [`HxAction::swap`]. For now it
-//!   points to the htmx 4 fork at <https://github.com/borolgs/axum-htmx>, branch
-//!   `v4`, pending <https://github.com/robertwayne/axum-htmx/pull/38>.
+//! - `hx` re-exports `axum_htmx` 0.8 header types and `SwapOption`; see [htmx 4
+//!   compatibility](#htmx-4-compatibility) for caveats.
 //!
-//! [`bundler`] re-exports `vixen-bundler`, the `build.rs` half. To call it, list
-//! `vixen` under `[build-dependencies]` as well.
+//! [`bundler`] re-exports `axum-vixen-bundler`, the `build.rs` half. To call it,
+//! list `axum-vixen` under `[build-dependencies]` as well.
 
 #![warn(missing_docs)]
 

@@ -7,6 +7,7 @@
 //! | define a page route | [`#[view_path]`](macro@view_path) |
 //! | define an htmx endpoint and call it from markup | [`#[action]`](macro@action), [`HxAction`], [`SyncStrategy`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
+//! | render one element that owns its id | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted fragments | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`bundler::build`] in `build.rs` |
 //!
@@ -39,12 +40,16 @@ extern crate self as vixen;
 pub mod assets;
 
 mod action;
+mod fragment;
+mod id;
 mod partial;
 
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
 pub use axum_htmx as hx;
+pub use fragment::Fragment;
+pub use id::Id;
 pub use maud;
 pub use vixen_bundler as bundler;
 
@@ -188,8 +193,8 @@ pub use vixen_macros::view_path;
 ///
 /// - `Render`, which writes the bare id.
 /// - `ID` and `SEL`, here `"todo-list"` and `"#todo-list"`.
-/// - `From<TodoListId> for Selector`, making the type usable anywhere a
-///   [`Selector`] is accepted: [`partial!`], [`HxPartial::target`],
+/// - [`Id`], whose blanket `From<T: Id> for Selector` makes the type usable
+///   anywhere a [`Selector`] is accepted: [`partial!`], [`HxPartial::target`],
 ///   [`HxAction::target`], or [`SyncStrategy::on`].
 /// - `slot()`, which renders `<div id="todo-list"></div>` for a later response
 ///   to fill.
@@ -245,6 +250,11 @@ pub use vixen_macros::assets;
 /// Like [`assets!`], this macro needs the manifest from
 /// [`bundler::build`], so the example is ignored.
 pub use vixen_macros::assets_router;
+
+/// Turns a free `fn(..) -> Markup` whose root element has `id=(Self)` into a
+/// [`Fragment`]: emits `#[id] struct <Fn>Id;`, makes `Self` that type inside
+/// the body, and returns `Fragment<<Fn>Id>`.
+pub use vixen_macros::fragment;
 
 #[doc(hidden)]
 pub mod __private {

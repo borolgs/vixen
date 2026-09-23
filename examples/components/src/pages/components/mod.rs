@@ -1,5 +1,6 @@
 use axum::Router;
 use vixen::{
+    fragment,
     maud::{Markup, html},
     routing::RouterExt,
     view_path,
@@ -9,6 +10,11 @@ use crate::shared::page;
 
 pub fn router() -> Router {
     Router::new().typed_get(home)
+}
+
+#[fragment]
+async fn hello() -> Markup {
+    html! { div id=(Self) { "Hello" } }
 }
 
 #[view_path("/")]
@@ -22,7 +28,9 @@ async fn home(_: HomePath) -> Markup {
         },
         html! {
             h1 { "Components" }
-            main {}
+            main {
+                (hello().await)
+            }
         },
     )
 }

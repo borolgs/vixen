@@ -4,6 +4,8 @@ use axum::{http::HeaderValue, response::IntoResponse};
 use axum_htmx::SwapOption;
 use maud::{Markup, Render, html};
 
+use crate::Id;
+
 /// An htmx response with an optional main body and any number of targeted
 /// `<hx-partial>` blocks.
 ///
@@ -156,6 +158,12 @@ pub struct Selector(pub String);
 impl From<Selector> for String {
     fn from(value: Selector) -> Self {
         value.0
+    }
+}
+
+impl<T: Id> From<T> for Selector {
+    fn from(_: T) -> Self {
+        Self(T::SEL.to_string())
     }
 }
 

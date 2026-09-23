@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, id,
+    action, fragment, id,
     maud::{DOCTYPE, Markup, html},
     partial,
     routing::RouterExt,
@@ -15,9 +15,6 @@ static COUNT: AtomicI64 = AtomicI64::new(0);
 
 #[id]
 struct CountId;
-
-#[id]
-struct HeadingId;
 
 #[view_path("/")]
 struct HomePath;
@@ -35,7 +32,7 @@ async fn home(_: HomePath) -> Markup {
                 (vixen::assets!())
             }
             body {
-                h1 id=(HeadingId) { (heading(count)) }
+                (heading(count))
                 main {
                     button hx-action=(Add::action().by(-1)) { "−" }
                     output id=(CountId) { (count) }
@@ -56,10 +53,11 @@ async fn add(Add { by }: Add) -> impl IntoResponse {
 
     partial!(
         CountId => html! { (count) },
-        HeadingId => heading(count),
+        heading(count),
     )
 }
 
+#[fragment]
 fn heading(count: i64) -> Markup {
     let title = match count {
         0 => "Zero",
@@ -67,7 +65,7 @@ fn heading(count: i64) -> Markup {
         _ => "Odd",
     };
 
-    html! { (title) }
+    html! {  h1 id=(Self) { (title) } }
 }
 
 #[tokio::main]

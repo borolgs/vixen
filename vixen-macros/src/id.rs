@@ -74,10 +74,9 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        impl From<#id_struct_ident> for ::vixen::Selector {
-            fn from(value: #id_struct_ident) -> Self {
-                Self(#id_struct_ident::SEL.to_string())
-            }
+        impl ::vixen::Id for #id_struct_ident {
+            const ID: &'static str = Self::ID;
+            const SEL: &'static str = Self::SEL;
         }
     }
 }

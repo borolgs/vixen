@@ -1,0 +1,22 @@
+[package]
+name = "components"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+maud = { workspace = true }
+axum = { workspace = true }
+axum-extra = { workspace = true }
+
+axum-vixen = { path = "../../vixen" }
+
+[build-dependencies]
+axum-vixen = { path = "../../vixen" }

@@ -1,6 +1,13 @@
 [workspace]
 resolver = "3"
-members = ["vixen", "vixen-bundler", "vixen-macros", "examples/counter", "examples/todos"]
+members = [
+    "vixen",
+    "vixen-bundler",
+    "vixen-macros",
+    "examples/counter",
+    "examples/todos",
+    "examples/components"
+]
 
 [workspace.package]
 edition = "2024"

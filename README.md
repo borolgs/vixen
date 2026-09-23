@@ -1,7 +1,7 @@
 #  vixen
 
 An axum-based library for rapid web development, currently focused on the view
-layer. Experimental and opinionated — think of it as `axum-extra-extra`.
+layer.
 
 Conceived as a thin glue layer over [maud](https://github.com/lambda-fairy/maud)
 and the `axum-*` crates. Under active development: the API is unstable and large
@@ -9,9 +9,9 @@ parts will still be reworked.
 
 ## The ideas behind vixen
 
-1. **Views are rendered right in the handlers.** maud rules.
+1. **Views are rendered right in the handlers.**
     - Something JSX-like may come later — more flexible, more extensible. For
-      now, simple and reliable wins.
+      now, maud's simplicity and reliability win.
     - vixen does not add anything on top of maud yet. A component library
       built on [Basecoat](https://basecoatui.com) is planned.
 
@@ -92,13 +92,48 @@ axum-extra = "0.12"
 maud = "0.27"
 
 [build-dependencies]
-axum-vixen = "0.1"
+axum-vixen = "0.1"  # only for build.rs below
 ```
 
 The package is `axum-vixen`; the crate it provides is `vixen`, so code says
-`use vixen::…`. The build dependency is needed only when `build.rs` calls
-[`vixen::bundler::build`][build]. The bundler requires [Bun](https://bun.sh) to
-be installed and available on `PATH` while the app is built.
+`use vixen::…`.
+
+### Page-local TS and CSS
+
+[Bun](https://bun.sh) must be on `PATH` while the app builds.
+
+```bash
+bun init
+bun add htmx.org@4
+```
+
+```rust,ignore
+// build.rs
+fn main() {
+    vixen::bundler::build(&vixen::bundler::Config::default());
+}
+```
+
+By default, [`build`][build] bundles every `src/pages/**/{page,index}.ts`, so a page is a
+directory:
+
+```text
+src/pages/todos/
+├── mod.rs      # handlers
+├── index.ts    # import 'htmx.org'; import './index.css';
+└── index.css
+```
+
+```rust,ignore
+// src/pages/todos/mod.rs — <script> and <link> for the entry next to this file
+head { (vixen::assets!()) }
+
+// src/main.rs — serves the bundle from the binary under /assets/
+Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
+```
+
+
+[`Config`][config] overrides the defaults: `entry_glob` picks the entries, `assets_prefix` moves the bundle and the `/assets/` URL it is served under. [`examples/counter`][counter] points the glob at a single `src/index.ts`.
 
 ## htmx 4 compatibility
 
@@ -140,6 +175,7 @@ cargo run -p todos               # http://127.0.0.1:4001/
 [assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
 [assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html
 [build]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/fn.build.html
+[config]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/struct.Config.html
 [vixen]: https://docs.rs/axum-vixen/latest/vixen/
 [vixen-macros]: https://docs.rs/axum-vixen-macros/latest/vixen_macros/
 [vixen-bundler]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/

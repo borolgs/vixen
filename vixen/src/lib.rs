@@ -66,8 +66,8 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 /// the source of the `hx-action` value that calls it.
 ///
 /// ```
-/// use axum::{Router, response::IntoResponse};
-/// use vixen::{action, maud::{Markup, html}, partial, routing::RouterExt};
+/// use axum::Router;
+/// use vixen::{action, maud::{Markup, html}, routing::RouterExt};
 ///
 /// #[action("/todos/rename")]
 /// struct RenameTodo {
@@ -76,8 +76,8 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 /// }
 ///
 /// // RenameTodo is both the route and the form extractor.
-/// async fn rename(RenameTodo { id, title }: RenameTodo) -> impl IntoResponse {
-///     partial!(_ => html! { (id) ": " (title) })
+/// async fn rename(RenameTodo { id, title }: RenameTodo) -> Markup {
+///     html! { li id={ "todo-" (id) } { (title) } }
 /// }
 ///
 /// let router: Router = Router::new().typed_post(rename);

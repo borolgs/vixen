@@ -1,10 +1,11 @@
 use axum::Router;
-use maud::DOCTYPE;
 use vixen::{
     maud::{Markup, html},
     routing::RouterExt,
     view_path,
 };
+
+use crate::shared::page;
 
 pub fn router() -> Router {
     Router::new().typed_get(home)
@@ -14,21 +15,14 @@ pub fn router() -> Router {
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {
-    html! {
-        (DOCTYPE)
-        html lang="en" {
-            head {
-                meta charset="utf-8";
-                meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Components · vixen" }
-                (vixen::assets!())
-            }
-            body {
-                h1 { "Components" }
-                main {
-
-                }
-            }
-        }
-    }
+    page(
+        html! {
+            title { "Components · vixen" }
+            (vixen::assets!())
+        },
+        html! {
+            h1 { "Components" }
+            main {}
+        },
+    )
 }

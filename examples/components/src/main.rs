@@ -1,6 +1,7 @@
 use axum::Router;
 
 mod pages;
+mod shared;
 
 const ADDR: &str = "127.0.0.1:4003";
 
@@ -8,6 +9,7 @@ const ADDR: &str = "127.0.0.1:4003";
 async fn main() {
     let router = Router::new()
         .merge(pages::components::router())
+        .merge(pages::other::router())
         .merge(vixen::assets_router!());
 
     let listener = tokio::net::TcpListener::bind(ADDR)

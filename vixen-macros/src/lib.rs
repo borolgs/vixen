@@ -12,6 +12,7 @@ use proc_macro::TokenStream;
 
 mod action;
 mod assets;
+mod fragment;
 mod id;
 mod view;
 
@@ -38,4 +39,9 @@ pub fn assets_router(item: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn assets(item: TokenStream) -> TokenStream {
     assets::expand_assets_head(item.into()).into()
+}
+
+#[proc_macro_attribute]
+pub fn fragment(attr: TokenStream, item: TokenStream) -> TokenStream {
+    fragment::expand(attr.into(), item.into()).into()
 }

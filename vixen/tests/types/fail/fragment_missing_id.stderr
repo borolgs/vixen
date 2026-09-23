@@ -1,0 +1,7 @@
+error: `#[fragment]` expects `id=(Self)` on the root element, e.g. `ul id=(Self) { .. }`
+ --> tests/types/fail/fragment_missing_id.rs:3:1
+  |
+3 | #[fragment]
+  | ^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `fragment` (in Nightly builds, run with -Z macro-backtrace for more info)

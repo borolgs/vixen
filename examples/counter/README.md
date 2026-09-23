@@ -14,12 +14,13 @@ cargo run -p counter   # http://127.0.0.1:4002/
   (`async fn add(Add { by }: Add)`) and what the buttons render.
   `hx-action=(Add::action().by(-1))` and `.by(1)` are the same endpoint with a
   different `hx-vals`.
-- **`#[id]`** on `CountId` and `HeadingId`: `id=(CountId)` in the page,
-  `#count` in the response.
+- **`#[id]`** on `CountId`: `id=(CountId)` in the page, `#count` in the
+  response.
+- **`#[fragment]`** on `heading`: the fn owns the `<h1>` and its id, so the page
+  and the response both just call `heading(count)`.
 - **`partial!`** in `add`: one click, two swaps. `CountId =>` aims the new
-  number at the `<output>` and `HeadingId =>` aims "Zero" / "Odd" / "Even" at
-  the `<h1>`, which `heading()` fills for the page too. There is no main swap,
-  so the button that asked keeps its label.
+  number at the `<output>`; `heading(count)` swaps the whole `<h1>`. There is
+  no main swap, so the button that asked keeps its label.
 - **`assets!()`** in the head, with `index.ts` and `index.css` next to
   `main.rs`. `assets!()` looks for an entry in the caller's own directory, and
   the default glob only covers `src/pages/**`, so `build.rs` names

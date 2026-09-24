@@ -18,9 +18,9 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   the macros sit at the root; `vixen::maud`, `vixen::hx` (all of
   `axum_htmx`, nothing else), `vixen::routing` (`axum_extra::routing`) and
   `vixen::bundler` (`vixen-bundler`) are plain re-exports. Runtime halves of the
-  macros live here (`action`, `partial`, `assets`).
+  macros live here (`action`, `fragment`, `partial`, `assets`).
 - `vixen-macros/` — proc macros: `#[action]`, `#[view_path]`, `#[id]`,
-  `assets!`, `assets_router!`.
+  `#[fragment]`, `assets!`, `assets_router!`.
 - `vixen-bundler/` — `build.rs` helper, reached as `vixen::bundler`: apps list
   `vixen` under `[build-dependencies]` too. Runs bun over per-page entrypoints
   and hands the resulting manifest to rustc as `VIXEN_MANIFEST`.

@@ -8,7 +8,7 @@
 //! | define an htmx endpoint and call it from markup | [`#[action]`](macro@action), [`HxAction`], [`SyncStrategy`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render one element that owns its id | [`#[fragment]`](macro@fragment), [`Fragment`] |
-//! | return a main swap and targeted fragments | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
+//! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`bundler::build`] in `build.rs` |
 //!
 //! ## Re-exports
@@ -189,6 +189,10 @@ pub use vixen_macros::view_path;
 /// `cart-badge`. `#[id("sidebar")]` overrides it; the value must be nonempty and
 /// contain no whitespace or `#`.
 ///
+/// Use `#[id]` when the page writes the element and a response replaces its
+/// contents. Use [`#[fragment]`](macro@fragment) when one function renders and
+/// replaces the whole element.
+///
 /// # Generated API
 ///
 /// - `Render`, which writes the bare id.
@@ -251,9 +255,45 @@ pub use vixen_macros::assets;
 /// [`bundler::build`], so the example is ignored.
 pub use vixen_macros::assets_router;
 
-/// Turns a free `fn(..) -> Markup` whose root element has `id=(Self)` into a
-/// [`Fragment`]: emits `#[id] struct <Fn>Id;`, makes `Self` that type inside
-/// the body, and returns `Fragment<<Fn>Id>`.
+/// Gives a function that renders one element its own typed id.
+///
+/// ```
+/// use vixen::{fragment, maud::{Markup, html}, partial};
+///
+/// #[fragment]
+/// fn todo_list(todos: &[&str]) -> Markup {
+///     html! {
+///         ul id=(Self) {
+///             @for todo in todos { li { (todo) } }
+///         }
+///     }
+/// }
+///
+/// let page = html! { (todo_list(&["milk"])) };
+/// assert_eq!(page.into_string(), r#"<ul id="todo-list"><li>milk</li></ul>"#);
+///
+/// let response = partial!(todo_list(&["milk", "eggs"]));
+/// assert_eq!(
+///     response.render().into_string(),
+///     concat!(
+///         r##"<hx-partial hx-target="#todo-list" hx-swap="outerHTML">"##,
+///         r#"<ul id="todo-list"><li>milk</li><li>eggs</li></ul></hx-partial>"#,
+///     )
+/// );
+/// ```
+///
+/// For `todo_list`, the macro declares `#[id] struct TodoListId` with the same
+/// visibility and changes the function's return type to
+/// `Fragment<TodoListId>`. Inside the body, `Self` refers to `TodoListId`, so it
+/// can also be used as `Self::SEL`.
+///
+/// The attribute takes no arguments and supports sync or async free functions
+/// returning `Markup`. It does not support methods, where `Self` already has a
+/// meaning.
+///
+/// The element must use `id=(Self)` at its root. The macro rejects a body with
+/// no `Self`, but cannot verify that it occurs in the root or that the markup
+/// has exactly one root element.
 pub use vixen_macros::fragment;
 
 #[doc(hidden)]

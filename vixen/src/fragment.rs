@@ -5,8 +5,34 @@ use maud::{Markup, Render};
 
 use crate::{HxPartial, HxPartialResponse, Id, Part, Parts};
 
-/// One element whose root carries `T`'s id; a response swaps it by `outerHTML`
-/// so the id survives.
+/// Markup for one element with a typed id.
+///
+/// `Fragment<T>` renders as plain markup. In a [`partial!`](crate::partial!)
+/// response, it targets `T::SEL` with an `outerHTML` swap.
+/// [`#[fragment]`](macro@crate::fragment) constructs it automatically;
+/// [`Fragment::new`] is available when the id type is declared separately.
+///
+/// ```
+/// use vixen::{Fragment, id, maud::html, partial};
+///
+/// #[id]
+/// struct NotesId;
+///
+/// fn notes(n: usize) -> Fragment<NotesId> {
+///     Fragment::new(html! { p id=(NotesId) { (n) " notes" } })
+/// }
+///
+/// assert_eq!(html! { (notes(2)) }.into_string(), r#"<p id="notes">2 notes</p>"#);
+/// assert_eq!(
+///     partial!(notes(3)).render().into_string(),
+///     concat!(
+///         r##"<hx-partial hx-target="#notes" hx-swap="outerHTML">"##,
+///         r#"<p id="notes">3 notes</p></hx-partial>"#,
+///     )
+/// );
+/// ```
+///
+/// A fragment also converts into [`Part`], [`Parts`] or [`HxPartialResponse`].
 pub struct Fragment<T: Id>(Markup, PhantomData<fn() -> T>);
 
 impl<T: Id> Fragment<T> {

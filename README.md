@@ -12,15 +12,16 @@ parts will still be reworked.
 1. **Views are rendered right in the handlers.**
     - Something JSX-like may come later — more flexible, more extensible. For
       now, maud's simplicity and reliability win.
-    - vixen does not add anything on top of maud yet. A component library
-      built on [Basecoat](https://basecoatui.com) is planned.
+    - vixen provides two helper macros: [`#[id]`][id] and [`#[fragment]`][fragment].
+    - A component library built on [Basecoat](https://basecoatui.com) is
+      planned.
 
 2. **htmx 4 handles frontend interactivity.** vixen adds two basic
    abstractions:
     - [`#[action]`][action] uses one type for the route, its form fields, and
       the markup that calls it.
-    - [`partial!`][partial] puts the main swap and any number of targeted HTML
-      fragments into one response.
+    - [`partial!`][partial] puts the main swap and any number of targeted parts
+      into one response.
 
 3. **TS and CSS live next to the page they belong to.** The browser is a
    JavaScript platform, and vixen embraces that boundary. When custom
@@ -41,7 +42,13 @@ The first two ideas fit in one file:
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use axum::{Router, response::IntoResponse};
-use vixen::{action, id, maud::{Markup, html}, partial, routing::RouterExt, view_path};
+use vixen::{
+    action, fragment, id,
+    maud::{Markup, html},
+    partial,
+    routing::RouterExt,
+    view_path,
+};
 
 static COUNT: AtomicI64 = AtomicI64::new(0);
 
@@ -52,11 +59,19 @@ struct CountId;
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {
+    let count = COUNT.load(Ordering::Relaxed);
     html! {
+        (heading(count))
         button hx-action=(Add::action().by(-1)) { "−" }
-        output id=(CountId) { (COUNT.load(Ordering::Relaxed)) }
+        output id=(CountId) { (count) }
         button hx-action=(Add::action().by(1)) { "+" }
     }
+}
+
+#[fragment]
+fn heading(count: i64) -> Markup {
+    let parity = if count % 2 == 0 { "Even" } else { "Odd" };
+    html! { h1 id=(Self) { (parity) } }
 }
 
 #[action("/add")]
@@ -67,7 +82,7 @@ struct Add {
 async fn add(Add { by }: Add) -> impl IntoResponse {
     let count = COUNT.fetch_add(by, Ordering::Relaxed) + by;
 
-    partial!(CountId => html! { (count) })
+    partial!(CountId => html! { (count) }, heading(count))
 }
 
 fn router() -> Router {
@@ -76,8 +91,10 @@ fn router() -> Router {
 ```
 
 `Add` is the route, the form extractor, and what the buttons render. `CountId`
-is both the `id` in the page and the target in the response.
-[`examples/counter`][counter] adds the surrounding page and bundles htmx.
+is both the `id` in the page and the target in the response. `#[fragment]`
+gives `heading` a typed id: a page call emits the `<h1>`, while a `partial!`
+call replaces it with an `outerHTML` swap. [`examples/counter`][counter] adds
+surrounding page markup and bundles htmx.
 
 ## Installation
 
@@ -151,7 +168,7 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 | crate | what |
 |---|---|
 | [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `axum-vixen-bundler` as `bundler`, plus the macros |
-| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`assets!`][assets] / [`assets_router!`][assets_router] |
+| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets] / [`assets_router!`][assets_router] |
 | [`axum-vixen-bundler`][vixen-bundler] | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
 
 ## Examples
@@ -171,6 +188,7 @@ cargo run -p todos               # http://127.0.0.1:4001/
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
 [view_path]: https://docs.rs/axum-vixen/latest/vixen/attr.view_path.html
 [id]: https://docs.rs/axum-vixen/latest/vixen/attr.id.html
+[fragment]: https://docs.rs/axum-vixen/latest/vixen/attr.fragment.html
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html
 [assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
 [assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html

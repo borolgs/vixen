@@ -287,9 +287,10 @@ pub use vixen_macros::assets_router;
 /// `Fragment<TodoListId>`. Inside the body, `Self` refers to `TodoListId`, so it
 /// can also be used as `Self::SEL`.
 ///
-/// The attribute takes no arguments and supports sync or async free functions
-/// returning `Markup`. It does not support methods, where `Self` already has a
-/// meaning.
+/// The attribute supports sync or async free functions returning `Markup`. It
+/// does not support methods, where `Self` already has a meaning.
+/// `#[fragment("sidebar")]` overrides the id, with the rules of
+/// [`#[id("sidebar")]`](macro@id).
 ///
 /// The element must use `id=(Self)` at its root. The macro rejects a body with
 /// no `Self`, but cannot verify that it occurs in the root or that the markup

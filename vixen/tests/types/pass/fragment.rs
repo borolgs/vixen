@@ -28,9 +28,15 @@ mod list {
     pub async fn todo_count(n: usize) -> Markup {
         html! { output id=(Self) { (n) } }
     }
+
+    // A literal overrides the id, as with `#[id("..")]`.
+    #[fragment("sidebar-nav")]
+    pub fn sidebar() -> Markup {
+        html! { nav id=(Self) {} }
+    }
 }
 
-use list::{TodoCountId, TodoListId, todo_count, todo_list};
+use list::{SidebarId, TodoCountId, TodoListId, sidebar, todo_count, todo_list};
 
 async fn count() -> Fragment<TodoCountId> {
     todo_count(1).await
@@ -39,6 +45,8 @@ async fn count() -> Fragment<TodoCountId> {
 fn main() {
     let _: &str = TodoListId::ID;
     let _: &str = TodoListId::SEL;
+    assert_eq!(SidebarId::ID, "sidebar-nav");
+    let _ = sidebar();
     let _ = count();
 
     let frag: Fragment<TodoListId> = todo_list(&["a"]);

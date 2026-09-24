@@ -1,7 +1,7 @@
 use heck::ToPascalCase;
 use proc_macro2::{Group, Ident, TokenStream, TokenTree};
 use quote::{ToTokens, format_ident, quote};
-use syn::{ItemFn, parse_quote, parse2, spanned::Spanned, visit_mut::VisitMut};
+use syn::{ItemFn, LitStr, parse_quote, parse2, spanned::Spanned, visit_mut::VisitMut};
 
 pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut fragment_fn = match parse2::<ItemFn>(item) {
@@ -45,8 +45,18 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         .to_compile_error();
     }
 
+    // `#[id("custom")]`
+    let id_attr = if attr.is_empty() {
+        quote! { #[::vixen::id] }
+    } else {
+        match parse2::<LitStr>(attr).and_then(|id| crate::id::check(&id).map(|_| id)) {
+            Ok(id) => quote! { #[::vixen::id(#id)] },
+            Err(err) => return err.to_compile_error(),
+        }
+    };
+
     quote! {
-        #[::vixen::id]
+        #id_attr
         #vis struct #id_struct_ident;
 
         #fragment_fn

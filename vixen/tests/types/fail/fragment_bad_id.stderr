@@ -1,0 +1,5 @@
+error: expected a bare id: not empty, no whitespace, no `#`
+ --> tests/types/fail/fragment_bad_id.rs:3:12
+  |
+3 | #[fragment("no spaces")]
+  |            ^^^^^^^^^^^

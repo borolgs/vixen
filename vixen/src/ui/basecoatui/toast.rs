@@ -254,3 +254,20 @@ impl Align {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::HxPartial;
+
+    #[test]
+    fn a_toast_appends_to_the_toaster() {
+        let html = HxPartial::from(Toaster::new().error("Oops", "It broke."))
+            .render()
+            .into_string();
+        assert!(html.starts_with(concat!(
+            r##"<hx-partial hx-target="#toaster" hx-swap="beforeend">"##,
+            r#"<div class="toast" role="alert" aria-atomic="true" aria-hidden="false" data-category="error">"#,
+        )));
+    }
+}

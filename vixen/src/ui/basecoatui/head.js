@@ -1,25 +1,36 @@
 promoteToaster();
 
-document.addEventListener('htmx:after:settle', (e) => {
-  const el = e.target.closest?.('dialog.drawer, dialog.dialog');
-  if (el) open(el);
+document.addEventListener('htmx:after:settle', (event) => {
+  const dialog = event.target.closest?.('dialog.drawer, dialog.dialog');
+  if (dialog) openDialog(dialog);
   else promoteToaster();
 });
 
-function open(el) {
-  if (el.dataset.closing) el.addEventListener('close', () => open(el), { once: true });
-  else if (!el.open) {
-    el.showModal();
-    hostToaster(el);
-    el.addEventListener('close', () => hostToaster(document.querySelector('dialog:modal')), { once: true });
+document.addEventListener('dialog:close', (event) => {
+  document.getElementById(event.detail.id)?.close();
+});
+
+function openDialog(dialog) {
+  if (dialog.dataset.closing) dialog.addEventListener('close', () => openDialog(dialog), { once: true });
+  else if (!dialog.open) {
+    dialog.showModal();
+    hostToaster(dialog);
+    dialog.addEventListener('close', () => hostToaster(document.querySelector('dialog:modal')), { once: true });
   }
 }
 
 function hostToaster(dialog) {
   const toaster = document.getElementById('toaster');
   if (!toaster) return;
+
   const host = dialog?.firstElementChild ?? document.body;
-  if (toaster.parentElement !== host) host.append(toaster);
+  if (toaster.parentElement === host) {
+    promoteToaster();
+    return;
+  }
+
+  for (const toast of toaster.children) toast.style.animation = 'none';
+  host.append(toaster);
   promoteToaster(true);
 }
 

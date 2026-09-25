@@ -1,0 +1,30 @@
+error[E0080]: evaluation panicked: a modal id must not contain ASCII whitespace or `#`
+ --> tests/types/basecoatui/fail/modal_bad_name.rs:3:24
+  |
+3 | const DRAWER: Drawer = Drawer::new("a b");
+  |                        ^^^^^^^^^^^^^^^^^^ evaluation of `DRAWER` failed inside this call
+  |
+note: inside `Drawer::new`
+ --> src/ui/basecoatui/drawer.rs
+  |
+  |             modal: Modal::new(id),
+  |                    ^^^^^^^^^^^^^^
+note: inside `basecoatui::modal::Modal::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/ui/basecoatui/modal.rs
+  |
+  | /             assert!(
+  | |                 !bytes[index].is_ascii_whitespace() && bytes[index] != b'#',
+  | |                 "a modal id must not contain ASCII whitespace or `#`"
+  | |             );
+  | |_____________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/types/basecoatui/fail/modal_bad_name.rs:6:13
+  |
+6 |     let _ = DRAWER.shell();
+  |             ^^^^^^

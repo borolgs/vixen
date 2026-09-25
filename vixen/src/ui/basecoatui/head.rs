@@ -2,11 +2,12 @@ use maud::PreEscaped;
 
 // TODO: bundle component assets instead of inlining them.
 
-/// Styles and scripts for [`Toaster`](super::Toaster). Render it in `<head>`
-/// before the page's own assets.
+/// Shared styles and scripts for [`Toaster`](super::Toaster),
+/// [`Drawer`](super::Drawer), and [`Dialog`](super::Dialog).
 ///
-/// The toaster moves into the open modal, and back out when it closes, so its
-/// buttons stay clickable. See <https://github.com/hunvreus/basecoat/issues/133>.
+/// Render this in `<head>` before the page's own assets. It opens drawers and
+/// dialogs after their slots are updated, handles their close events, and keeps
+/// toasts interactive above an open modal.
 pub const HEAD: PreEscaped<&str> = PreEscaped(concat!(
     "<style>\n",
     include_str!("./head.css"),

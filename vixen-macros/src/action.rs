@@ -129,6 +129,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
 
         let setter = quote_spanned! { field_name.span() =>
+            #[allow(unused)]
             #vis fn #field_name(mut self, val: #field_type) -> Self {
                 self.0 = self.0.val(#key, #val_expr);
                 self

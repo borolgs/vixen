@@ -1,5 +1,5 @@
 use heck::ToPascalCase;
-use proc_macro2::{Group, Ident, TokenStream, TokenTree};
+use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
 use quote::{ToTokens, format_ident, quote};
 use syn::{ItemFn, LitStr, parse_quote, parse2, spanned::Spanned, visit_mut::VisitMut};
 
@@ -14,6 +14,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fragment_fn_ident = &fragment_fn.sig.ident;
 
     let vis = &fragment_fn.vis;
+    let fragment_fn_name = &fragment_fn.sig.ident;
     let asyncness = &fragment_fn.sig.asyncness;
 
     // <FnName>Id;
@@ -45,19 +46,42 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         .to_compile_error();
     }
 
-    // `#[id("custom")]`
-    let id_attr = if attr.is_empty() {
-        quote! { #[::vixen::id] }
+    // `#[fragment("custom")]`
+    let id = if attr.is_empty() {
+        LitStr::new(&crate::id::html_id(&id_struct_ident), Span::call_site())
     } else {
         match parse2::<LitStr>(attr).and_then(|id| crate::id::check(&id).map(|_| id)) {
-            Ok(id) => quote! { #[::vixen::id(#id)] },
+            Ok(id) => id,
             Err(err) => return err.to_compile_error(),
         }
     };
 
+    let doc = format!(
+        "Fragment with id [`{id_struct_ident}`]: a page call renders the element, a `partial!` call \
+         replaces it (`outerHTML`). [`{fragment_fn_name}::slot()`] renders a hidden `<div>` with the \
+         same id for a later `partial!` to replace."
+    );
+    if fragment_fn
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("doc"))
+    {
+        fragment_fn.attrs.push(parse_quote!(#[doc = ""]));
+    }
+    fragment_fn.attrs.push(parse_quote!(#[doc = #doc]));
+
     quote! {
-        #id_attr
+        #[::vixen::id(#id)]
         #vis struct #id_struct_ident;
+
+        #vis mod #fragment_fn_name {
+            /// A hidden `<div>` with the fragment's id, for a later `partial!` to replace.
+            pub fn slot() -> ::vixen::maud::Markup {
+                ::vixen::maud::html! {
+                    div id=#id style="display: none;" {}
+                }
+            }
+        }
 
         #fragment_fn
     }

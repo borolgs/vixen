@@ -1,5 +1,5 @@
 use heck::ToKebabCase;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{Error, Item, LitStr, parse_quote};
 
@@ -12,6 +12,15 @@ pub fn check(id: &LitStr) -> syn::Result<()> {
         ));
     }
     Ok(())
+}
+
+/// The default id for `ident`: kebab-case, with a trailing `-id` removed.
+pub fn html_id(ident: &Ident) -> String {
+    let kebab = ident.to_string().to_kebab_case();
+    match kebab.strip_suffix("-id") {
+        Some(stripped) => stripped.to_owned(),
+        None => kebab,
+    }
 }
 
 pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -31,15 +40,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let id_struct_ident = id_struct.ident.clone();
 
-    let html_id = {
-        let kebab_id = id_struct_ident.to_string().to_kebab_case();
-
-        if let Some(stripped) = kebab_id.strip_suffix("-id") {
-            stripped.to_string()
-        } else {
-            kebab_id
-        }
-    };
+    let html_id = html_id(&id_struct_ident);
 
     let id = syn::parse2::<LitStr>(attr).unwrap_or(LitStr::new(&html_id, Span::call_site()));
 

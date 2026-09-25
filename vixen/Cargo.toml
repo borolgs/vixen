@@ -16,6 +16,12 @@ name = "vixen"
 [lints]
 workspace = true
 
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+basecoatui = []
+
 [dependencies]
 axum-vixen-macros = { path = "../vixen-macros", version = "0.1.1" }
 axum-vixen-bundler = { path = "../vixen-bundler", version = "0.1.1" }

@@ -16,7 +16,7 @@ maud = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 
-axum-vixen = { path = "../../vixen" }
+axum-vixen = { path = "../../vixen", features = ["basecoatui"] }
 
 [build-dependencies]
 axum-vixen = { path = "../../vixen" }

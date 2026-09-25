@@ -220,8 +220,8 @@ impl<S> HxPartial<S, NoMain> {
     ///
     /// Omit the main body to leave the requesting element untouched. This
     /// method can only be called once.
-    pub fn main(mut self, content: Markup) -> HxPartial<Filled, HasMain> {
-        self.state.main = Some(content);
+    pub fn main(mut self, content: impl Into<Markup>) -> HxPartial<Filled, HasMain> {
+        self.state.main = Some(content.into());
         self.cast()
     }
 }
@@ -251,8 +251,8 @@ impl<S, M> HxPartial<S, M> {
     }
 
     /// Adds a preconfigured [`Part`].
-    pub fn part(mut self, part: Part) -> HxPartial<Filled, M> {
-        self.state.parts.push(part);
+    pub fn part(mut self, part: impl Into<Part>) -> HxPartial<Filled, M> {
+        self.state.parts.push(part.into());
         self.cast()
     }
 
@@ -299,6 +299,7 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 ///
 /// - `_ => content` for the main swap;
 /// - `target => content` for a targeted swap;
+/// - `(target, swap) => content` for a targeted swap with the swap spelled out;
 /// - a [`Fragment`](crate::Fragment) for an `outerHTML` swap of its element;
 /// - a [`Part`] or anything convertible to [`Parts`], such as `Vec<Part>`.
 ///
@@ -323,6 +324,7 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 ///     _ => html! { div.alert { "Thanks!" } },
 ///     review_list(),
 ///     ShelfCountId => html! { "12" },
+///     ("#reviews", SwapOption::AfterBegin) => html! { li { "Sturdy." } },
 ///     toast("Saved"),
 /// );
 /// ```
@@ -330,6 +332,9 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 macro_rules! partial {
     (@acc $p:expr;) => {
         $p
+    };
+    (@acc $p:expr; ($target:expr, $swap:expr) => $content:expr $(, $($rest:tt)*)?) => {
+        $crate::partial!(@acc $p.target_swap($target, $swap, $content); $($($rest)*)?)
     };
     (@acc $p:expr; $target:expr => $content:expr $(, $($rest:tt)*)?) => {
         $crate::partial!(@acc $p.target($target, $content); $($($rest)*)?)
@@ -370,6 +375,17 @@ mod tests {
                 r##"<hx-partial hx-target="#toaster" hx-swap="beforeend">saved</hx-partial>"##,
                 r##"<hx-partial hx-target="#rows"><tr><td>row</td></tr></hx-partial>"##,
             )
+        );
+    }
+
+    #[test]
+    fn a_tuple_target_spells_out_the_swap() {
+        let html = partial!(("#rows", SwapOption::AfterEnd) => rows())
+            .render()
+            .into_string();
+        assert_eq!(
+            html,
+            r##"<hx-partial hx-target="#rows" hx-swap="afterend"><tr><td>row</td></tr></hx-partial>"##
         );
     }
 

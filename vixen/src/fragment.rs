@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use axum_htmx::SwapOption;
 use maud::{Markup, Render};
 
-use crate::{HxPartial, HxPartialResponse, Id, Part, Parts};
+use crate::{Id, Part, Parts};
 
 /// Markup for one element with a typed id.
 ///
@@ -32,7 +32,7 @@ use crate::{HxPartial, HxPartialResponse, Id, Part, Parts};
 /// );
 /// ```
 ///
-/// A fragment also converts into [`Part`], [`Parts`] or [`HxPartialResponse`].
+/// A fragment also converts into [`Part`], [`Parts`] or [`Markup`].
 pub struct Fragment<T: Id>(Markup, PhantomData<fn() -> T>);
 
 impl<T: Id> Fragment<T> {
@@ -60,8 +60,8 @@ impl<T: Id> From<Fragment<T>> for Parts {
     }
 }
 
-impl<T: Id> From<Fragment<T>> for HxPartialResponse {
+impl<T: Id> From<Fragment<T>> for Markup {
     fn from(value: Fragment<T>) -> Self {
-        HxPartial::new().part(Part::from(value))
+        value.0
     }
 }

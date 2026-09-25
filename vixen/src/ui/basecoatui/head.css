@@ -1,0 +1,10 @@
+/* Reset popover UA styles so basecoat .toaster positioning works
+   https://github.com/hunvreus/basecoat/issues/133 (1/3) */
+.toaster[popover] {
+  inset: auto 0 0 auto;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+}

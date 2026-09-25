@@ -13,8 +13,8 @@ parts will still be reworked.
     - Something JSX-like may come later — more flexible, more extensible. For
       now, maud's simplicity and reliability win.
     - vixen provides two helper macros: [`#[id]`][id] and [`#[fragment]`][fragment].
-    - A component library built on [Basecoat](https://basecoatui.com) is
-      planned.
+    - A component library built on [Basecoat](https://basecoatui.com) has
+      begun: `vixen::ui::basecoatui`, behind the `basecoatui` feature.
 
 2. **htmx 4 handles frontend interactivity.** vixen adds two basic
    abstractions:

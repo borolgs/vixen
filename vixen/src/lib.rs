@@ -10,6 +10,7 @@
 //! | render one element that owns its id | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`bundler::build`] in `build.rs` |
+//! | show a Basecoat toast from a handler | [`ui`], behind the `basecoatui` feature |
 //!
 //! ## Re-exports
 //!
@@ -43,6 +44,7 @@ mod action;
 mod fragment;
 mod id;
 mod partial;
+pub mod ui;
 
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
 // docs here are either hidden or appended to the original item's docs.

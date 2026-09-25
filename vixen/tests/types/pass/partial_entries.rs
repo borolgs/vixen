@@ -30,4 +30,9 @@ fn main() {
     let _ = partial!(both());
     let _ = partial!(vec![toast(), toast()]);
     let _ = partial!(_ => rows(), both(), "#rows" => rows());
+
+    // `(target, swap) => content`; a parenthesised bare part is still a part.
+    let _ = partial!(("#rows", SwapOption::AfterEnd) => rows(), toast());
+    let _ = partial!(toast(), ("#rows", SwapOption::AfterEnd) => rows());
+    let _ = partial!((toast()), "#rows" => rows());
 }

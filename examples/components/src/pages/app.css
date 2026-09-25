@@ -1,7 +1,10 @@
+@import "tailwindcss";
+@import "basecoat-css";
+
+@source "../";
+
 body {
   max-width: 28rem;
   margin: 3rem auto;
   padding: 0 1rem;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
 }

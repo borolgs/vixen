@@ -7,7 +7,7 @@
 //! | define a page route | [`#[view_path]`](macro@view_path) |
 //! | define an htmx endpoint and call it from markup | [`#[action]`](macro@action), [`HxAction`], [`SyncStrategy`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
-//! | render one element that owns its id | [`#[fragment]`](macro@fragment), [`Fragment`] |
+//! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`bundler::build`] in `build.rs` |
 //! | show a Basecoat toast from a handler | [`ui`], behind the `basecoatui` feature |
@@ -257,37 +257,41 @@ pub use vixen_macros::assets;
 /// [`bundler::build`], so the example is ignored.
 pub use vixen_macros::assets_router;
 
-/// Gives a function that renders one element its own typed id.
+/// Turns a function that renders one element into a typed [`Fragment`]. In
+/// page markup the fragment renders normally; in a response it becomes an
+/// `outerHTML` [`Part`] targeting the same element.
 ///
 /// ```
 /// use vixen::{fragment, maud::{Markup, html}, partial};
 ///
 /// #[fragment]
-/// fn todo_list(todos: &[&str]) -> Markup {
-///     html! {
-///         ul id=(Self) {
-///             @for todo in todos { li { (todo) } }
-///         }
-///     }
+/// fn counter(count: i64) -> Markup {
+///     html! { output id=(Self) { (count) } }
 /// }
 ///
-/// let page = html! { (todo_list(&["milk"])) };
-/// assert_eq!(page.into_string(), r#"<ul id="todo-list"><li>milk</li></ul>"#);
+/// let page = html! { (counter(1)) };
+/// assert_eq!(page.into_string(), r#"<output id="counter">1</output>"#);
 ///
-/// let response = partial!(todo_list(&["milk", "eggs"]));
+/// let response = partial!(counter(2));
 /// assert_eq!(
 ///     response.render().into_string(),
-///     concat!(
-///         r##"<hx-partial hx-target="#todo-list" hx-swap="outerHTML">"##,
-///         r#"<ul id="todo-list"><li>milk</li><li>eggs</li></ul></hx-partial>"#,
-///     )
+///     r##"<hx-partial hx-target="#counter" hx-swap="outerHTML"><output id="counter">2</output></hx-partial>"##
+/// );
+///
+/// assert_eq!(
+///     counter::slot().into_string(),
+///     r#"<div id="counter" style="display: none;"></div>"#
 /// );
 /// ```
 ///
-/// For `todo_list`, the macro declares `#[id] struct TodoListId` with the same
-/// visibility and changes the function's return type to
-/// `Fragment<TodoListId>`. Inside the body, `Self` refers to `TodoListId`, so it
-/// can also be used as `Self::SEL`.
+/// For `counter`, the macro declares `#[id] struct CounterId`, changes the
+/// return type to `Fragment<CounterId>`, and exposes `counter::slot()`. The
+/// generated items have the same visibility as the function. Inside the body,
+/// `Self` is `CounterId`, so `Self::SEL` works too.
+///
+/// [`Fragment`] converts into [`Part`], [`Parts`] and [`Markup`](maud::Markup),
+/// and can be used with `html!`, [`partial!`], [`HxPartial::part`] or
+/// [`HxPartial::main`].
 ///
 /// The attribute supports sync or async free functions returning `Markup`. It
 /// does not support methods, where `Self` already has a meaning.

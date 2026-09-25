@@ -13,8 +13,8 @@ parts will still be reworked.
     - Something JSX-like may come later — more flexible, more extensible. For
       now, maud's simplicity and reliability win.
     - vixen provides two helper macros: [`#[id]`][id] and [`#[fragment]`][fragment].
-    - A component library built on [Basecoat](https://basecoatui.com) has
-      begun: `vixen::ui::basecoatui`, behind the `basecoatui` feature.
+    - Optional [Basecoat](#basecoat) components are available under
+      `vixen::ui::basecoatui` with the `basecoatui` feature.
 
 2. **htmx 4 handles frontend interactivity.** vixen adds two basic
    abstractions:
@@ -43,7 +43,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, fragment, id,
+    action, fragment,
     maud::{Markup, html},
     partial,
     routing::RouterExt,
@@ -51,9 +51,6 @@ use vixen::{
 };
 
 static COUNT: AtomicI64 = AtomicI64::new(0);
-
-#[id]
-struct CountId;
 
 #[view_path("/")]
 struct HomePath;
@@ -63,15 +60,9 @@ async fn home(_: HomePath) -> Markup {
     html! {
         (heading(count))
         button hx-action=(Add::action().by(-1)) { "−" }
-        output id=(CountId) { (count) }
+        (counter(count))
         button hx-action=(Add::action().by(1)) { "+" }
     }
-}
-
-#[fragment]
-fn heading(count: i64) -> Markup {
-    let parity = if count % 2 == 0 { "Even" } else { "Odd" };
-    html! { h1 id=(Self) { (parity) } }
 }
 
 #[action("/add")]
@@ -82,7 +73,25 @@ struct Add {
 async fn add(Add { by }: Add) -> impl IntoResponse {
     let count = COUNT.fetch_add(by, Ordering::Relaxed) + by;
 
-    partial!(CountId => html! { (count) }, heading(count))
+    partial! {
+        counter(count),
+        heading(count),
+    }
+}
+
+#[fragment]
+fn heading(count: i64) -> Markup {
+    let title = match count {
+        0 => "Zero",
+        n if n % 2 == 0 => "Even",
+        _ => "Odd",
+    };
+    html! { h1 id=(Self) { (title) } }
+}
+
+#[fragment]
+fn counter(count: i64) -> Markup {
+    html! { output id=(Self) { (count) } }
 }
 
 fn router() -> Router {
@@ -90,11 +99,10 @@ fn router() -> Router {
 }
 ```
 
-`Add` is the route, the form extractor, and what the buttons render. `CountId`
-is both the `id` in the page and the target in the response. `#[fragment]`
-gives `heading` a typed id: a page call emits the `<h1>`, while a `partial!`
-call replaces it with an `outerHTML` swap. [`examples/counter`][counter] adds
-surrounding page markup and bundles htmx.
+`Add` is the route, the form extractor, and what the buttons render. Each
+`#[fragment]` owns its element ID: in page markup it renders the element; in
+`partial!` it becomes an `outerHTML` update for that element.
+[`examples/counter`][counter] adds surrounding page markup and bundles htmx.
 
 ## Installation
 
@@ -152,6 +160,83 @@ Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
 
 [`Config`][config] overrides the defaults: `entry_glob` picks the entries, `assets_prefix` moves the bundle and the `/assets/` URL it is served under. [`examples/counter`][counter] points the glob at a single `src/index.ts`.
 
+### Basecoat
+
+Enable `basecoatui` to render [Basecoat](https://basecoatui.com) components
+from Rust:
+
+```toml
+[dependencies]
+axum-vixen = { version = "0.1", features = ["basecoatui"] }
+```
+
+The components use the `basecoat-css` npm package and Tailwind:
+
+```bash
+bun add basecoat-css
+bun add -d tailwindcss bun-plugin-tailwind
+```
+
+The bundler merges `build.ts`, next to `Cargo.toml`, into its generated
+`Bun.build` options. Use it to enable Tailwind:
+
+```ts
+// build.ts
+import tailwind from 'bun-plugin-tailwind';
+
+export default { entrypoints: [], plugins: [tailwind] };
+```
+
+Import the styles from the page's CSS:
+
+```css
+/* src/pages/index.css */
+@import "tailwindcss";
+@import "basecoat-css";
+@source "../";
+```
+
+Load htmx, the Basecoat scripts, and that stylesheet from the page entry:
+
+```ts
+// src/pages/index.ts
+import 'htmx.org';
+import 'basecoat-css/basecoat';
+import 'basecoat-css/toast';
+import './index.css';
+```
+
+Place `HEAD` before the page's assets and render one `Toaster` shell in the
+body. An action can return a toast alongside other partial updates:
+
+```rust,ignore
+use vixen::ui::basecoatui::{HEAD, Toaster};
+
+const TOASTER: Toaster = Toaster::new();
+
+async fn home(_: HomePath) -> Markup {
+    html! {
+        head { (HEAD) (vixen::assets!()) }
+        body {
+            (counter(0))
+            button hx-action=(Add::action().by(1)) { "+" }
+            (TOASTER.shell())
+        }
+    }
+}
+
+async fn add(Add { by }: Add) -> impl IntoResponse {
+    let count = COUNT.fetch_add(by, Ordering::Relaxed) + by;
+
+    partial! {
+        counter(count),
+        TOASTER.success("Added", format!("Now at {count}.")),
+    }
+}
+```
+
+See [`examples/components`][components] for the complete setup.
+
 ## htmx 4 compatibility
 
 vixen targets htmx 4, but `vixen::hx` re-exports
@@ -179,10 +264,14 @@ screen, with its `index.ts` and `index.css` beside it. Start here.
 [`examples/todos`][todos] — a todo list on one page: every macro once, plus a
 per-page `index.ts`.
 
+[`examples/components`][components] — Basecoat components with Tailwind and
+an action that returns a toast.
+
 ```bash
 bun install                      # once, for the frontend deps
 cargo run -p counter             # http://127.0.0.1:4002/
 cargo run -p todos               # http://127.0.0.1:4001/
+cargo run -p components          # http://127.0.0.1:4003/
 ```
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
@@ -200,3 +289,4 @@ cargo run -p todos               # http://127.0.0.1:4001/
 [axum-htmx-v4]: https://github.com/robertwayne/axum-htmx/pull/38
 [counter]: https://github.com/borolgs/vixen/tree/main/examples/counter
 [todos]: https://github.com/borolgs/vixen/tree/main/examples/todos
+[components]: https://github.com/borolgs/vixen/tree/main/examples/components

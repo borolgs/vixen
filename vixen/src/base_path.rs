@@ -1,7 +1,4 @@
-use std::fmt::{self, Display, Write as _};
-
 use axum::{Router, http::Uri, response::Redirect, routing::get};
-use maud::{Escaper, Render};
 
 /// Normalizes and validates `VIXEN_BASE_PATH` at compile time.
 /// Missing, empty, and `/` values mean no base path; trailing slashes are removed.
@@ -39,41 +36,15 @@ pub fn mount<S: Clone + Send + Sync + 'static>(base: &str, router: Router<S>) ->
         .route(base, get(redirect))
 }
 
-/// A route path prefixed with the app's base path.
-///
-/// `Display` supports string contexts such as `Redirect::to`; `Render` supports
-/// Maud markup.
-#[derive(Clone, Copy, Debug)]
-pub struct Href<T>(&'static str, T);
-
-impl<T> Href<T> {
-    /// Prefixes `path` with `base`.
-    pub fn new(base: &'static str, path: T) -> Self {
-        Self(base, path)
-    }
-}
-
-impl<T: Display> Display for Href<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)?;
-        self.1.fmt(f)
-    }
-}
-
-impl<T: Display> Render for Href<T> {
-    fn render_to(&self, buffer: &mut String) {
-        let _ = write!(Escaper::new(buffer), "{self}");
-    }
-}
-
 /// The app's base path, `""` when there is none.
 ///
 /// Set it with [`Config::base_path`](crate::Config) in `build.rs`, or set
 /// `VIXEN_BASE_PATH` when using [`Config::default`](crate::Config::default).
 /// Trailing slashes are dropped; anything else must start with `/`.
 /// Routes stay unprefixed: [`mount!`](macro@crate::mount) nests them, and
-/// [`#[action]`](macro@crate::action), [`assets!`](crate::assets) and
-/// [`href!`](macro@crate::href) prefix the URLs they emit.
+/// [`#[action]`](macro@crate::action), [`assets!`](crate::assets),
+/// [`asset!`](crate::asset) and [`href!`](macro@crate::href) prefix the URLs
+/// they emit.
 ///
 /// ```
 /// assert_eq!(vixen::base_path!(), "");
@@ -101,27 +72,6 @@ macro_rules! mount {
     };
 }
 
-/// `path` behind [`base_path!`], for `Redirect::to` and other string
-/// contexts. In markup, a [`#[view_path]`](macro@crate::view_path) type already
-/// renders as its link.
-///
-/// ```
-/// use vixen::{href, view_path};
-///
-/// #[view_path("/items/{id}")]
-/// struct ItemPath {
-///     id: u32,
-/// }
-///
-/// assert_eq!(href!(ItemPath { id: 7 }).to_string(), "/items/7");
-/// ```
-#[macro_export]
-macro_rules! href {
-    ($path:expr) => {
-        $crate::Href::new($crate::base_path!(), $path)
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use axum::{
@@ -129,7 +79,6 @@ mod tests {
         http::{Request, StatusCode, header::LOCATION},
         response::Response,
     };
-    use maud::html;
     use tower::ServiceExt;
 
     use super::*;
@@ -153,16 +102,6 @@ mod tests {
     #[should_panic(expected = "must start with `/`")]
     fn rejects_a_relative_base() {
         base_path(Some("app"));
-    }
-
-    #[test]
-    fn href_displays_and_renders_escaped() {
-        let href = Href::new("/app", "/q?a=1&b=2");
-        assert_eq!(href.to_string(), "/app/q?a=1&b=2");
-        assert_eq!(
-            html! { a href=(href) {} }.into_string(),
-            r#"<a href="/app/q?a=1&amp;b=2"></a>"#
-        );
     }
 
     async fn send(router: Router, uri: &str) -> Response {

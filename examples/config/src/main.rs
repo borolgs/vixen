@@ -7,6 +7,8 @@ use vixen::{
     view_path,
 };
 
+mod assets;
+
 const ADDR: &str = "127.0.0.1:4004";
 
 #[view_path("/")]
@@ -23,6 +25,7 @@ async fn home(_: HomePath) -> Markup {
                 (vixen::assets!())
             }
             body {
+                img src=(assets::SHIP) alt="ship" width="160" height="88";
                 h1 { "Mounted at " code { (vixen::base_path!()) "/" } }
                 main {
                     (pong(0))

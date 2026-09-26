@@ -10,6 +10,7 @@
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
+//! | resolve a static file to its content-hashed URL | [`asset!`] |
 //! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
 //! | show a Basecoat toast from a handler | [`ui`], behind the `basecoatui` feature |
 //!
@@ -44,6 +45,7 @@ pub mod assets;
 mod action;
 mod base_path;
 mod fragment;
+mod href;
 mod id;
 mod partial;
 pub mod ui;
@@ -52,8 +54,8 @@ pub mod ui;
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
 pub use axum_htmx as hx;
-pub use base_path::Href;
 pub use fragment::Fragment;
+pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;
 pub use vixen_bundler::{Config, build};
@@ -267,6 +269,26 @@ pub use vixen_macros::assets;
 /// Like [`assets!`], this macro needs the manifest from [`build`], so the
 /// example is ignored.
 pub use vixen_macros::assets_router;
+
+/// Resolves a static file to its content-hashed URL at compile time.
+///
+/// Paths are relative to the calling source file, as with `include_bytes!`.
+/// [`build`] copies files matching [`Config::static_glob`] under hashed names;
+/// the default glob covers images in `src/**/assets/` directories.
+/// [`assets_router!`] serves the copies.
+///
+/// The macro expands to an [`Href`], so [`base_path!`] is applied and the result
+/// can be rendered in markup or used through `Display`.
+///
+/// ```ignore
+/// // src/pages/game/mod.rs, next to src/pages/game/assets/map.jpg
+/// html! { img src=(vixen::asset!("./assets/map.jpg")); }
+/// // <img src="/assets/map-1a2b3c4d.jpg">
+/// ```
+///
+/// Compilation fails if the file does not exist or is outside the configured
+/// glob. This example is ignored because it needs the manifest from [`build`].
+pub use vixen_macros::asset;
 
 /// Turns a function that renders one element into a typed [`Fragment`]. In
 /// page markup the fragment renders normally; in a response it becomes an

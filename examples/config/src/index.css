@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --accent: #e4572e;
 }
 
@@ -11,4 +11,9 @@ body {
   min-height: 100vh;
   margin: 0;
   font-family: system-ui, sans-serif;
+}
+
+button {
+  font: inherit;
+  padding: 0.25rem 0.75rem;
 }

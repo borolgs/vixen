@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: the values are always set */
 import { rmSync } from 'node:fs';
-import { join, normalize, relative, resolve } from 'node:path';
+import { join, normalize, parse, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
 // Invoked by `vixen_bundler::build` with the consumer crate as cwd.
@@ -12,6 +12,7 @@ const { values } = parseArgs({
     root: { type: 'string' },
     assetsPrefix: { type: 'string' },
     entryGlob: { type: 'string' },
+    staticGlob: { type: 'string' },
     userConfig: { type: 'string' },
   },
   strict: true,
@@ -96,6 +97,8 @@ if (!result.success) {
   process.exit(0);
 }
 
+const assetUrl = (path: string) => join('/', cfg.assetsPrefix, normalize(path)).replaceAll('\\', '/');
+
 const entries: Record<string, { js: string; css: string | null }> = {};
 
 const dir = resolve(outdir);
@@ -105,8 +108,6 @@ for (const [rawPath, out] of Object.entries(result.metafile!.outputs)) {
   // CSS outputs share an entry point; `cssBundle` links them from the JS output.
   if (!out.entryPoint || !rawPath.endsWith('.js')) continue;
 
-  const assetUrl = (path: string) => join('/', cfg.assetsPrefix, normalize(path)).replaceAll('\\', '/');
-
   const entry = {
     js: assetUrl(rawPath),
     css: out.cssBundle ? assetUrl(out.cssBundle) : null,
@@ -115,11 +116,37 @@ for (const [rawPath, out] of Object.entries(result.metafile!.outputs)) {
   entries[resolve(normalize(out.entryPoint))] = entry;
 }
 
+// Copy `asset!` files into the bundle root as `[name]-[hash][ext]`.
+const statics: Record<string, string> = {};
+const copied = new Set<string>();
+
+for (const path of Array.from(new Bun.Glob(cfg.staticGlob).scanSync()).sort()) {
+  const bytes = await Bun.file(path).bytes();
+  const hash = Bun.hash(bytes).toString(36).slice(-8).padStart(8, '0');
+  const { name, ext } = parse(path);
+  const out = `${name}-${hash}${ext}`;
+
+  if (!copied.has(out)) {
+    if (files.includes(out)) {
+      console.log(`cargo::error=vixen-bundler: ${path} collides with bundle output ${out}`);
+      process.exit(0);
+    }
+    await Bun.write(join(dir, out), bytes);
+    copied.add(out);
+    files.push(out);
+  }
+
+  statics[resolve(path)] = assetUrl(out);
+  console.log(`cargo::rerun-if-changed=${resolve(path)}`);
+}
+
 const manifest = {
   entry_glob: cfg.entryGlob,
+  static_glob: cfg.staticGlob,
   dir,
   prefix: cfg.assetsPrefix,
   entries,
+  static: statics,
   files,
 };
 

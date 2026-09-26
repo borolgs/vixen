@@ -68,9 +68,9 @@ impl<T: Display> Render for Href<T> {
 
 /// The app's base path, `""` when there is none.
 ///
-/// Set it through [`Config::base_path`](crate::Config) in `build.rs`, or with
-/// the `VIXEN_BASE_PATH` build environment variable when the config leaves it
-/// empty. Trailing slashes are dropped; anything else must start with `/`.
+/// Set it with [`Config::base_path`](crate::Config) in `build.rs`, or set
+/// `VIXEN_BASE_PATH` when using [`Config::default`](crate::Config::default).
+/// Trailing slashes are dropped; anything else must start with `/`.
 /// Routes stay unprefixed: [`mount!`](macro@crate::mount) nests them, and
 /// [`#[action]`](macro@crate::action), [`assets!`](crate::assets) and
 /// [`href!`](macro@crate::href) prefix the URLs they emit.

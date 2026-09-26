@@ -157,18 +157,39 @@ head { (vixen::assets!()) }
 Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
 ```
 
+### Config
 
-[`Config`][config] overrides the defaults: `entry_glob` picks the entries, `assets_prefix` moves the bundle and the `/assets/` URL it is served under. [`examples/counter`][counter] points the glob at a single `src/index.ts`.
+[`Config`][config] controls bundling. `Config::default()` reads
+`VIXEN_<FIELD>` variables from the build environment.
 
-### Base path
+| Field | Default | Purpose |
+|---|---|---|
+| `base_path` | none | URL prefix |
+| `bun_cmd` | `bun` | Bun executable |
+| `root` | `src` | prefix stripped from entry paths |
+| `entry_glob` | `src/pages/**/{page,index}.ts` | input files |
+| `assets_prefix` | `assets` | bundle directory and URL |
+| `config` | `build.ts` | Bun config |
 
-For an app served from `/app/`, set `Config::base_path` to `"/app"` in
-`build.rs`, or set `VIXEN_BASE_PATH=/app` in the build environment. Keep route
-paths unprefixed and wrap the router in `vixen::mount!`; it serves the router at
-`/app/` and redirects `/app` to `/app/`.
+```rust,ignore
+// build.rs
+fn main() {
+    vixen::build(vixen::Config {
+        entry_glob: "src/index.ts".into(),
+        ..Default::default()
+    });
+}
+```
 
-`#[action]`, `assets!` and `#[view_path]` include the prefix in rendered URLs.
-Use [`href!`][href] where a string is required, such as `Redirect::to`. See
+The default `build.ts`, next to `Cargo.toml`, exports `Bun.build` options or a
+function returning them. Use it for plugins, `define` and extra `entrypoints`;
+vixen owns `root`, `outdir`, `metafile` and `naming`. Leave `publicPath` unset.
+
+For an app served from `/app/`, set `base_path` to `"/app"`. Keep route paths
+unprefixed and wrap the router in `vixen::mount!`; it serves the router at
+`/app/` and redirects `/app` to `/app/`. `#[action]`, `assets!` and
+`#[view_path]` include the prefix in rendered URLs. Use [`href!`][href] where a
+string is required, such as `Redirect::to`. See
 [`examples/config`][config-example] for a complete app served from `/config/`.
 
 ### Basecoat
@@ -188,8 +209,7 @@ bun add basecoat-css
 bun add -d tailwindcss bun-plugin-tailwind
 ```
 
-The bundler merges `build.ts`, next to `Cargo.toml`, into its generated
-`Bun.build` options. Use it to enable Tailwind:
+Enable Tailwind in [`build.ts`](#config):
 
 ```ts
 // build.ts

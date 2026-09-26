@@ -35,4 +35,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
+tokio = { workspace = true }
+tower = { version = "0.5", features = ["util"] }
 trybuild = "1.0.121"

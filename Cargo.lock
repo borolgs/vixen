@@ -127,6 +127,8 @@ dependencies = [
  "maud",
  "serde",
  "serde_json",
+ "tokio",
+ "tower",
  "trybuild",
 ]
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Base-path support through `Config::base_path` or `VIXEN_BASE_PATH`, with
+  `base_path!`, `mount!`, `href!` and `HxAction::base`.
+- Prefix handling for URLs rendered by `#[action]`, `assets!` and
+  `#[view_path]`.
+- A base-path example in `examples/config`.
+
+### Changed
+
+- Re-exported `build` and `Config` at the `vixen` crate root instead of under
+  `vixen::bundler`; `build` now takes `Config` by value.
+- `assets!()` now expands to `Markup`.
+
 ## 0.1.2 - 2026-09-26
 
 ### Added

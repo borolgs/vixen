@@ -123,9 +123,8 @@ pub struct Entry {
 }
 
 pub fn parse_manifest() -> Result<Manifest, String> {
-    let manifest_raw = env::var("VIXEN_MANIFEST").map_err(|_| {
-        "VIXEN_MANIFEST is not set: call `vixen::build` from build.rs".to_string()
-    })?;
+    let manifest_raw = env::var("VIXEN_MANIFEST")
+        .map_err(|_| "VIXEN_MANIFEST is not set: call `vixen::build` from build.rs".to_string())?;
 
     serde_json::from_str(&manifest_raw)
         .map_err(|e| format!("VIXEN_MANIFEST is not a valid asset manifest: {e}"))

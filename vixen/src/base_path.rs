@@ -34,7 +34,9 @@ pub fn mount<S: Clone + Send + Sync + 'static>(base: &str, router: Router<S>) ->
             None => Redirect::permanent(&root),
         }
     };
-    Router::new().nest(&format!("{base}/"), router).route(base, get(redirect))
+    Router::new()
+        .nest(&format!("{base}/"), router)
+        .route(base, get(redirect))
 }
 
 /// A route path prefixed with the app's base path.
@@ -118,4 +120,75 @@ macro_rules! href {
     ($path:expr) => {
         $crate::Href::new($crate::base_path!(), $path)
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode, header::LOCATION},
+        response::Response,
+    };
+    use maud::html;
+    use tower::ServiceExt;
+
+    use super::*;
+
+    #[test]
+    fn normalizes_the_raw_value() {
+        let cases = [
+            (None, ""),
+            (Some(""), ""),
+            (Some("/"), ""),
+            (Some("/app"), "/app"),
+            (Some("/app/"), "/app"),
+            (Some("/app//"), "/app"),
+        ];
+        for (raw, want) in cases {
+            assert_eq!(base_path(raw), want, "{raw:?}");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "must start with `/`")]
+    fn rejects_a_relative_base() {
+        base_path(Some("app"));
+    }
+
+    #[test]
+    fn href_displays_and_renders_escaped() {
+        let href = Href::new("/app", "/q?a=1&b=2");
+        assert_eq!(href.to_string(), "/app/q?a=1&b=2");
+        assert_eq!(
+            html! { a href=(href) {} }.into_string(),
+            r#"<a href="/app/q?a=1&amp;b=2"></a>"#
+        );
+    }
+
+    async fn send(router: Router, uri: &str) -> Response {
+        router
+            .oneshot(Request::get(uri).body(Body::empty()).unwrap())
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn mounts_under_the_base_and_redirects_the_bare_base() {
+        let app = || {
+            Router::new()
+                .route("/", get(|| async { "root" }))
+                .route("/x", get(|| async { "x" }))
+        };
+
+        assert_eq!(send(mount("", app()), "/").await.status(), StatusCode::OK);
+
+        let mounted = || mount("/app", app());
+        assert_eq!(send(mounted(), "/app/").await.status(), StatusCode::OK);
+        assert_eq!(send(mounted(), "/app/x").await.status(), StatusCode::OK);
+        assert_eq!(send(mounted(), "/x").await.status(), StatusCode::NOT_FOUND);
+
+        let res = send(mounted(), "/app?q=1").await;
+        assert_eq!(res.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(res.headers()[LOCATION], "/app/?q=1");
+    }
 }

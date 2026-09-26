@@ -290,6 +290,15 @@ mod tests {
     }
 
     #[test]
+    fn base_prefixes_the_path() {
+        let html = html! { form hx-action=(HxAction::new("/save").base("/app")) {} }.into_string();
+        assert_eq!(
+            html,
+            r#"<form hx-action="/app/save" hx-method="post"></form>"#
+        );
+    }
+
+    #[test]
     fn a_target_is_also_a_raw_selector() {
         let html = html! { div hx-action=(Search::action().hx().target("#list")) {} }.into_string();
         assert_eq!(

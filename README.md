@@ -27,8 +27,8 @@ parts will still be reworked.
    JavaScript platform, and vixen embraces that boundary. When custom
    client-side code is needed, it uses the JavaScript ecosystem directly — if
    we have to write JS, we might as well do it properly.
-    - [`vixen::bundler::build`][build] finds the entry points, bundles their TS
-      and CSS with Bun, and passes the asset manifest to Rust.
+    - [`vixen::build`][build] finds the entry points, bundles their TS and CSS
+      with Bun, and passes the asset manifest to Rust.
     - [`assets!`][assets] emits the `<script>` and `<link>` tags for the current
       page.
     - [`assets_router!`][assets_router] embeds the bundled files in the binary
@@ -135,7 +135,7 @@ bun add htmx.org@4
 ```rust,ignore
 // build.rs
 fn main() {
-    vixen::bundler::build(&vixen::bundler::Config::default());
+    vixen::build(vixen::Config::default());
 }
 ```
 
@@ -159,6 +159,17 @@ Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
 
 
 [`Config`][config] overrides the defaults: `entry_glob` picks the entries, `assets_prefix` moves the bundle and the `/assets/` URL it is served under. [`examples/counter`][counter] points the glob at a single `src/index.ts`.
+
+### Base path
+
+For an app served from `/app/`, set `Config::base_path` to `"/app"` in
+`build.rs`, or set `VIXEN_BASE_PATH=/app` in the build environment. Keep route
+paths unprefixed and wrap the router in `vixen::mount!`; it serves the router at
+`/app/` and redirects `/app` to `/app/`.
+
+`#[action]`, `assets!` and `#[view_path]` include the prefix in rendered URLs.
+Use [`href!`][href] where a string is required, such as `Redirect::to`. See
+[`examples/config`][config-example] for a complete app served from `/config/`.
 
 ### Basecoat
 
@@ -252,9 +263,9 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 
 | crate | what |
 |---|---|
-| [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, `axum-vixen-bundler` as `bundler`, plus the macros |
+| [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, the bundler's `build` and `Config`, plus the macros |
 | [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets] / [`assets_router!`][assets_router] |
-| [`axum-vixen-bundler`][vixen-bundler] | `build.rs` helper that bundles per-page TS/CSS with bun; apps reach it as `vixen::bundler` |
+| [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun |
 
 ## Examples
 
@@ -267,11 +278,15 @@ per-page `index.ts`.
 [`examples/components`][components] — Basecoat components with Tailwind and
 an action that returns a toast.
 
+[`examples/config`][config-example] — demonstrates `Config::base_path`,
+`mount!`, and prefixed action, asset, and page links.
+
 ```bash
 bun install                      # once, for the frontend deps
 cargo run -p counter             # http://127.0.0.1:4002/
 cargo run -p todos               # http://127.0.0.1:4001/
 cargo run -p components          # http://127.0.0.1:4003/
+cargo run -p config              # http://127.0.0.1:4004/config/
 ```
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
@@ -281,8 +296,9 @@ cargo run -p components          # http://127.0.0.1:4003/
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html
 [assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
 [assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html
-[build]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/fn.build.html
-[config]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/struct.Config.html
+[href]: https://docs.rs/axum-vixen/latest/vixen/macro.href.html
+[build]: https://docs.rs/axum-vixen/latest/vixen/fn.build.html
+[config]: https://docs.rs/axum-vixen/latest/vixen/struct.Config.html
 [vixen]: https://docs.rs/axum-vixen/latest/vixen/
 [vixen-macros]: https://docs.rs/axum-vixen-macros/latest/vixen_macros/
 [vixen-bundler]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/
@@ -290,3 +306,4 @@ cargo run -p components          # http://127.0.0.1:4003/
 [counter]: https://github.com/borolgs/vixen/tree/main/examples/counter
 [todos]: https://github.com/borolgs/vixen/tree/main/examples/todos
 [components]: https://github.com/borolgs/vixen/tree/main/examples/components
+[config-example]: https://github.com/borolgs/vixen/tree/main/examples/config

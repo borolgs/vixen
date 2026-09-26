@@ -1,10 +1,10 @@
-use vixen::{routing::TypedPath, view_path};
+use vixen::{route, routing::TypedPath};
 
-#[view_path("/")]
+#[route("/")]
 struct Root;
 
 /// Already documented; the macro appends the route below.
-#[view_path("/items/{id}")]
+#[route("/items/{id}")]
 struct Item {
     id: u32,
 }

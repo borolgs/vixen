@@ -6,14 +6,14 @@
 
 - Base-path support through `Config::base_path` or `VIXEN_BASE_PATH`, with
   `base_path!`, `mount!`, `href!` and `HxAction::base`.
-- Prefix handling for URLs rendered by `#[action]`, `assets!` and
-  `#[view_path]`.
+- Prefix handling for URLs rendered by `#[action]`, `assets!` and `#[route]`.
 - A base-path example in `examples/config`.
 - `VIXEN_<FIELD>` environment defaults for every `Config` field.
 - `asset!` for compile-time-checked URLs to static files with hashed names.
 
 ### Changed
 
+- Renamed `#[view_path]` to `#[route]`.
 - Re-exported `build` and `Config` at the `vixen` crate root instead of under
   `vixen::bundler`; `build` now takes `Config` by value.
 - `assets!()` now expands to `Markup`.

@@ -33,13 +33,13 @@ impl<T: Display> Render for Href<T> {
 }
 
 /// `path` behind [`base_path!`](crate::base_path!), for `Redirect::to` and
-/// other string contexts. In markup, a [`#[view_path]`](macro@crate::view_path)
+/// other string contexts. In markup, a [`#[route]`](macro@crate::route)
 /// type already renders as its link.
 ///
 /// ```
-/// use vixen::{href, view_path};
+/// use vixen::{href, route};
 ///
-/// #[view_path("/items/{id}")]
+/// #[route("/items/{id}")]
 /// struct ItemPath {
 ///     id: u32,
 /// }

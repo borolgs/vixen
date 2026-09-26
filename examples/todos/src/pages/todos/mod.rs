@@ -4,9 +4,8 @@ use axum::{Router, response::IntoResponse};
 use vixen::{
     action, id,
     maud::{DOCTYPE, Markup, html},
-    partial,
+    partial, route,
     routing::RouterExt,
-    view_path,
 };
 
 static TODOS: Mutex<Vec<Todo>> = Mutex::new(Vec::new());
@@ -30,7 +29,7 @@ pub fn router() -> Router {
         .typed_post(toggle)
 }
 
-#[view_path("/")]
+#[route("/")]
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {

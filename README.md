@@ -46,14 +46,13 @@ use axum::{Router, response::IntoResponse};
 use vixen::{
     action, fragment,
     maud::{Markup, html},
-    partial,
+    partial, route,
     routing::RouterExt,
-    view_path,
 };
 
 static COUNT: AtomicI64 = AtomicI64::new(0);
 
-#[view_path("/")]
+#[route("/")]
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {
@@ -194,7 +193,7 @@ vixen owns `root`, `outdir`, `metafile` and `naming`. Leave `publicPath` unset.
 For an app served from `/app/`, set `base_path` to `"/app"`. Keep route paths
 unprefixed and wrap the router in `vixen::mount!`; it serves the router at
 `/app/` and redirects `/app` to `/app/`. `#[action]`, `assets!`, `asset!` and
-`#[view_path]` include the prefix in rendered URLs. Use [`href!`][href] where a
+`#[route]` include the prefix in rendered URLs. Use [`href!`][href] where a
 string is required, such as `Redirect::to`. See
 [`examples/config`][config-example] for a complete app served from `/config/`.
 
@@ -290,7 +289,7 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 | crate | what |
 |---|---|
 | [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, the bundler's `build` and `Config`, plus the macros |
-| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
+| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[route]`][route], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
 | [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun and copies static files under hashed names |
 
 ## Examples
@@ -316,7 +315,7 @@ cargo run -p config              # http://127.0.0.1:4004/config/
 ```
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
-[view_path]: https://docs.rs/axum-vixen/latest/vixen/attr.view_path.html
+[route]: https://docs.rs/axum-vixen/latest/vixen/attr.route.html
 [id]: https://docs.rs/axum-vixen/latest/vixen/attr.id.html
 [fragment]: https://docs.rs/axum-vixen/latest/vixen/attr.fragment.html
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html

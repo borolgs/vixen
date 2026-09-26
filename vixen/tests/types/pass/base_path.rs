@@ -1,7 +1,7 @@
 use axum::Router;
-use vixen::view_path;
+use vixen::route;
 
-#[view_path("/")]
+#[route("/")]
 struct Root;
 
 fn main() {

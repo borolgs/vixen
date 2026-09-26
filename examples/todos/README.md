@@ -10,7 +10,7 @@ cargo run -p todos    # http://127.0.0.1:4001/
 
 ## What to look for
 
-- **`#[view_path("/")]`** on `HomePath`: the route is a type, and
+- **`#[route("/")]`** on `HomePath`: the route is a type, and
   `.typed_get(home)` reads it off the handler's argument. `router()` is the
   table of contents.
 - **`#[action("/todos/add")]`** on `AddTodo`: one struct is the route, the form
@@ -33,6 +33,6 @@ cargo run -p todos    # http://127.0.0.1:4001/
   binary.
 
 `axum-extra` is a direct dependency because the `TypedPath` derive behind
-`#[view_path]` and `#[action]` expands to `::axum_extra::..` paths. `maud` is
+`#[route]` and `#[action]` expands to `::axum_extra::..` paths. `maud` is
 one because its own `html!` expands to `extern crate maud;`, which no re-export
 satisfies.

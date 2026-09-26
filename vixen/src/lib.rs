@@ -4,7 +4,7 @@
 //!
 //! | To | Use |
 //! |---|---|
-//! | define a page route | [`#[view_path]`](macro@view_path) |
+//! | define a page route | [`#[route]`](macro@route) |
 //! | define an htmx endpoint and call it from markup | [`#[action]`](macro@action), [`HxAction`], [`SyncStrategy`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
@@ -23,7 +23,7 @@
 //!   Because `html!` expands to `extern crate maud;`, any crate that invokes
 //!   it must also depend on `maud` directly.
 //! - [`routing`] re-exports `axum_extra::routing` 0.12. It provides
-//!   `TypedPath`, derived by [`#[view_path]`](macro@view_path) and
+//!   `TypedPath`, derived by [`#[route]`](macro@route) and
 //!   [`#[action]`](macro@action), and `RouterExt`, whose `typed_get` and
 //!   `typed_post` methods register their handlers.
 //! - `hx` re-exports `axum_htmx` 0.8 header types and `SwapOption`; see [htmx 4
@@ -148,9 +148,9 @@ pub use vixen_macros::action;
 ///
 /// ```
 /// use axum::Router;
-/// use vixen::{maud::{Markup, html}, routing::RouterExt, view_path};
+/// use vixen::{maud::{Markup, html}, route, routing::RouterExt};
 ///
-/// #[view_path("/items/{id}")]
+/// #[route("/items/{id}")]
 /// struct ItemPath {
 ///     id: u32,
 /// }
@@ -176,7 +176,7 @@ pub use vixen_macros::action;
 ///
 /// Generated code refers to `::axum` and `::axum_extra`, so both must be direct
 /// dependencies of the calling crate.
-pub use vixen_macros::view_path;
+pub use vixen_macros::route;
 
 /// Declares a typed element ID shared by the page and partial responses.
 ///

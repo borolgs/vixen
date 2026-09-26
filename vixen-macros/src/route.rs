@@ -1,10 +1,10 @@
-//! `#[view_path]` — `TypedPath` + `Deserialize` in one attribute.
+//! `#[route]` — `TypedPath` + `Deserialize` in one attribute.
 
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Error, Item, LitStr, parse_quote};
 
-/// `#[view_path("/a/{id}")] struct P { id: i64 }` becomes
+/// `#[route("/a/{id}")] struct P { id: i64 }` becomes
 /// `#[derive(Deserialize, TypedPath)] #[typed_path("/a/{id}")]` on the same
 /// struct and adds a base-path-aware `Render` implementation.
 pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -13,7 +13,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         Ok(other) => {
             let err = Error::new_spanned(
                 &other,
-                "`#[view_path]` expects a struct, e.g. `#[view_path(\"/\")] struct Index;`",
+                "`#[route]` expects a struct, e.g. `#[route(\"/\")] struct Index;`",
             )
             .to_compile_error();
 
@@ -27,7 +27,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         Err(err) => {
             let err = Error::new(
                 err.span(),
-                "`#[view_path]` expects a path literal, e.g. `#[view_path(\"/items/{id}\")]`",
+                "`#[route]` expects a path literal, e.g. `#[route(\"/items/{id}\")]`",
             )
             .to_compile_error();
             return quote! { #err #path_struct };

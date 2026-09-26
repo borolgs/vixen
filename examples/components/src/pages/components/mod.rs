@@ -3,10 +3,9 @@ use vixen::{
     HxPartial, action, fragment,
     hx::{HxResponseTrigger, SwapOption},
     maud::{Markup, html},
-    partial,
+    partial, route,
     routing::RouterExt,
     ui::basecoatui::{Action, Category, Dialog, Drawer, Duration, HEAD, Toast, Toaster},
-    view_path,
 };
 
 use crate::shared::page;
@@ -21,7 +20,7 @@ pub fn router() -> Router {
         .typed_post(delete_shelf)
 }
 
-#[view_path("/")]
+#[route("/")]
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {

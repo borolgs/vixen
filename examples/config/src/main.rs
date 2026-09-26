@@ -2,16 +2,15 @@ use axum::{Router, response::IntoResponse};
 use vixen::{
     action, fragment,
     maud::{DOCTYPE, Markup, html},
-    partial,
+    partial, route,
     routing::RouterExt,
-    view_path,
 };
 
 mod assets;
 
 const ADDR: &str = "127.0.0.1:4004";
 
-#[view_path("/")]
+#[route("/")]
 struct HomePath;
 
 async fn home(_: HomePath) -> Markup {

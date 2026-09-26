@@ -19,7 +19,7 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and
   `vixen_bundler::{build, Config}`. Runtime support for the macros lives here
   (`action`, `fragment`, `partial`, `assets`, `base_path`).
-- `vixen-macros/` — proc macros: `#[action]`, `#[view_path]`, `#[id]`,
+- `vixen-macros/` — proc macros: `#[action]`, `#[route]`, `#[id]`,
   `#[fragment]`, `assets!`, `asset!`, `assets_router!`.
 - `vixen-bundler/` — the `build.rs` helper behind `vixen::{build, Config}`.
   Apps also list `vixen` under `[build-dependencies]`. It runs Bun over

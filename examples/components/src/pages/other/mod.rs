@@ -1,8 +1,8 @@
 use axum::Router;
 use vixen::{
     maud::{Markup, html},
+    route,
     routing::RouterExt,
-    view_path,
 };
 
 use crate::shared::page;
@@ -11,7 +11,7 @@ pub fn router() -> Router {
     Router::new().typed_get(other)
 }
 
-#[view_path("/other")]
+#[route("/other")]
 struct OtherPath;
 
 async fn other(_: OtherPath) -> Markup {

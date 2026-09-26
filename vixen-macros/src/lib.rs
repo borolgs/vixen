@@ -14,7 +14,7 @@ mod action;
 mod assets;
 mod fragment;
 mod id;
-mod view;
+mod route;
 
 #[proc_macro_attribute]
 pub fn action(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -27,8 +27,8 @@ pub fn id(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn view_path(attr: TokenStream, item: TokenStream) -> TokenStream {
-    view::expand(attr.into(), item.into()).into()
+pub fn route(attr: TokenStream, item: TokenStream) -> TokenStream {
+    route::expand(attr.into(), item.into()).into()
 }
 
 #[proc_macro]

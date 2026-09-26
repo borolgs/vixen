@@ -9,7 +9,7 @@ cargo run -p counter   # http://127.0.0.1:4002/
 
 ## What it shows
 
-- `#[view_path("/")]` and `typed_get` define the page route.
+- `#[route("/")]` and `typed_get` define the page route.
 - `#[action("/add")]` defines the POST route and extracts `by` from the form.
   `Add::action().by(...)` sends it through `hx-vals`.
 - `#[fragment]` makes `heading` and `counter` independently replaceable.

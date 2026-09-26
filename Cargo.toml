@@ -6,7 +6,8 @@ members = [
     "vixen-macros",
     "examples/counter",
     "examples/todos",
-    "examples/components"
+    "examples/components",
+    "examples/config",
 ]
 
 [workspace.package]

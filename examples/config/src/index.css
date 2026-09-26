@@ -1,0 +1,14 @@
+:root {
+  color-scheme: light dark;
+  --accent: #e4572e;
+}
+
+body {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.5rem;
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}

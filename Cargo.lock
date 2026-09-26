@@ -177,6 +177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.1.2"
+dependencies = [
+ "axum",
+ "axum-extra",
+ "axum-vixen",
+ "maud",
+ "tokio",
+]
+
+[[package]]
 name = "counter"
 version = "0.1.2"
 dependencies = [

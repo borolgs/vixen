@@ -31,6 +31,7 @@ parts will still be reworked.
       with Bun, and passes the asset manifest to Rust.
     - [`assets!`][assets] emits the `<script>` and `<link>` tags for the current
       page.
+    - [`asset!`][asset] resolves page-local static files to content-hashed URLs.
     - [`assets_router!`][assets_router] embeds the bundled files in the binary
       and returns an axum router that serves them.
     - For now, that bundler is Bun: simple and fast. Later there may be an
@@ -123,7 +124,7 @@ axum-vixen = "0.1"  # only for build.rs below
 The package is `axum-vixen`; the crate it provides is `vixen`, so code says
 `use vixen::…`.
 
-### Page-local TS and CSS
+### Page-local assets
 
 [Bun](https://bun.sh) must be on `PATH` while the app builds.
 
@@ -146,12 +147,16 @@ directory:
 src/pages/todos/
 ├── mod.rs      # handlers
 ├── index.ts    # import 'htmx.org'; import './index.css';
-└── index.css
+├── index.css
+└── assets/     # files referenced by asset!
 ```
 
 ```rust,ignore
 // src/pages/todos/mod.rs — <script> and <link> for the entry next to this file
 head { (vixen::assets!()) }
+
+// src/pages/todos/mod.rs — content-hashed URL for a nearby file
+img src=(vixen::asset!("./assets/logo.svg"));
 
 // src/main.rs — serves the bundle from the binary under /assets/
 Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
@@ -168,6 +173,7 @@ Router::new().merge(pages::todos::router()).merge(vixen::assets_router!())
 | `bun_cmd` | `bun` | Bun executable |
 | `root` | `src` | prefix stripped from entry paths |
 | `entry_glob` | `src/pages/**/{page,index}.ts` | input files |
+| `static_glob` | `src/**/assets/**/*.{svg,png,jpg,jpeg,gif,webp,avif,ico}` | files copied for `asset!` |
 | `assets_prefix` | `assets` | bundle directory and URL |
 | `config` | `build.ts` | Bun config |
 
@@ -187,7 +193,7 @@ vixen owns `root`, `outdir`, `metafile` and `naming`. Leave `publicPath` unset.
 
 For an app served from `/app/`, set `base_path` to `"/app"`. Keep route paths
 unprefixed and wrap the router in `vixen::mount!`; it serves the router at
-`/app/` and redirects `/app` to `/app/`. `#[action]`, `assets!` and
+`/app/` and redirects `/app` to `/app/`. `#[action]`, `assets!`, `asset!` and
 `#[view_path]` include the prefix in rendered URLs. Use [`href!`][href] where a
 string is required, such as `Redirect::to`. See
 [`examples/config`][config-example] for a complete app served from `/config/`.
@@ -284,8 +290,8 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 | crate | what |
 |---|---|
 | [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, the bundler's `build` and `Config`, plus the macros |
-| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets] / [`assets_router!`][assets_router] |
-| [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun |
+| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[view_path]`][view_path], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
+| [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun and copies static files under hashed names |
 
 ## Examples
 
@@ -295,8 +301,8 @@ screen, with its `index.ts` and `index.css` beside it. Start here.
 [`examples/todos`][todos] — a todo list on one page: every macro once, plus a
 per-page `index.ts`.
 
-[`examples/components`][components] — Basecoat components with Tailwind and
-an action that returns a toast.
+[`examples/components`][components] — the `basecoatui` toaster, drawer and
+dialog, styled with Tailwind.
 
 [`examples/config`][config-example] — demonstrates `Config::base_path`,
 `mount!`, and prefixed action, asset, and page links.
@@ -315,6 +321,7 @@ cargo run -p config              # http://127.0.0.1:4004/config/
 [fragment]: https://docs.rs/axum-vixen/latest/vixen/attr.fragment.html
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html
 [assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
+[asset]: https://docs.rs/axum-vixen/latest/vixen/macro.asset.html
 [assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html
 [href]: https://docs.rs/axum-vixen/latest/vixen/macro.href.html
 [build]: https://docs.rs/axum-vixen/latest/vixen/fn.build.html

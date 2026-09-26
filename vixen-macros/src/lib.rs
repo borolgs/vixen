@@ -41,6 +41,11 @@ pub fn assets(item: TokenStream) -> TokenStream {
     assets::expand_assets_head(item.into()).into()
 }
 
+#[proc_macro]
+pub fn asset(item: TokenStream) -> TokenStream {
+    assets::expand_asset(item.into()).into()
+}
+
 #[proc_macro_attribute]
 pub fn fragment(attr: TokenStream, item: TokenStream) -> TokenStream {
     fragment::expand(attr.into(), item.into()).into()

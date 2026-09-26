@@ -26,12 +26,13 @@ use std::{
 const BUILD_TS: &str = include_str!("./build.ts");
 
 /// Environment variables that affect the build configuration.
-const CONFIG_ENV_VARS: [&str; 6] = [
+const CONFIG_ENV_VARS: [&str; 7] = [
     "VIXEN_BASE_PATH",
     "VIXEN_BUN_CMD",
     "VIXEN_ROOT",
     "VIXEN_ASSETS_PREFIX",
     "VIXEN_ENTRY_GLOB",
+    "VIXEN_STATIC_GLOB",
     "VIXEN_CONFIG",
 ];
 
@@ -52,6 +53,9 @@ pub struct Config {
     pub assets_prefix: PathBuf,
     /// Entry glob (`src/pages/**/{page,index}.ts` by default).
     pub entry_glob: String,
+    /// Static asset glob for `asset!`
+    /// (`src/**/assets/**/*.{svg,png,jpg,jpeg,gif,webp,avif,ico}` by default).
+    pub static_glob: String,
     /// Bun config merged into `Bun.build` (`build.ts` by default).
     /// Leave `publicPath` unset; `assets!` adds the URL prefix.
     pub config: Option<PathBuf>,
@@ -65,9 +69,20 @@ impl Default for Config {
             root: env_or("VIXEN_ROOT", "src").into(),
             assets_prefix: env_or("VIXEN_ASSETS_PREFIX", "assets").into(),
             entry_glob: env_or("VIXEN_ENTRY_GLOB", "src/pages/**/{page,index}.ts"),
+            static_glob: env_or(
+                "VIXEN_STATIC_GLOB",
+                "src/**/assets/**/*.{svg,png,jpg,jpeg,gif,webp,avif,ico}",
+            ),
             config: Some(env_or("VIXEN_CONFIG", "build.ts").into()),
         }
     }
+}
+
+/// Returns the literal path prefix of a glob.
+fn glob_base(glob: &str) -> PathBuf {
+    glob.split('/')
+        .take_while(|s| !s.contains(['*', '?', '[', '{', '!']))
+        .collect()
 }
 
 fn env_or(name: &str, default: &str) -> String {
@@ -104,6 +119,8 @@ pub fn build(cfg: Config) {
         .arg(&cfg.assets_prefix)
         .arg("--entryGlob")
         .arg(&cfg.entry_glob)
+        .arg("--staticGlob")
+        .arg(&cfg.static_glob)
         .current_dir(&manifest_dir);
 
     // `rerun-if`
@@ -112,13 +129,16 @@ pub fn build(cfg: Config) {
         println!("cargo::rerun-if-env-changed={name}");
     }
     let dir = Path::new(&manifest_dir);
+    // Watch this separately because `static_glob` may point outside `root`.
+    let static_base = glob_base(&cfg.static_glob);
     for path in [
         cfg.root.as_path(),
+        static_base.as_path(),
         Path::new("package.json"),
         Path::new("tsconfig.json"),
     ] {
         let path = dir.join(path);
-        if path.exists() {
+        if path != dir && path.exists() {
             println!("cargo::rerun-if-changed={}", path.display());
         }
     }
@@ -160,4 +180,23 @@ pub fn build(cfg: Config) {
     }
 
     println!("cargo::rustc-env=VIXEN_BASE_PATH={}", cfg.base_path);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn glob_base_stops_at_the_first_pattern() {
+        let cases = [
+            ("src/**/assets/**/*.png", "src"),
+            ("src/pages/*/assets/*.svg", "src/pages"),
+            ("static/logo.svg", "static/logo.svg"),
+            ("**/assets/*.png", ""),
+            ("{src,static}/**/*.png", ""),
+        ];
+        for (glob, want) in cases {
+            assert_eq!(glob_base(glob), Path::new(want), "{glob}");
+        }
+    }
 }

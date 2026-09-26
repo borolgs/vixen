@@ -10,6 +10,7 @@
   `#[view_path]`.
 - A base-path example in `examples/config`.
 - `VIXEN_<FIELD>` environment defaults for every `Config` field.
+- `asset!` for compile-time-checked URLs to static files with hashed names.
 
 ### Changed
 

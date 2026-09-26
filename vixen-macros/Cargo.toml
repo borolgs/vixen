@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
-description = "Proc-macro half of vixen: #[action], #[view_path], #[id], #[fragment], assets! and assets_router!. Use them through axum-vixen."
+description = "Proc-macro half of vixen: #[action], #[view_path], #[id], #[fragment], assets!, asset! and assets_router!. Use them through axum-vixen."
 keywords = ["axum", "htmx", "maud", "web"]
 categories = ["web-programming"]
 

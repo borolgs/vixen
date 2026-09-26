@@ -20,6 +20,12 @@
         "tailwindcss": "~4.1.14",
       },
     },
+    "examples/config": {
+      "name": "config",
+      "dependencies": {
+        "htmx.org": "4.0.0",
+      },
+    },
     "examples/counter": {
       "name": "counter",
       "dependencies": {
@@ -89,6 +95,8 @@
     "bun-types": ["bun-types@1.4.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q=="],
 
     "components": ["components@workspace:examples/components"],
+
+    "config": ["config@workspace:examples/config"],
 
     "counter": ["counter@workspace:examples/counter"],
 

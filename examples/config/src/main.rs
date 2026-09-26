@@ -1,6 +1,8 @@
-use axum::Router;
+use axum::{Router, response::IntoResponse};
 use vixen::{
+    action, fragment,
     maud::{DOCTYPE, Markup, html},
+    partial,
     routing::RouterExt,
     view_path,
 };
@@ -17,27 +19,53 @@ async fn home(_: HomePath) -> Markup {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Counter · vixen" }
+                title { "Config · vixen" }
                 (vixen::assets!())
             }
             body {
+                h1 { "Mounted at " code { (vixen::base_path!()) "/" } }
                 main {
-                    "TODO"
+                    (pong(0))
+                    a href=(HomePath) { "Reload" }
                 }
             }
         }
     }
 }
 
+#[action("/ping")]
+struct Ping {
+    n: u32,
+}
+
+async fn ping(Ping { n }: Ping) -> impl IntoResponse {
+    partial!(pong(n))
+}
+
+#[fragment]
+fn pong(n: u32) -> Markup {
+    html! {
+        p id=(Self) {
+            button hx-action=(Ping::action().n(n + 1)) { "Ping" }
+            " pong #" (n)
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
-    let router = Router::new().typed_get(home).merge(vixen::assets_router!());
+    let router = vixen::mount!(
+        Router::new()
+            .typed_get(home)
+            .typed_post(ping)
+            .merge(vixen::assets_router!())
+    );
 
     let listener = tokio::net::TcpListener::bind(ADDR)
         .await
         .unwrap_or_else(|e| panic!("failed to bind {ADDR}: {e}"));
 
-    println!("listening on http://{ADDR}/");
+    println!("listening on http://{ADDR}{}/", vixen::base_path!());
 
     axum::serve(listener, router).await.expect("server error");
 }

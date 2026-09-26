@@ -67,7 +67,7 @@ pub fn expand_assets_router(_: TokenStream) -> TokenStream {
 pub fn expand_assets_head(_: TokenStream) -> TokenStream {
     let call_span = proc_macro2::Span::call_site();
 
-    let empty = quote! { ::vixen::maud::PreEscaped("") };
+    let empty = quote! { ::vixen::maud::PreEscaped(::std::string::String::new()) };
 
     let Some(page_dir) = call_site_dir(call_span) else {
         return empty;
@@ -86,31 +86,16 @@ pub fn expand_assets_head(_: TokenStream) -> TokenStream {
         return empty;
     };
 
-    let mut head = String::new();
-    head.push_str(r#"<script type="module" defer src=""#);
-    escape_attr(&page_entry.js, &mut head);
-    head.push_str(r#""></script>"#);
-    if let Some(css) = &page_entry.css {
-        head.push_str(r#"<link rel="stylesheet" type="text/css" href=""#);
-        escape_attr(css, &mut head);
-        head.push_str(r#"">"#);
-    }
-
-    let head = LitStr::new(&head, call_span);
-
-    quote! { ::vixen::maud::PreEscaped(#head) }
-}
-
-fn escape_attr(value: &str, out: &mut String) {
-    for c in value.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            c => out.push(c),
+    let js = LitStr::new(&page_entry.js, call_span);
+    let css = match &page_entry.css {
+        Some(css) => {
+            let css = LitStr::new(css, call_span);
+            quote! { ::core::option::Option::Some(#css) }
         }
-    }
+        None => quote! { ::core::option::Option::None },
+    };
+
+    quote! { ::vixen::assets::head(::vixen::base_path!(), #js, #css) }
 }
 
 fn call_site_dir(span: proc_macro2::Span) -> Option<PathBuf> {
@@ -139,7 +124,7 @@ pub struct Entry {
 
 pub fn parse_manifest() -> Result<Manifest, String> {
     let manifest_raw = env::var("VIXEN_MANIFEST").map_err(|_| {
-        "VIXEN_MANIFEST is not set: call `vixen::bundler::build` from build.rs".to_string()
+        "VIXEN_MANIFEST is not set: call `vixen::build` from build.rs".to_string()
     })?;
 
     serde_json::from_str(&manifest_raw)

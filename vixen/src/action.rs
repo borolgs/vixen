@@ -16,13 +16,14 @@ use crate::partial::swap_attr;
 /// `hx-*` attributes. Using it as another attribute's value produces invalid
 /// markup.
 ///
-/// [`#[action]`](macro@crate::action) builds one for each endpoint. To build
-/// one directly:
+/// [`#[action]`](macro@crate::action) builds one for each endpoint, prefixed
+/// with [`base_path!`](crate::base_path). To build one directly:
 ///
 /// ```
 /// use vixen::{HxAction, SyncStrategy, maud::html};
 ///
 /// let search = HxAction::new("/search")
+///     .base(vixen::base_path!())
 ///     .trigger("input changed delay:300ms")
 ///     .target("#results")
 ///     .sync(SyncStrategy::Replace);
@@ -40,6 +41,7 @@ use crate::partial::swap_attr;
 /// ```
 #[derive(Clone)]
 pub struct HxAction {
+    base: &'static str,
     path: &'static str,
     vals: Map<String, Value>,
     trigger: Option<String>,
@@ -58,6 +60,7 @@ impl HxAction {
     /// Creates a POST action for `path` with no values or options.
     pub fn new(path: &'static str) -> Self {
         HxAction {
+            base: "",
             path,
             vals: Map::new(),
             trigger: None,
@@ -65,6 +68,12 @@ impl HxAction {
             swap: None,
             sync: None,
         }
+    }
+
+    /// Prefixes the path, usually with [`base_path!`](crate::base_path).
+    pub fn base(mut self, base: &'static str) -> Self {
+        self.base = base;
+        self
     }
 
     /// Adds an `hx-vals` entry, omitting null values.
@@ -108,6 +117,7 @@ impl Render for HxAction {
     fn render_to(&self, buffer: &mut String) {
         // Rendering starts inside maud's quoted `hx-action` value. Each
         // separator starts another attribute; maud supplies the final quote.
+        escape(buffer, self.base);
         escape(buffer, self.path);
         if !self.vals.is_empty() {
             buffer.push_str("\" hx-vals=\"");

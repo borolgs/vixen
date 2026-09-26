@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use maud::{Markup, html};
 
 pub type Assets = &'static [(&'static str, &'static str, &'static [u8])];
 
@@ -29,4 +30,13 @@ pub fn router<S: Clone + Send + Sync + 'static>(files: Assets, prefix: &str) -> 
             }
         }),
     )
+}
+
+pub fn head(base: &str, js: &str, css: Option<&str>) -> Markup {
+    html! {
+        script type="module" defer src={ (base) (js) } {}
+        @if let Some(css) = css {
+            link rel="stylesheet" type="text/css" href={ (base) (css) };
+        }
+    }
 }

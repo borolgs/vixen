@@ -9,7 +9,8 @@
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
-//! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`bundler::build`] in `build.rs` |
+//! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
+//! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
 //! | show a Basecoat toast from a handler | [`ui`], behind the `basecoatui` feature |
 //!
 //! ## Re-exports
@@ -27,8 +28,8 @@
 //! - `hx` re-exports `axum_htmx` 0.8 header types and `SwapOption`; see [htmx 4
 //!   compatibility](#htmx-4-compatibility) for caveats.
 //!
-//! [`bundler`] re-exports `axum-vixen-bundler`, the `build.rs` half. To call it,
-//! list `axum-vixen` under `[build-dependencies]` as well.
+//! [`build`] and [`Config`] come from `axum-vixen-bundler`, the `build.rs`
+//! half. To call them, list `axum-vixen` under `[build-dependencies]` as well.
 
 #![warn(missing_docs)]
 
@@ -41,6 +42,7 @@ extern crate self as vixen;
 pub mod assets;
 
 mod action;
+mod base_path;
 mod fragment;
 mod id;
 mod partial;
@@ -50,10 +52,11 @@ pub mod ui;
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
 pub use axum_htmx as hx;
+pub use base_path::Href;
 pub use fragment::Fragment;
 pub use id::Id;
 pub use maud;
-pub use vixen_bundler as bundler;
+pub use vixen_bundler::{Config, build};
 
 pub use partial::{HxPartial, HxPartialResponse, Part, Parts, Selector};
 
@@ -118,7 +121,8 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 /// - `Name::action()`, which returns a `NameAction` builder with one setter per
 ///   field. `String` setters accept `impl Into<String>`, `Option<T>` setters
 ///   accept `T`, and other setters use the declared type, which must implement
-///   `Serialize`. Fields without a value are omitted from `hx-vals`.
+///   `Serialize`. Fields without a value are omitted from `hx-vals`. The
+///   rendered path is prefixed with [`base_path!`].
 /// - `NameAction`, which renders as the value of `hx-action`. Call `.hx()` to
 ///   add `trigger`, `target`, `swap`, or `sync` through [`HxAction`].
 /// - `Name::FIELD`, a set of `&'static str` field names for form controls.
@@ -156,11 +160,17 @@ pub use vixen_macros::action;
 /// let router: Router = Router::new().typed_get(item);
 ///
 /// assert_eq!(ItemPath { id: 7 }.to_string(), "/items/7");
+/// assert_eq!(
+///     html! { a href=(ItemPath { id: 7 }) {} }.into_string(),
+///     r#"<a href="/items/7"></a>"#
+/// );
 /// ```
 ///
-/// The macro adds only those derives, the `typed_path` attribute, and a
-/// `Route: /items/{id}` line to the struct's docs. Use the raw derives if you
-/// need custom rejections, serde attributes, or generics.
+/// The macro adds those derives, the `typed_path` attribute, a
+/// `Route: /items/{id}` line to the struct's docs, and a `Render` impl: in
+/// markup the path is its link, prefixed with [`base_path!`], while
+/// `to_string()` and `to_uri()` stay the route. Use the raw derives if you need
+/// custom rejections, serde attributes, or generics.
 ///
 /// Generated code refers to `::axum` and `::axum_extra`, so both must be direct
 /// dependencies of the calling crate.
@@ -212,12 +222,12 @@ pub use vixen_macros::id;
 
 /// The current page's `<script>` and `<link>` tags, resolved at compile time.
 ///
-/// By default, [`bundler::build`] builds every entry matching
+/// By default, [`build`] builds every entry matching
 /// `src/pages/**/{page,index}.ts`. `assets!()` looks for one next to the source
-/// file where it is invoked. It expands to `PreEscaped<&'static str>`
-/// containing a `<script type="module">` tag and, when that entry imports CSS,
-/// a `<link rel="stylesheet">` tag. If no entry matches, it expands to an empty
-/// string.
+/// file where it is invoked. It expands to `Markup` with a
+/// `<script type="module">` tag and, when that entry imports CSS, a
+/// `<link rel="stylesheet">` tag, their URLs prefixed with [`base_path!`]. If
+/// no entry matches, it expands to empty markup.
 ///
 /// ```ignore
 /// // src/pages/todos/mod.rs, next to src/pages/todos/index.ts
@@ -231,18 +241,19 @@ pub use vixen_macros::id;
 ///
 /// [`assets_router!`] serves the content-hashed URLs.
 ///
-/// [`bundler::build`] generates the manifest used by this macro, so it
-/// must run from `build.rs`. The example is ignored because it has no build
-/// script; see `examples/counter` for a checked version.
+/// [`build`] generates the manifest used by this macro, so it must run from
+/// `build.rs`. The example is ignored because it has no build script; see
+/// `examples/counter` for a checked version.
 pub use vixen_macros::assets;
 
 /// Builds a `Router` that serves bundled assets from the binary.
 ///
 /// `include_bytes!` embeds every file emitted by the bundler. The router serves
-/// them under `assets_prefix` (`/assets/` by default), with the correct MIME
-/// type and `Cache-Control: public, max-age=31536000, immutable`. Content hashes
-/// in the file names make the immutable cache policy safe. Unknown paths under
-/// the prefix return 404.
+/// them under `assets_prefix` (`/assets/` by default, `{base}/assets/` inside
+/// [`mount!`]), with the correct MIME type and
+/// `Cache-Control: public, max-age=31536000, immutable`. Content hashes in the
+/// file names make the immutable cache policy safe. Unknown paths under the
+/// prefix return 404.
 ///
 /// ```ignore
 /// let router = Router::new()
@@ -253,8 +264,8 @@ pub use vixen_macros::assets;
 /// The generated router is generic over its state and can be merged into any
 /// `Router<S>`.
 ///
-/// Like [`assets!`], this macro needs the manifest from
-/// [`bundler::build`], so the example is ignored.
+/// Like [`assets!`], this macro needs the manifest from [`build`], so the
+/// example is ignored.
 pub use vixen_macros::assets_router;
 
 /// Turns a function that renders one element into a typed [`Fragment`]. In
@@ -306,4 +317,6 @@ pub use vixen_macros::fragment;
 #[doc(hidden)]
 pub mod __private {
     pub use {serde, serde_json};
+
+    pub use crate::base_path::{base_path, mount};
 }

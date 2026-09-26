@@ -1,3 +1,3 @@
 fn main() {
-    vixen::bundler::build(&vixen::bundler::Config::default());
+    vixen::build(vixen::Config::default());
 }

@@ -1,5 +1,5 @@
 fn main() {
-    vixen::bundler::build(&vixen::bundler::Config {
+    vixen::build(vixen::Config {
         entry_glob: "src/index.ts".into(),
         ..Default::default()
     });

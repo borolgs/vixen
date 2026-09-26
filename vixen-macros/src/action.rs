@@ -211,9 +211,12 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             /// Starts an `hx-action=(...)` value for this route.
             pub fn action() -> #action_builder_ident {
-                #action_builder_ident(::vixen::HxAction::new(
-                    <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH,
-                ))
+                #action_builder_ident(
+                    ::vixen::HxAction::new(
+                        <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH,
+                    )
+                    .base(::vixen::base_path!()),
+                )
             }
 
             pub fn path(&self) -> &'static str {

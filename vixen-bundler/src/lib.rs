@@ -1,15 +1,16 @@
 //! Per-page asset bundling for build scripts.
 //!
 //! Call [`build`] from `build.rs`. It runs the bundled Bun script and exports
-//! the asset manifest to rustc as `VIXEN_MANIFEST`.
+//! the asset manifest to rustc as `VIXEN_MANIFEST`, plus `VIXEN_BASE_PATH`
+//! when [`Config::base_path`] is set.
 //!
-//! Apps reach this crate as `vixen::bundler`, with `vixen` listed under
-//! `[build-dependencies]`:
+//! Apps reach this crate as `vixen::{build, Config}`, with `vixen` listed
+//! under `[build-dependencies]`:
 //!
 //! ```no_run
-//! # mod vixen { pub use vixen_bundler as bundler; }
+//! # mod vixen { pub use vixen_bundler::{build, Config}; }
 //! // build.rs
-//! vixen::bundler::build(&vixen::bundler::Config::default());
+//! vixen::build(vixen::Config::default());
 //! ```
 
 #![warn(missing_docs)]
@@ -24,9 +25,12 @@ use std::{
 /// Bundler script copied to `OUT_DIR` before execution.
 const BUILD_TS: &str = include_str!("./build.ts");
 
-/// Bundler settings. Paths are relative to `CARGO_MANIFEST_DIR`.
+/// Build settings. Paths are relative to `CARGO_MANIFEST_DIR`.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// URL prefix the app is served under, e.g. `/app`.
+    /// An empty value uses `VIXEN_BASE_PATH` from the build environment.
+    pub base_path: String,
     /// Bun executable. Default: `bun`.
     pub bun_cmd: String,
     /// Base path stripped from entry paths. Default: `src`.
@@ -35,13 +39,15 @@ pub struct Config {
     pub assets_prefix: PathBuf,
     /// Entry glob. Default: `src/pages/**/{page,index}.ts`.
     pub entry_glob: String,
-    /// Consumer bun config merged into `Bun.build`.
+    /// Bun config merged into `Bun.build`.
+    /// Leave `publicPath` unset; `assets!` adds the URL prefix.
     pub config: Option<PathBuf>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
+            base_path: String::new(),
             bun_cmd: "bun".into(),
             root: "src".into(),
             assets_prefix: "assets".into(),
@@ -56,7 +62,7 @@ impl Default for Config {
 /// # Panics
 ///
 /// Panics if Bun cannot start or exits unsuccessfully.
-pub fn build(cfg: &Config) {
+pub fn build(cfg: Config) {
     let manifest_dir =
         env::var("CARGO_MANIFEST_DIR").expect("vixen-bundler: CARGO_MANIFEST_DIR unset");
 
@@ -105,5 +111,9 @@ pub fn build(cfg: &Config) {
             out.status,
             String::from_utf8_lossy(&out.stderr)
         );
+    }
+
+    if !cfg.base_path.is_empty() {
+        println!("cargo::rustc-env=VIXEN_BASE_PATH={}", cfg.base_path);
     }
 }

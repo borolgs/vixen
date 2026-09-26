@@ -9,6 +9,7 @@
 - Prefix handling for URLs rendered by `#[action]`, `assets!` and
   `#[view_path]`.
 - A base-path example in `examples/config`.
+- `VIXEN_<FIELD>` environment defaults for every `Config` field.
 
 ### Changed
 

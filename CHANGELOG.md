@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-09-27
 
 ### Added
 
@@ -9,7 +9,8 @@
 - Prefix handling for URLs rendered by `#[action]`, `assets!` and `#[route]`.
 - A base-path example in `examples/config`.
 - `VIXEN_<FIELD>` environment defaults for every `Config` field.
-- `asset!` for compile-time-checked URLs to static files with hashed names.
+- `asset!` for compile-time-checked URLs to static files with hashed names,
+  picked up by `Config::static_glob`.
 - `RouterExt::{view, action}` register routes from the first and last handler
   arguments.
 
@@ -19,6 +20,7 @@
 - Re-exported `build` and `Config` at the `vixen` crate root instead of under
   `vixen::bundler`; `build` now takes `Config` by value.
 - `assets!()` now expands to `Markup`.
+- New `Config` fields break struct literals without `..Default::default()`.
 
 ## 0.1.2 - 2026-09-26
 

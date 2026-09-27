@@ -23,8 +23,8 @@ all-features = true
 basecoatui = []
 
 [dependencies]
-axum-vixen-macros = { path = "../vixen-macros", version = "0.1.2" }
-axum-vixen-bundler = { path = "../vixen-bundler", version = "0.1.2" }
+axum-vixen-macros = { path = "../vixen-macros", version = "0.2.0" }
+axum-vixen-bundler = { path = "../vixen-bundler", version = "0.2.0" }
 
 axum = { workspace = true }
 axum-htmx = { workspace = true }

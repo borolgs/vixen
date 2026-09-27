@@ -10,6 +10,8 @@
 - A base-path example in `examples/config`.
 - `VIXEN_<FIELD>` environment defaults for every `Config` field.
 - `asset!` for compile-time-checked URLs to static files with hashed names.
+- `RouterExt::{view, action}` register routes from the first and last handler
+  arguments.
 
 ### Changed
 

@@ -1,5 +1,11 @@
-use axum::Router;
+use std::sync::Arc;
 
+use axum::Router;
+use tokio::sync::Mutex;
+
+use crate::state::AppState;
+
+mod state;
 mod pages {
     pub mod todos;
 }
@@ -8,9 +14,13 @@ const ADDR: &str = "127.0.0.1:4001";
 
 #[tokio::main]
 async fn main() {
+    let state = AppState {
+        todos: Arc::new(Mutex::new(Vec::new())),
+    };
     let router = Router::new()
-        .merge(pages::todos::router())
-        .merge(vixen::assets_router!());
+        .merge(pages::todos::router(state.clone()))
+        .merge(vixen::assets_router!())
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(ADDR)
         .await

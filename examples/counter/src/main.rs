@@ -2,10 +2,9 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, fragment,
+    RouterExt, action, fragment,
     maud::{DOCTYPE, Markup, html},
     partial, route,
-    routing::RouterExt,
 };
 
 const ADDR: &str = "127.0.0.1:4002";
@@ -71,8 +70,8 @@ fn counter(count: i64) -> Markup {
 #[tokio::main]
 async fn main() {
     let router = Router::new()
-        .typed_get(home)
-        .typed_post(add)
+        .view(home)
+        .action(add)
         .merge(vixen::assets_router!());
 
     let listener = tokio::net::TcpListener::bind(ADDR)

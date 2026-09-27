@@ -1,7 +1,7 @@
 # todos
 
-A small vixen app: a todo list on one page, kept in a `static`. Read `src/pages/todos/mod.rs` top to
-bottom. `examples/counter` is the step before it.
+A small vixen app: a todo list on one page, kept in axum state. Read
+`src/pages/todos/mod.rs` top to bottom. `examples/counter` is the step before it.
 
 ```bash
 bun install           # once, for htmx
@@ -10,14 +10,13 @@ cargo run -p todos    # http://127.0.0.1:4001/
 
 ## What to look for
 
-- **`#[route("/")]`** on `HomePath`: the route is a type, and
-  `.typed_get(home)` reads it off the handler's argument. `router()` is the
-  table of contents.
-- **`#[action("/todos/add")]`** on `AddTodo`: one struct is the route, the form
-  extractor (`async fn add(AddTodo { title }: AddTodo)`) and the view's
-  spelling of both. `hx-action=(AddTodo::action())` renders the path and the
-  method, `name=(AddTodo::FIELD.title)` is the field's wire name, and
-  `ToggleTodo::action().id(todo.id)` puts a value in `hx-vals`.
+- **`#[route("/")]`** makes `HomePath` the typed route used by `.view(home)`.
+  `router()` lists the page's handlers.
+- **`#[action("/todos/add")]`** makes `AddTodo` the POST route and form
+  extractor. It follows `State` because it reads the body. `.action(add)` gets
+  its route from that last argument. `AddTodo::action()` renders the path and
+  method, `AddTodo::FIELD.title` names the form field, and
+  `ToggleTodo::action().id(todo.id)` puts `id` in `hx-vals`.
 - **`#[id]`** on `TodoListId` and `TodoCountId`: the same type is
   `id=(TodoCountId)` in the page and `#todo-count` wherever a response aims at
   it.

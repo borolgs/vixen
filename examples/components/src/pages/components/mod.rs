@@ -1,10 +1,9 @@
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    HxPartial, action, fragment,
+    HxPartial, RouterExt, action, fragment,
     hx::{HxResponseTrigger, SwapOption},
     maud::{Markup, html},
     partial, route,
-    routing::RouterExt,
     ui::basecoatui::{Action, Category, Dialog, Drawer, Duration, HEAD, Toast, Toaster},
 };
 
@@ -12,12 +11,12 @@ use crate::shared::page;
 
 pub fn router() -> Router {
     Router::new()
-        .typed_get(home)
-        .typed_post(show_toast)
-        .typed_post(open_drawer)
-        .typed_post(save_profile)
-        .typed_post(confirm_delete)
-        .typed_post(delete_shelf)
+        .view(home)
+        .action(show_toast)
+        .action(open_drawer)
+        .action(save_profile)
+        .action(confirm_delete)
+        .action(delete_shelf)
 }
 
 #[route("/")]

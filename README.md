@@ -44,10 +44,9 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, fragment,
+    RouterExt, action, fragment,
     maud::{Markup, html},
     partial, route,
-    routing::RouterExt,
 };
 
 static COUNT: AtomicI64 = AtomicI64::new(0);
@@ -95,13 +94,14 @@ fn counter(count: i64) -> Markup {
 }
 
 fn router() -> Router {
-    Router::new().typed_get(home).typed_post(add)
+    Router::new().view(home).action(add)
 }
 ```
 
-`Add` is the route, the form extractor, and what the buttons render. Each
-`#[fragment]` owns its element ID: in page markup it renders the element; in
-`partial!` it becomes an `outerHTML` update for that element.
+`Add` is both a route and a form extractor. `Add::action()` renders the htmx
+attributes used by the buttons; [`.action(add)`][router-ext] registers the
+handler. A `#[fragment]` renders its element in page markup and an `outerHTML`
+update in `partial!`.
 [`examples/counter`][counter] adds surrounding page markup and bundles htmx.
 
 ## Installation
@@ -316,6 +316,7 @@ cargo run -p config              # http://127.0.0.1:4004/config/
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
 [route]: https://docs.rs/axum-vixen/latest/vixen/attr.route.html
+[router-ext]: https://docs.rs/axum-vixen/latest/vixen/trait.RouterExt.html
 [id]: https://docs.rs/axum-vixen/latest/vixen/attr.id.html
 [fragment]: https://docs.rs/axum-vixen/latest/vixen/attr.fragment.html
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html

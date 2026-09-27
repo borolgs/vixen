@@ -1,9 +1,8 @@
 use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, fragment,
+    RouterExt, action, fragment,
     maud::{DOCTYPE, Markup, html},
     partial, route,
-    routing::RouterExt,
 };
 
 mod assets;
@@ -58,8 +57,8 @@ fn pong(n: u32) -> Markup {
 async fn main() {
     let router = vixen::mount!(
         Router::new()
-            .typed_get(home)
-            .typed_post(ping)
+            .view(home)
+            .action(ping)
             .merge(vixen::assets_router!())
     );
 

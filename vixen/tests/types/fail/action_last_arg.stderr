@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `Form<Rename>: TypedPath` is not satisfied
+  --> tests/types/fail/action_last_arg.rs:16:35
+   |
+16 |     let _: Router = Router::new().action(rename);
+   |                                   ^^^^^^ the trait `TypedPath` is not implemented for `Form<Rename>`
+   |
+help: the trait `TypedPath` is implemented for `WithQueryParams<P, T>`
+  --> $CARGO/axum-extra-$VERSION/src/routing/typed.rs
+   |
+   | / impl<P, T> TypedPath for WithQueryParams<P, T>
+   | | where
+   | |     P: TypedPath,
+   | |     T: Serialize,
+   | |_________________^
+note: required by a bound in `action`
+  --> src/router.rs
+   |
+   |     fn action<H, T, P>(self, handler: H) -> Self
+   |        ------ required by a bound in this associated function
+...
+   |         P: TypedPath;
+   |            ^^^^^^^^^ required by this bound in `RouterExt::action`

@@ -1,20 +1,22 @@
-use std::sync::Mutex;
+use std::sync::Arc;
 
-use axum::{Router, response::IntoResponse};
+use axum::{Router, extract::State, response::IntoResponse};
+use tokio::sync::Mutex;
 use vixen::{
-    action, id,
+    RouterExt, action, id,
     maud::{DOCTYPE, Markup, html},
     partial, route,
-    routing::RouterExt,
 };
 
-static TODOS: Mutex<Vec<Todo>> = Mutex::new(Vec::new());
+use crate::state::AppState;
 
-struct Todo {
-    id: usize,
-    title: String,
-    done: bool,
+pub struct Todo {
+    pub id: usize,
+    pub title: String,
+    pub done: bool,
 }
+
+pub type Todos = Arc<Mutex<Vec<Todo>>>;
 
 #[id]
 struct TodoListId;
@@ -22,18 +24,19 @@ struct TodoListId;
 #[id]
 struct TodoCountId;
 
-pub fn router() -> Router {
+pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .typed_get(home)
-        .typed_post(add)
-        .typed_post(toggle)
+        .view(home)
+        .action(add)
+        .action(toggle)
+        .with_state(state)
 }
 
 #[route("/")]
 struct HomePath;
 
-async fn home(_: HomePath) -> Markup {
-    let todos = TODOS.lock().unwrap();
+async fn home(_: HomePath, State(todos): State<Todos>) -> Markup {
+    let todos = todos.lock().await;
 
     html! {
         (DOCTYPE)
@@ -64,8 +67,13 @@ struct AddTodo {
     title: String,
 }
 
-async fn add(AddTodo { title }: AddTodo) -> impl IntoResponse {
-    let mut todos = TODOS.lock().unwrap();
+async fn add(
+    _: AddTodoPath,
+    State(todos): State<Todos>,
+    AddTodo { title }: AddTodo,
+) -> impl IntoResponse {
+    let mut todos = todos.lock().await;
+
     let id = todos.len();
     todos.push(Todo {
         id,
@@ -85,8 +93,8 @@ struct ToggleTodo {
     id: usize,
 }
 
-async fn toggle(ToggleTodo { id }: ToggleTodo) -> impl IntoResponse {
-    let mut todos = TODOS.lock().unwrap();
+async fn toggle(State(todos): State<Todos>, ToggleTodo { id }: ToggleTodo) -> impl IntoResponse {
+    let mut todos = todos.lock().await;
     if let Some(todo) = todos.get_mut(id) {
         todo.done = !todo.done;
     }

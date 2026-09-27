@@ -6,6 +6,7 @@
 //! |---|---|
 //! | define a page route | [`#[route]`](macro@route) |
 //! | define an htmx endpoint and call it from markup | [`#[action]`](macro@action), [`HxAction`], [`SyncStrategy`] |
+//! | register pages and actions on a router | [`RouterExt`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
@@ -22,10 +23,9 @@
 //! - [`maud`] 0.27, with its `axum` feature, provides `html!` and `Markup`.
 //!   Because `html!` expands to `extern crate maud;`, any crate that invokes
 //!   it must also depend on `maud` directly.
-//! - [`routing`] re-exports `axum_extra::routing` 0.12. It provides
-//!   `TypedPath`, derived by [`#[route]`](macro@route) and
-//!   [`#[action]`](macro@action), and `RouterExt`, whose `typed_get` and
-//!   `typed_post` methods register their handlers.
+//! - [`routing`] re-exports `axum_extra::routing` 0.12 for the `TypedPath`
+//!   derives used by [`#[route]`](macro@route) and [`#[action]`](macro@action).
+//!   Register handlers with [`RouterExt`].
 //! - `hx` re-exports `axum_htmx` 0.8 header types and `SwapOption`; see [htmx 4
 //!   compatibility](#htmx-4-compatibility) for caveats.
 //!
@@ -48,6 +48,7 @@ mod fragment;
 mod href;
 mod id;
 mod partial;
+mod router;
 pub mod ui;
 
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
@@ -61,6 +62,7 @@ pub use maud;
 pub use vixen_bundler::{Config, build};
 
 pub use partial::{HxPartial, HxPartialResponse, Part, Parts, Selector};
+pub use router::{LastElementIs, RouterExt};
 
 pub mod markers {
     //! Type-state markers used by [`HxPartial`](crate::HxPartial).
@@ -79,7 +81,7 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 ///
 /// ```
 /// use axum::Router;
-/// use vixen::{action, maud::{Markup, html}, routing::RouterExt};
+/// use vixen::{RouterExt, action, maud::{Markup, html}};
 ///
 /// #[action("/todos/rename")]
 /// struct RenameTodo {
@@ -92,7 +94,7 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 ///     html! { li id={ "todo-" (id) } { (title) } }
 /// }
 ///
-/// let router: Router = Router::new().typed_post(rename);
+/// let router: Router = Router::new().action(rename);
 ///
 /// // `id` is sent through `hx-vals`; `title` comes from the input.
 /// fn rename_form(id: u32) -> Markup {
@@ -117,9 +119,9 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 /// For `#[action("/path")] struct Name { .. }`, the macro generates:
 ///
 /// - `Deserialize`, `Serialize`, axum's `FromRequest` through
-///   `axum_extra::extract::Form`, and `TypedPath` for `Name`. This lets
-///   `typed_post` infer the route from the handler's argument. The macro also
-///   adds `Route: POST /path` to the struct's docs.
+///   `axum_extra::extract::Form`, and `TypedPath` for `Name`.
+///   [`RouterExt::action`] infers the route from the last handler argument. The
+///   macro also adds `Route: POST /path` to the struct's docs.
 /// - `Name::action()`, which returns a `NameAction` builder with one setter per
 ///   field. `String` setters accept `impl Into<String>`, `Option<T>` setters
 ///   accept `T`, and other setters use the declared type, which must implement
@@ -134,9 +136,8 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 ///
 /// `#[action]` accepts a struct with named fields and no generics.
 ///
-/// `typed_post` requires its `TypedPath` argument first, while axum requires a
-/// body-consuming form extractor last. Since `Name` is both, it must be the
-/// handler's only extractor.
+/// `Name` consumes the request body and must be the handler's last argument.
+/// Put extractors such as `State` before it.
 ///
 /// Generated code refers to `::axum` and `::axum_extra`, so both must be direct
 /// dependencies of the calling crate. vixen enables the required features:
@@ -148,7 +149,7 @@ pub use vixen_macros::action;
 ///
 /// ```
 /// use axum::Router;
-/// use vixen::{maud::{Markup, html}, route, routing::RouterExt};
+/// use vixen::{RouterExt, maud::{Markup, html}, route};
 ///
 /// #[route("/items/{id}")]
 /// struct ItemPath {
@@ -159,7 +160,7 @@ pub use vixen_macros::action;
 ///     html! { a href=(ItemPath { id: id + 1 }) { "Next" } }
 /// }
 ///
-/// let router: Router = Router::new().typed_get(item);
+/// let router: Router = Router::new().view(item);
 ///
 /// assert_eq!(ItemPath { id: 7 }.to_string(), "/items/7");
 /// assert_eq!(
@@ -259,7 +260,7 @@ pub use vixen_macros::assets;
 ///
 /// ```ignore
 /// let router = Router::new()
-///     .typed_get(home)
+///     .view(home)
 ///     .merge(vixen::assets_router!());
 /// ```
 ///

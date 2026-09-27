@@ -1,14 +1,14 @@
 use axum::Router;
 use vixen::{
+    RouterExt,
     maud::{Markup, html},
     route,
-    routing::RouterExt,
 };
 
 use crate::shared::page;
 
 pub fn router() -> Router {
-    Router::new().typed_get(other)
+    Router::new().view(other)
 }
 
 #[route("/other")]

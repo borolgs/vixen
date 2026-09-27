@@ -4,6 +4,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Error, Item, LitStr, parse_quote};
 
+// TODO: Generate `TypedPath`, `Display`, and `FromRequestParts` in both macros
+// to remove apps' direct `axum-extra` dependency and prevent version mismatches.
+
 /// `#[route("/a/{id}")] struct P { id: i64 }` becomes
 /// `#[derive(Deserialize, TypedPath)] #[typed_path("/a/{id}")]` on the same
 /// struct and adds a base-path-aware `Render` implementation.

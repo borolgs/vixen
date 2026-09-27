@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use axum::{Router, extract::State, response::IntoResponse};
+use axum::{Router, extract::State};
 use tokio::sync::Mutex;
 use vixen::{
-    RouterExt, action, id,
+    RouterExt, action, fragment,
     maud::{DOCTYPE, Markup, html},
     partial, route,
 };
@@ -18,74 +18,12 @@ pub struct Todo {
 
 pub type Todos = Arc<Mutex<Vec<Todo>>>;
 
-#[id]
-struct TodoListId;
-
-#[id]
-struct TodoCountId;
-
-pub fn router(state: AppState) -> Router<AppState> {
-    Router::new()
-        .view(home)
-        .action(add)
-        .action(toggle)
-        .with_state(state)
-}
-
 #[route("/")]
 struct HomePath;
-
-async fn home(_: HomePath, State(todos): State<Todos>) -> Markup {
-    let todos = todos.lock().await;
-
-    html! {
-        (DOCTYPE)
-        html lang="en" {
-            head {
-                meta charset="utf-8";
-                meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Todos · vixen" }
-                (vixen::assets!())
-            }
-            body {
-                h1 { "Todos" }
-                p id=(TodoCountId) { (todo_count(&todos)) }
-                form hx-action=(AddTodo::action()) { (add_todo_fields()) }
-                nav {
-                    button type="button" data-show="all" { "All" }
-                    button type="button" data-show="active" { "Active" }
-                    button type="button" data-show="done" { "Done" }
-                }
-                ul id=(TodoListId) { (todo_list(&todos)) }
-            }
-        }
-    }
-}
 
 #[action("/todos/add")]
 struct AddTodo {
     title: String,
-}
-
-async fn add(
-    _: AddTodoPath,
-    State(todos): State<Todos>,
-    AddTodo { title }: AddTodo,
-) -> impl IntoResponse {
-    let mut todos = todos.lock().await;
-
-    let id = todos.len();
-    todos.push(Todo {
-        id,
-        title,
-        done: false,
-    });
-
-    partial!(
-        _ => add_todo_fields(),
-        TodoListId => todo_list(&todos),
-        TodoCountId => todo_count(&todos),
-    )
 }
 
 #[action("/todos/toggle")]
@@ -93,41 +31,111 @@ struct ToggleTodo {
     id: usize,
 }
 
-async fn toggle(State(todos): State<Todos>, ToggleTodo { id }: ToggleTodo) -> impl IntoResponse {
-    let mut todos = todos.lock().await;
-    if let Some(todo) = todos.get_mut(id) {
-        todo.done = !todo.done;
-    }
+pub fn router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .view(async |_: HomePath, State(todos): State<Todos>| {
+            let todos = todos.lock().await;
 
-    partial! {
-        TodoListId => todo_list(&todos),
-        TodoCountId => todo_count(&todos)
-    }
+            page(
+                html! {
+                    title { "Todos · vixen" }
+                    (vixen::assets!())
+                },
+                html! {
+                    h1 { "Todos" }
+                    (todo_count(&todos))
+                    (add_todo_form())
+                    nav {
+                        button type="button" data-show="all" aria-pressed="true" { "All" }
+                        button type="button" data-show="active" aria-pressed="false" { "Active" }
+                        button type="button" data-show="done" aria-pressed="false" { "Done" }
+                    }
+                    (todo_list(&todos))
+                },
+            )
+        })
+        .action(
+            async |State(todos): State<Todos>, AddTodo { title }: AddTodo| {
+                let mut todos = todos.lock().await;
+
+                let id = todos.len();
+                todos.push(Todo {
+                    id,
+                    title,
+                    done: false,
+                });
+
+                partial! {
+                    add_todo_form(),
+                    todo_list(&todos),
+                    todo_count(&todos)
+                }
+            },
+        )
+        .action(
+            async |State(todos): State<Todos>, ToggleTodo { id }: ToggleTodo| {
+                let mut todos = todos.lock().await;
+                if let Some(todo) = todos.get_mut(id) {
+                    todo.done = !todo.done;
+                }
+
+                partial! {
+                    todo_list(&todos),
+                    todo_count(&todos)
+                }
+            },
+        )
+        .with_state(state)
 }
 
-fn add_todo_fields() -> Markup {
+#[fragment]
+fn add_todo_form() -> Markup {
     html! {
-        input name=(AddTodo::FIELD.title) placeholder="What needs doing?" required autofocus;
-        button type="submit" { "Add" }
+        form id=(Self) hx-action=(AddTodo::action()) {
+            input name=(AddTodo::FIELD.title) placeholder="What needs doing?" required autofocus;
+            button type="submit" { "Add" }
+        }
     }
 }
 
+#[fragment]
 fn todo_count(todos: &[Todo]) -> Markup {
     let left = todos.iter().filter(|todo| !todo.done).count();
 
-    html! { (left) " left" }
+    html! {
+        p id=(Self) {
+            (left) " left"
+        }
+    }
 }
 
+#[fragment]
 fn todo_list(todos: &[Todo]) -> Markup {
     html! {
-        @for todo in todos {
-            li {
-                label {
-                    input type="checkbox" checked[todo.done]
-                        hx-action=(ToggleTodo::action().id(todo.id));
-                    (todo.title)
+        ul id=(Self) {
+            @for todo in todos {
+                li {
+                    label {
+                        input type="checkbox" checked[todo.done]
+                            hx-action=(ToggleTodo::action().id(todo.id));
+                        (todo.title)
+                    }
                 }
             }
+        }
+    }
+}
+
+pub fn page(head: Markup, content: Markup) -> Markup {
+    html! {
+        (DOCTYPE)
+        html lang="en" {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                (head)
+            }
+            body { (content) }
         }
     }
 }

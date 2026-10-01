@@ -10,7 +10,7 @@ use crate::{Id, Part, Parts, Selector};
 /// `Fragment<T>` renders as plain markup. In a [`partial!`](crate::partial!)
 /// response, it targets its id with an `outerHTML` swap.
 /// [`#[fragment]`](macro@crate::fragment) constructs it automatically;
-/// [`Fragment::new`] is for an id declared separately, such as a dynamic one.
+/// [`Fragment::new`] is for markup the attribute can't wrap, such as a method's.
 ///
 /// ```
 /// use vixen::{Fragment, id, maud::html, partial};
@@ -18,14 +18,23 @@ use crate::{Id, Part, Parts, Selector};
 /// #[id]
 /// struct TodoId(u32);
 ///
-/// fn todo(id: u32, title: &str) -> Fragment<TodoId> {
-///     let id = TodoId(id);
-///     Fragment::new(&id, html! { li id=(id) { (title) } })
+/// struct Todo {
+///     id: u32,
+///     title: &'static str,
 /// }
 ///
-/// assert_eq!(html! { (todo(7, "milk")) }.into_string(), r#"<li id="todo-7">milk</li>"#);
+/// impl Todo {
+///     fn view(&self) -> Fragment<TodoId> {
+///         let id = TodoId(self.id);
+///         Fragment::new(&id, html! { li id=(id) { (self.title) } })
+///     }
+/// }
+///
+/// let todo = Todo { id: 7, title: "milk" };
+/// assert_eq!(html! { (todo.view()) }.into_string(), r#"<li id="todo-7">milk</li>"#);
+/// let todo = Todo { title: "oat milk", ..todo };
 /// assert_eq!(
-///     partial!(todo(7, "oat milk")).render().into_string(),
+///     partial!(todo.view()).render().into_string(),
 ///     concat!(
 ///         r##"<hx-partial hx-target="#todo-7" hx-swap="outerHTML">"##,
 ///         r#"<li id="todo-7">oat milk</li></hx-partial>"#,

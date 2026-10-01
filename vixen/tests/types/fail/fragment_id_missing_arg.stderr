@@ -1,0 +1,35 @@
+error[E0599]: the method `implements_render_or_display` exists for reference `&&TodoId::slot::maud::macro_private::ChooseRenderOrDisplay<&fn(u64) -> TodoId {TodoId}>`, but its trait bounds were not satisfied
+ --> tests/types/fail/fragment_id_missing_arg.rs:8:5
+  |
+8 |     vixen::maud::html! { li id=(Self) {} }
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+  |
+ ::: $CARGO/maud-$VERSION/src/lib.rs
+  |
+  |     pub struct ChooseRenderOrDisplay<T>(pub T);
+  |     ----------------------------------- doesn't satisfy `_: ViaDisplay`
+  |
+  = note: the following trait bounds were not satisfied:
+          `&fn(u64) -> TodoId {TodoId}: Render`
+          which is required by `&TodoId::slot::maud::macro_private::ChooseRenderOrDisplay<&fn(u64) -> TodoId {TodoId}>: TodoId::slot::maud::macro_private::ViaRender`
+          `&fn(u64) -> TodoId {TodoId}: std::fmt::Display`
+          which is required by `TodoId::slot::maud::macro_private::ChooseRenderOrDisplay<&fn(u64) -> TodoId {TodoId}>: TodoId::slot::maud::macro_private::ViaDisplay`
+  = note: this error originates in the macro `maud::macro_private::render_to` which comes from the expansion of the macro `vixen::maud::html` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+ --> tests/types/fail/fragment_id_missing_arg.rs:6:1
+  |
+6 | #[fragment(TodoId)]
+  | ^^^^^^^^^^^^^^^^^^^
+  | |
+  | expected `&TodoId`, found `&fn(u64) -> TodoId {TodoId}`
+  | arguments to this function are incorrect
+  |
+  = note: expected reference `&TodoId`
+             found reference `&fn(u64) -> TodoId {TodoId}`
+note: associated function defined here
+ --> src/fragment.rs
+  |
+  |     pub fn new(id: &T, markup: Markup) -> Self {
+  |            ^^^
+  = note: this error originates in the attribute macro `fragment` (in Nightly builds, run with -Z macro-backtrace for more info)

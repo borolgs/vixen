@@ -5,6 +5,7 @@
 ### Added
 
 - `#[id]` on a one-field tuple struct: a dynamic id, `TodoId(7)` is `todo-7`.
+- `#[fragment(CartId)]` and `#[fragment(TodoId(todo.id))]`: a fragment with an existing `#[id]` struct, static or dynamic.
 
 ### Changed
 

@@ -41,7 +41,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         parse2(attr).unwrap_or(LitStr::new(&html_id, Span::call_site()))
     };
 
-    if let Err(err) = check(&id) {
+    if let Err(err) = check_id(&id) {
         let err = err.to_compile_error();
         return quote! { #err #id_struct };
     }
@@ -142,7 +142,7 @@ pub fn html_id(ident: &Ident) -> String {
 }
 
 /// is valid id
-pub fn check(id: &LitStr) -> syn::Result<()> {
+pub fn check_id(id: &LitStr) -> syn::Result<()> {
     let value = id.value();
     if value.is_empty() || value.contains(char::is_whitespace) || value.contains('#') {
         return Err(Error::new(

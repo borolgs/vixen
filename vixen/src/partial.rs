@@ -163,8 +163,8 @@ impl From<Selector> for String {
 }
 
 impl<T: Id> From<T> for Selector {
-    fn from(_: T) -> Self {
-        Self(T::SEL.to_string())
+    fn from(id: T) -> Self {
+        id.sel()
     }
 }
 
@@ -181,8 +181,8 @@ impl From<String> for Selector {
 }
 
 impl Render for Selector {
-    fn render(&self) -> Markup {
-        maud::PreEscaped(self.0.clone())
+    fn render_to(&self, buffer: &mut String) {
+        self.0.render_to(buffer);
     }
 }
 

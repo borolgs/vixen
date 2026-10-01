@@ -17,13 +17,13 @@ cargo run -p todos    # http://127.0.0.1:4001/
   its route from that last argument. `AddTodo::action()` renders the path and
   method, `AddTodo::FIELD.title` names the form field, and
   `ToggleTodo::action().id(todo.id)` puts `id` in `hx-vals`.
-- **`#[id]`** on `TodoListId` and `TodoCountId`: the same type is
-  `id=(TodoCountId)` in the page and `#todo-count` wherever a response aims at
-  it.
-- **`partial!`** in `add`: `_ =>` is the main swap (the form re-renders
-  empty), and `TodoListId =>` / `TodoCountId =>` are aimed by the handler, each
-  filled by the same function the page used. `toggle` answers with parts only,
-  so the checkbox that asked is left alone.
+- **`#[fragment]`** on `todo_list`, `todo_count` and `add_todo_form`: the same
+  function renders the element in the page and replaces it in a response.
+- **`#[id]`** on `TodoItemId(usize)`: a dynamic id, `todo-item-3`.
+  `todo_item` wraps its row with `Fragment::new`, so toggling one todo
+  replaces just that row.
+- **`partial!`** in the actions lists fragments, each filled by the same
+  function the page used. Both answer with parts only.
 - **`assets!()`** in the head, with `index.ts` next to `mod.rs`: that is the
   whole setup. `build.rs` finds `src/pages/**/index.ts` by itself, there is no
   `build.ts`. The script imports htmx from npm and a plain `index.css`, and

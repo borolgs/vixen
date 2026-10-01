@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `#[id]` on a one-field tuple struct: a dynamic id, `TodoId(7)` is `todo-7`.
+
+### Changed
+
+- `Id::sel(&self)` replaces the `ID` and `SEL` consts, which `#[id]` types lose too.
+- `Fragment::new` takes the id: `Fragment::new(&id, markup)`.
+- `Selector` renders escaped.
+
 ## 0.2.0 - 2026-09-27
 
 ### Added

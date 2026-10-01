@@ -30,13 +30,6 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut replacer = Replacer::new("Self", id_struct_ident.clone());
     syn::visit_mut::visit_block_mut(&mut replacer, fragment_fn.block.as_mut());
 
-    // Wrap the body's Markup in a Fragment.
-    let body = fragment_fn.block.to_token_stream();
-    let await_ = asyncness.map(|_| quote! { .await });
-    fragment_fn.block = parse_quote! {{
-        ::vixen::Fragment::new((#asyncness || #markup #body)() #await_)
-    }};
-
     // TODO: match the `id` `=` `(Self)` token sequence; any `Self` passes for now.
     if replacer.count < 1 {
         return syn::Error::new(
@@ -55,6 +48,13 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
             Err(err) => return err.to_compile_error(),
         }
     };
+
+    // Wrap the body's Markup in a Fragment.
+    let body = fragment_fn.block.to_token_stream();
+    let await_ = asyncness.map(|_| quote! { .await });
+    fragment_fn.block = parse_quote! {{
+        ::vixen::Fragment::new(&#id_struct_ident, (#asyncness || #markup #body)() #await_)
+    }};
 
     let doc = format!(
         "Fragment with id [`{id_struct_ident}`]: a page call renders the element, a `partial!` call \

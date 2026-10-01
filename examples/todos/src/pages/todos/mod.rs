@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{Router, extract::State};
 use tokio::sync::Mutex;
 use vixen::{
-    RouterExt, action, fragment,
+    Fragment, RouterExt, action, fragment, id,
     maud::{DOCTYPE, Markup, html},
     partial, route,
 };
@@ -75,17 +75,41 @@ pub fn router(state: AppState) -> Router<AppState> {
         .action(
             async |State(todos): State<Todos>, ToggleTodo { id }: ToggleTodo| {
                 let mut todos = todos.lock().await;
-                if let Some(todo) = todos.get_mut(id) {
-                    todo.done = !todo.done;
-                }
+
+                let Some(todo) = todos.get_mut(id) else {
+                    return partial! {
+                        todo_count(&todos)
+                    };
+                };
+
+                todo.done = !todo.done;
 
                 partial! {
-                    todo_list(&todos),
-                    todo_count(&todos)
+                    todo_item(todo),
+                    todo_count(&todos),
                 }
             },
         )
         .with_state(state)
+}
+
+#[id]
+struct TodoItemId(usize);
+
+fn todo_item(todo: &Todo) -> Fragment<TodoItemId> {
+    let id = TodoItemId(todo.id);
+    Fragment::new(
+        &id,
+        html! {
+            li id=(id) {
+                label {
+                    input type="checkbox" checked[todo.done]
+                        hx-action=(ToggleTodo::action().id(todo.id));
+                    (todo.title)
+                }
+            }
+        },
+    )
 }
 
 #[fragment]
@@ -114,13 +138,7 @@ fn todo_list(todos: &[Todo]) -> Markup {
     html! {
         ul id=(Self) {
             @for todo in todos {
-                li {
-                    label {
-                        input type="checkbox" checked[todo.done]
-                            hx-action=(ToggleTodo::action().id(todo.id));
-                        (todo.title)
-                    }
-                }
+                (todo_item(todo))
             }
         }
     }

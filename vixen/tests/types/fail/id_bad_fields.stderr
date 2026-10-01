@@ -1,0 +1,14 @@
+error: `#[id]` expects a unit or one-field tuple struct, e.g. `#[id] struct TodoId(u64);`
+ --> tests/types/fail/id_bad_fields.rs:4:15
+  |
+4 |   struct TodoId {
+  |  _______________^
+5 | |     id: u64,
+6 | | }
+  | |_^
+
+error: `#[id]` expects a unit or one-field tuple struct, e.g. `#[id] struct TodoId(u64);`
+ --> tests/types/fail/id_bad_fields.rs:9:14
+  |
+9 | struct CellId(u32, u32);
+  |              ^^^^^^^^^^

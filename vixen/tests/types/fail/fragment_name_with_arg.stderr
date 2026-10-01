@@ -1,0 +1,5 @@
+error: a dynamic id needs its own struct: `#[id] struct TodoId(u64);` and `#[fragment(TodoId(todo.id))]`
+ --> tests/types/fail/fragment_name_with_arg.rs:3:18
+  |
+3 | #[fragment("todo", id)]
+  |                  ^

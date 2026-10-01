@@ -20,8 +20,9 @@ cargo run -p todos    # http://127.0.0.1:4001/
 - **`#[fragment]`** on `todo_list`, `todo_count` and `add_todo_form`: the same
   function renders the element in the page and replaces it in a response.
 - **`#[id]`** on `TodoItemId(usize)`: a dynamic id, `todo-item-3`.
-  `todo_item` wraps its row with `Fragment::new`, so toggling one todo
-  replaces just that row.
+  `#[fragment(TodoItemId(todo.id))]` gives it to both `todo_item` and
+  `todo_item_edit_form`, so toggle, edit, save and cancel each replace just
+  that row.
 - **`partial!`** in the actions lists fragments, each filled by the same
   function the page used. Both answer with parts only.
 - **`assets!()`** in the head, with `index.ts` next to `mod.rs`: that is the

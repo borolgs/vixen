@@ -1,9 +1,58 @@
 use heck::ToPascalCase;
 use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
 use quote::{ToTokens, format_ident, quote};
-use syn::{ItemFn, LitStr, parse_quote, parse2, spanned::Spanned, visit_mut::VisitMut};
+use syn::{
+    Expr, ItemFn, LitStr, parenthesized, parse::Parse, parse_quote, parse2, spanned::Spanned,
+    token, visit_mut::VisitMut,
+};
+
+use crate::id::{check_id, html_id};
+
+enum FragmentAttr {
+    Default,
+    Name(LitStr),
+    Id { ty: Ident, arg: Option<Expr> },
+}
+
+impl Parse for FragmentAttr {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.is_empty() {
+            return Ok(Self::Default);
+        }
+
+        if input.peek(LitStr) {
+            let name: LitStr = input.parse()?;
+            check_id(&name)?;
+            if !input.is_empty() {
+                return Err(input.error(
+                    "a dynamic id needs its own struct: \
+                     `#[id] struct TodoId(u64);` and `#[fragment(TodoId(todo.id))]`",
+                ));
+            }
+            return Ok(Self::Name(name));
+        }
+
+        let ty: Ident = input.parse()?;
+
+        let arg: Option<Expr> = if input.peek(token::Paren) {
+            let content;
+            parenthesized!(content in input);
+            Some(content.parse()?)
+        } else {
+            None
+        };
+
+        Ok(Self::Id { ty, arg })
+    }
+}
 
 pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attr_span = attr.span();
+    let attr: FragmentAttr = match parse2(attr) {
+        Ok(v) => v,
+        Err(err) => return err.to_compile_error(),
+    };
+
     let mut fragment_fn = match parse2::<ItemFn>(item) {
         Ok(v) => v,
         Err(err) => {
@@ -19,6 +68,21 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // <FnName>Id;
     let id_struct_ident = format_ident!("{}Id", fragment_fn_ident.to_string().to_pascal_case());
+    let (id_struct_ident, html_id, id_arg) = match attr {
+        FragmentAttr::Default => {
+            let html_id = LitStr::new(&html_id(&id_struct_ident), Span::call_site());
+            (id_struct_ident, Some(html_id), None)
+        }
+        FragmentAttr::Name(lit_str) => (id_struct_ident, Some(lit_str), None),
+        FragmentAttr::Id { ty, arg } => (ty, None, arg),
+    };
+
+    // __vixen_id | <FnName>Id
+    // TODO: make the dynamic id binding hygienic so user code cannot shadow it.
+    let id_val = id_arg
+        .as_ref()
+        .map(|_| Ident::new("__vixen_id", Span::call_site()))
+        .unwrap_or(id_struct_ident.clone());
 
     // The closure keeps the user's `-> Markup`, so their import stays used.
     let markup = std::mem::replace(
@@ -26,41 +90,41 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         parse_quote! { -> ::vixen::Fragment<#id_struct_ident> },
     );
 
-    // id=(Self) -> id(<FnName>Id)
-    let mut replacer = Replacer::new("Self", id_struct_ident.clone());
+    // id=(Self) -> id(<FnName>Id) | id=(__vixen_id)
+    let mut replacer = Replacer::new("Self", id_val.clone());
     syn::visit_mut::visit_block_mut(&mut replacer, fragment_fn.block.as_mut());
 
     // TODO: match the `id` `=` `(Self)` token sequence; any `Self` passes for now.
     if replacer.count < 1 {
         return syn::Error::new(
-            attr.span(),
+            attr_span,
             "`#[fragment]` expects `id=(Self)` on the root element, e.g. `ul id=(Self) { .. }`",
         )
         .to_compile_error();
     }
 
-    // `#[fragment("custom")]`
-    let id = if attr.is_empty() {
-        LitStr::new(&crate::id::html_id(&id_struct_ident), Span::call_site())
-    } else {
-        match parse2::<LitStr>(attr).and_then(|id| crate::id::check(&id).map(|_| id)) {
-            Ok(id) => id,
-            Err(err) => return err.to_compile_error(),
-        }
-    };
+    let id_stmt = id_arg.map(|arg| {
+        quote! { let #id_val = #id_struct_ident(#arg); }
+    });
 
     // Wrap the body's Markup in a Fragment.
     let body = fragment_fn.block.to_token_stream();
     let await_ = asyncness.map(|_| quote! { .await });
     fragment_fn.block = parse_quote! {{
-        ::vixen::Fragment::new(&#id_struct_ident, (#asyncness || #markup #body)() #await_)
+        #id_stmt
+        ::vixen::Fragment::new(&#id_val, (#asyncness || #markup #body)() #await_)
     }};
 
-    let doc = format!(
+    let mut doc = format!(
         "Fragment with id [`{id_struct_ident}`]: a page call renders the element, a `partial!` call \
-         replaces it (`outerHTML`). [`{fragment_fn_name}::slot()`] renders a hidden `<div>` with the \
-         same id for a later `partial!` to replace."
+         replaces it (`outerHTML`)."
     );
+    if html_id.is_some() {
+        doc.push_str(&format!(
+            " [`{fragment_fn_name}::slot()`] renders a hidden `<div>` with the same id for a later \
+             `partial!` to replace."
+        ));
+    }
     if fragment_fn
         .attrs
         .iter()
@@ -70,19 +134,25 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     fragment_fn.attrs.push(parse_quote!(#[doc = #doc]));
 
-    quote! {
-        #[::vixen::id(#id)]
-        #vis struct #id_struct_ident;
+    let id_decl = html_id.map(|html_id| {
+        quote! {
+            #[::vixen::id(#html_id)]
+            #vis struct #id_struct_ident;
 
-        #vis mod #fragment_fn_name {
-            /// A hidden `<div>` with the fragment's id, for a later `partial!` to replace.
-            pub fn slot() -> ::vixen::maud::Markup {
-                ::vixen::maud::html! {
-                    div id=#id style="display: none;" {}
+            // Static ids only; a dynamic id has `SomeId(id).slot()` instead.
+            #vis mod #fragment_fn_name {
+                /// A hidden `<div>` with the fragment's id, for a later `partial!` to replace.
+                pub fn slot() -> ::vixen::maud::Markup {
+                    ::vixen::maud::html! {
+                        div id=#html_id style="display: none;" {}
+                    }
                 }
             }
         }
+    });
 
+    quote! {
+        #id_decl
         #fragment_fn
     }
 }

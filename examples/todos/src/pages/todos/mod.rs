@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use axum::{Router, extract::State};
+use axum::{Router, extract::State, http::StatusCode};
 use tokio::sync::Mutex;
 use vixen::{
-    Fragment, RouterExt, action, fragment, id,
+    RouterExt, action, fragment, id,
     maud::{DOCTYPE, Markup, html},
     partial, route,
 };
@@ -28,6 +28,22 @@ struct AddTodo {
 
 #[action("/todos/toggle")]
 struct ToggleTodo {
+    id: usize,
+}
+
+#[action("/todos/edit")]
+struct EditTodo {
+    id: usize,
+}
+
+#[action("/todos/save")]
+struct SaveTodo {
+    id: usize,
+    title: String,
+}
+
+#[action("/todos/cancel")]
+struct CancelEdit {
     id: usize,
 }
 
@@ -90,26 +106,68 @@ pub fn router(state: AppState) -> Router<AppState> {
                 }
             },
         )
+        .action(
+            async |State(todos): State<Todos>, EditTodo { id }: EditTodo| {
+                let todos = todos.lock().await;
+                let Some(todo) = todos.get(id) else {
+                    return Err(StatusCode::NOT_FOUND);
+                };
+
+                Ok(partial!(todo_item_edit_form(todo)))
+            },
+        )
+        .action(
+            async |State(todos): State<Todos>, SaveTodo { id, title }: SaveTodo| {
+                let mut todos = todos.lock().await;
+                let Some(todo) = todos.get_mut(id) else {
+                    return Err(StatusCode::NOT_FOUND);
+                };
+                todo.title = title;
+
+                Ok(partial!(todo_item(todo)))
+            },
+        )
+        .action(
+            async |State(todos): State<Todos>, CancelEdit { id }: CancelEdit| {
+                let todos = todos.lock().await;
+                let Some(todo) = todos.get(id) else {
+                    return Err(StatusCode::NOT_FOUND);
+                };
+
+                Ok(partial!(todo_item(todo)))
+            },
+        )
         .with_state(state)
 }
 
 #[id]
 struct TodoItemId(usize);
 
-fn todo_item(todo: &Todo) -> Fragment<TodoItemId> {
-    let id = TodoItemId(todo.id);
-    Fragment::new(
-        &id,
-        html! {
-            li id=(id) {
-                label {
-                    input type="checkbox" checked[todo.done]
-                        hx-action=(ToggleTodo::action().id(todo.id));
-                    (todo.title)
-                }
+#[fragment(TodoItemId(todo.id))]
+fn todo_item(todo: &Todo) -> Markup {
+    html! {
+        li id=(Self) {
+            label {
+                input type="checkbox" checked[todo.done]
+                    hx-action=(ToggleTodo::action().id(todo.id));
+                (todo.title)
             }
-        },
-    )
+            button type="button" hx-action=(EditTodo::action().id(todo.id)) { "Edit" }
+        }
+    }
+}
+
+#[fragment(TodoItemId(todo.id))]
+fn todo_item_edit_form(todo: &Todo) -> Markup {
+    html! {
+        li id=(Self) {
+            form hx-action=(SaveTodo::action().id(todo.id)) {
+                input name=(SaveTodo::FIELD.title) value=(todo.title) required autofocus;
+                button type="submit" { "Save" }
+                button type="button" hx-action=(CancelEdit::action().id(todo.id)) { "Cancel" }
+            }
+        }
+    }
 }
 
 #[fragment]

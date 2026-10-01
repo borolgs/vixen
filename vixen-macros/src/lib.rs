@@ -331,6 +331,25 @@ pub fn asset(item: TokenStream) -> TokenStream {
 /// `#[fragment("sidebar")]` overrides the id, with the rules of
 /// [`#[id("sidebar")]`](../vixen/attr.id.html).
 ///
+/// `#[fragment(CartId)]` uses an existing unit `#[id]` struct.
+/// `#[fragment(TodoId(id))]` takes a dynamic one: the argument can use the
+/// params, runs before the body, and `Self` is its value. Neither form
+/// generates `slot()`; the struct has its own.
+///
+/// ```
+/// use vixen::{fragment, id, maud::{Markup, html}};
+///
+/// #[id]
+/// struct TodoId(u64);
+///
+/// #[fragment(TodoId(id))]
+/// fn todo(id: u64, title: &str) -> Markup {
+///     html! { li id=(Self) { (title) } }
+/// }
+///
+/// assert_eq!(html! { (todo(7, "milk")) }.into_string(), r#"<li id="todo-7">milk</li>"#);
+/// ```
+///
 /// The element must use `id=(Self)` at its root. The macro rejects a body with
 /// no `Self`, but cannot verify that it occurs in the root or that the markup
 /// has exactly one root element.

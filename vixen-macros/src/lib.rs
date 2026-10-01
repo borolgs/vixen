@@ -114,20 +114,36 @@ pub fn action(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// `cart-badge`. `#[id("sidebar")]` overrides it; the value must be nonempty and
 /// contain no whitespace or `#`.
 ///
+/// A one-field tuple struct makes the id dynamic: the field, any `Display`, is
+/// appended after a `-`.
+///
+/// ```
+/// use vixen::{id, maud::html, partial};
+///
+/// #[id]
+/// struct TodoId(u32);
+///
+/// let id = TodoId(7);
+/// assert_eq!(html! { li id=(id) {} }.into_string(), r#"<li id="todo-7"></li>"#);
+/// assert_eq!(
+///     partial!(id => html! { "milk" }).render().into_string(),
+///     r##"<hx-partial hx-target="#todo-7">milk</hx-partial>"##
+/// );
+/// ```
+///
 /// Use `#[id]` when the page writes the element and a response replaces its
 /// contents. Use [`#[fragment]`](../vixen/attr.fragment.html) when one
 /// function renders and replaces the whole element.
 ///
 /// # Generated API
 ///
-/// - `Render`, which writes the bare id.
-/// - `ID` and `SEL`, here `"todo-list"` and `"#todo-list"`.
+/// - `Render`, which writes the bare id, escaped.
 /// - [`Id`], whose blanket `From<T: Id> for Selector` makes the type usable
 ///   anywhere a [`Selector`] is accepted: [`partial!`], [`HxPartial::target`],
 ///   [`HxAction::target`], or [`SyncStrategy::on`].
 /// - `slot()`, which renders `<div id="todo-list"></div>` for a later response
 ///   to fill.
-/// - An `HTML id: todo-list` line in the struct's docs.
+/// - An `HTML id: todo-list` line in the struct's docs, or `todo-{u32}`.
 ///
 /// `slot()` invokes maud's `html!`, so the calling crate must depend on `maud`
 /// directly; see [re-exports].
@@ -305,7 +321,7 @@ pub fn asset(item: TokenStream) -> TokenStream {
 /// For `counter`, the macro declares `#[id] struct CounterId`, changes the
 /// return type to `Fragment<CounterId>`, and exposes `counter::slot()`. The
 /// generated items have the same visibility as the function. Inside the body,
-/// `Self` is `CounterId`, so `Self::SEL` works too.
+/// `Self` is `CounterId`.
 ///
 /// [`Fragment`] converts into [`Part`], [`Parts`] and `Markup`, and can be used
 /// with `html!`, [`partial!`], [`HxPartial::part`] or [`HxPartial::main`].

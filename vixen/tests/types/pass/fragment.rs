@@ -1,8 +1,8 @@
-use vixen::{Fragment, Part, maud::html, partial};
+use vixen::{Fragment, Id, Part, maud::html, partial};
 
 mod list {
     use vixen::{
-        fragment,
+        Id, fragment,
         maud::{Markup, html},
     };
 
@@ -10,14 +10,14 @@ mod list {
     #[fragment]
     pub fn todo_list(todos: &[&str]) -> Markup {
         // `Self` is the id type in plain code and inside `html!`.
-        let clear = Self::SEL;
+        let clear = Self.sel();
         if todos.is_empty() {
             return html! { ul id=(Self) {} };
         }
         html! {
             ul id=(Self) {
                 @for todo in todos {
-                    li hx-target=(Self::SEL) { (todo) }
+                    li hx-target=(Self.sel()) { (todo) }
                 }
                 button hx-target=(clear) { "clear" }
             }
@@ -43,9 +43,8 @@ async fn count() -> Fragment<TodoCountId> {
 }
 
 fn main() {
-    let _: &str = TodoListId::ID;
-    let _: &str = TodoListId::SEL;
-    assert_eq!(SidebarId::ID, "sidebar-nav");
+    assert_eq!(html! { (SidebarId) }.into_string(), "sidebar-nav");
+    assert_eq!(SidebarId.sel().0, "#sidebar-nav");
     let _ = sidebar();
     let _ = count();
 

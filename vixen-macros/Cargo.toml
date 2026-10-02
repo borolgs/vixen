@@ -32,3 +32,4 @@ axum-vixen = { path = "../vixen" }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 maud = { workspace = true }
+tokio = { workspace = true }

@@ -12,6 +12,7 @@ mod action;
 mod assets;
 mod fragment;
 mod id;
+mod req_ctx;
 mod route;
 
 /// Declares an htmx endpoint. One struct is the route, the form extractor, and
@@ -363,4 +364,60 @@ pub fn asset(item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn fragment(attr: TokenStream, item: TokenStream) -> TokenStream {
     fragment::expand(attr.into(), item.into()).into()
+}
+
+/// Adds request-local access to an axum extractor.
+///
+/// `Ctx::middleware` extracts the context once per request. Downstream code
+/// reads it with `Ctx::current()`. Tests can set it directly with
+/// `ctx.scope(future)`.
+///
+/// ```
+/// use axum::{
+///     Router,
+///     extract::{FromRef, FromRequestParts, State},
+///     middleware,
+///     routing::get,
+/// };
+/// use vixen::ReqCtx;
+///
+/// #[derive(Clone, FromRef)]
+/// struct AppState {
+///     shop_name: String,
+/// }
+///
+/// #[derive(Clone, FromRequestParts, ReqCtx)]
+/// #[from_request(state(AppState))]
+/// struct Ctx {
+///     #[from_request(via(State))]
+///     shop_name: String,
+/// }
+///
+/// async fn shop_name() -> String {
+///     Ctx::current().shop_name
+/// }
+///
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// let state = AppState { shop_name: "Vixen Goods".into() };
+/// let app: Router = Router::new()
+///     .route("/", get(shop_name))
+///     .layer(middleware::from_fn_with_state(state.clone(), Ctx::middleware))
+///     .with_state(state);
+///
+/// let name = Ctx { shop_name: "Vixen Goods".into() }
+///     .scope(shop_name())
+///     .await;
+/// assert_eq!(name, "Vixen Goods");
+/// # }
+/// ```
+///
+/// The context must implement `Clone` and `FromRequestParts` and cannot be
+/// generic. Spawned Tokio tasks do not inherit it; move a context into them
+/// with `tokio::spawn(Ctx::current().scope(future))`.
+///
+/// The expanded code refers to `::axum`, which must be a direct dependency.
+#[proc_macro_derive(ReqCtx)]
+pub fn req_ctx(item: TokenStream) -> TokenStream {
+    req_ctx::expand(item.into()).into()
 }

@@ -49,6 +49,8 @@ mod href;
 mod id;
 mod partial;
 mod router;
+#[cfg(feature = "testing")]
+pub mod testing;
 pub mod ui;
 
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
@@ -65,7 +67,7 @@ pub use partial::{HxPartial, HxPartialResponse, Part, Parts, Selector};
 pub use router::{LastElementIs, RouterExt};
 
 // Docs live on the definitions, where IDE hover finds them.
-pub use vixen_macros::{action, asset, assets, assets_router, fragment, id, route};
+pub use vixen_macros::{ReqCtx, action, asset, assets, assets_router, fragment, id, route};
 
 pub mod markers {
     //! Type-state markers used by [`HxPartial`](crate::HxPartial).
@@ -81,7 +83,7 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 
 #[doc(hidden)]
 pub mod __private {
-    pub use {serde, serde_json};
+    pub use {serde, serde_json, tokio};
 
     pub use crate::base_path::{base_path, mount};
 }

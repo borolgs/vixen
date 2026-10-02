@@ -32,6 +32,17 @@
         "htmx.org": "4.0.0",
       },
     },
+    "examples/shop": {
+      "name": "shop",
+      "dependencies": {
+        "basecoat-css": "^1.0.2",
+        "htmx.org": "4.0.0",
+      },
+      "devDependencies": {
+        "bun-plugin-tailwind": "^0.1.2",
+        "tailwindcss": "~4.1.14",
+      },
+    },
     "examples/todos": {
       "name": "todos",
       "dependencies": {
@@ -101,6 +112,8 @@
     "counter": ["counter@workspace:examples/counter"],
 
     "htmx.org": ["htmx.org@4.0.0", "", { "bin": { "upgrade-check": "dist/scripts/upgrade-check.js" } }, "sha512-T/171FUY93Kdfp8t+DnHdk45QvKRiBhVhhrwSzrXgUi4pHKvhp77dUA/qg8FAjsFWPIHNbmUuIdCrcVHuiZWng=="],
+
+    "shop": ["shop@workspace:examples/shop"],
 
     "tailwindcss": ["tailwindcss@4.1.18", "", {}, "sha512-4+Z+0yiYyEtUVCScyfHCxOYP06L5Ne+JiHhY2IjR2KWMIWhJOYZKLSGZaP5HkZ8+bY0cxfzwDE5uOmzFXyIwxw=="],
 

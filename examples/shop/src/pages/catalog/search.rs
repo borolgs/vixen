@@ -1,10 +1,8 @@
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use strum::IntoEnumIterator;
 use vixen::{
-    HxAction, SyncStrategy, action, fragment,
-    hx::SwapOption,
+    HxAction, Page, Paged, PagedAction, SyncStrategy, action, fragment,
     maud::{Markup, html},
-    partial,
 };
 
 use crate::{
@@ -13,13 +11,36 @@ use crate::{
         catalog::{
             DETAIL,
             product_art::{ArtSize, art},
-            queries::{CatalogPage, Product, search_products},
+            queries::{Product, search_products},
             quick_view::QuickViewPath,
         },
         shared::{TOASTER, price},
     },
     state::ctx,
 };
+
+pub async fn catalog_index() -> Markup {
+    let search = SearchCatalog::default();
+    let page = load(&search).await;
+
+    html! {
+        (catalog_search_form(&search))
+        @match page {
+            Ok(page) => { (CATALOG.render(&search, page)) }
+            Err(_) => {
+                (CATALOG.shell(html! {
+                    li class="col-span-full" {
+                        div class="alert" data-variant="destructive" {
+                            h3 { "The shelf is empty" }
+                            section { p { "The database did not answer." } }
+                        }
+                    }
+                }))
+            }
+        }
+        (DETAIL.shell())
+    }
+}
 
 #[derive(Clone, Default)]
 #[action("/catalog/search")]
@@ -32,50 +53,86 @@ pub struct SearchCatalog {
     pub after: Option<u32>,
 }
 
-pub async fn search(search: SearchCatalog) -> Response {
-    let page = ctx()
+impl PagedAction for SearchCatalog {
+    type Cursor = u32;
+
+    fn cursor(&self) -> Option<u32> {
+        self.after
+    }
+
+    fn next(&self, after: u32) -> HxAction {
+        // TODO: Let `#[action]` build this from `self` via `Serialize`.
+        SearchCatalog::action()
+            .q(&self.q)
+            .sort(self.sort)
+            .maybe_category(self.category)
+            .after(after)
+            .hx()
+    }
+}
+
+const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", card)
+    .list(|id, rows| {
+        html! {
+            ul id=(id) class="mt-6 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-4" {
+                (rows)
+            }
+        }
+    })
+    .empty(|_| {
+        html! {
+            li class="text-muted-foreground col-span-full py-12 text-center text-sm" {
+                "Nothing on the shelf matches."
+            }
+        }
+    })
+    .loading(|next| {
+        html! {
+            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
+                hx-action=(next)
+            {
+                "Loading…"
+            }
+        }
+    })
+    .retry(|again| {
+        html! {
+            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
+                hx-action=(again)
+            {
+                "The rest did not load. "
+                button.btn type="button" data-variant="ghost" data-size="sm" { "Try again" }
+            }
+        }
+    });
+
+pub async fn catalog_search(search: SearchCatalog) -> Response {
+    let page = load(&search)
+        .await
+        .map_err(|_| TOASTER.error("That didn't go through", "Try again in a moment."));
+
+    CATALOG.respond(&search, page)
+}
+
+async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, u32>> {
+    ctx()
         .db
         .call({
             let search = search.clone();
             move |conn| search_products(conn, &search)
         })
-        .await;
-
-    match (page, search.after) {
-        (Ok(page), None) => partial!(catalog_grid(&page, &search)).into_response(),
-        (Ok(page), Some(_)) => {
-            partial!((CatalogGridId, SwapOption::BeforeEnd) => cards(&page, &search))
-                .into_response()
-        }
-        (Err(err), after) => {
-            tracing::error!("search catalog: {err:#}");
-
-            let toast = TOASTER.error("That didn't go through", "Try again in a moment.");
-
-            match after {
-                Some(after) => partial!(
-                    toast,
-                    (CatalogGridId, SwapOption::BeforeEnd) => retry(&search, after),
-                )
-                .into_response(),
-                None => toast.into_response(),
-            }
-        }
-    }
+        .await
+        .inspect_err(|err| tracing::error!("search catalog: {err:#}"))
 }
 
-// A radio fires `input` as well as `change`, and a text input fires `change` on blur.
-const SEARCH_TRIGGER: &str =
-    "submit, change[target.type!='search'], input[target.type=='search'] delay:300ms";
-
 #[fragment]
-pub fn catalog_search(search: &SearchCatalog) -> Markup {
+pub fn catalog_search_form(search: &SearchCatalog) -> Markup {
     let chip = "btn has-checked:bg-primary has-checked:text-primary-foreground \
         has-focus-visible:ring-ring/50 has-focus-visible:ring-[3px]";
 
     html! {
         form id=(Self) class="mt-8 flex flex-wrap items-center gap-3"
-            hx-action=(SearchCatalog::action().hx().trigger(SEARCH_TRIGGER).sync(SyncStrategy::Replace))
+            hx-action=(CATALOG.search(SearchCatalog::action()))
         {
             fieldset class="flex flex-wrap gap-2" {
                 legend class="sr-only" { "Category" }
@@ -102,65 +159,6 @@ pub fn catalog_search(search: &SearchCatalog) -> Markup {
             }
         }
     }
-}
-
-#[fragment]
-pub fn catalog_grid(page: &CatalogPage, search: &SearchCatalog) -> Markup {
-    html! {
-        ul id=(Self) class="mt-6 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-4" {
-            @if page.cards.is_empty() {
-                li class="text-muted-foreground col-span-full py-12 text-center text-sm" {
-                    "Nothing on the shelf matches."
-                }
-            }
-            (cards(page, search))
-        }
-    }
-}
-
-/// One page of cards, then the sentinel that asks for the next.
-fn cards(page: &CatalogPage, search: &SearchCatalog) -> Markup {
-    html! {
-        @for product in &page.cards { (card(product)) }
-        @if let Some(after) = page.next {
-            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
-                hx-action=(next_page(search, after).trigger("intersect once"))
-            {
-                "Loading…"
-            }
-        }
-    }
-}
-
-/// Stands in for the sentinel when the page `after` failed to load.
-fn retry(search: &SearchCatalog, after: u32) -> Markup {
-    html! {
-        li class="text-muted-foreground col-span-full py-6 text-center text-sm" {
-            "The rest did not load. "
-            button.btn data-variant="ghost" data-size="sm"
-                hx-action=(next_page(search, after).target("closest li"))
-            {
-                "Try again"
-            }
-        }
-    }
-}
-
-/// The same search, continued from `after`. The row that asks deletes itself.
-fn next_page(search: &SearchCatalog, after: u32) -> HxAction {
-    let action = SearchCatalog::action()
-        .q(&search.q)
-        .sort(search.sort)
-        .after(after);
-    let action = match search.category {
-        Some(category) => action.category(category),
-        None => action,
-    };
-
-    action
-        .hx()
-        .swap(SwapOption::Delete)
-        .sync(SyncStrategy::Abort.on(CatalogSearchId))
 }
 
 fn card(product: &Product) -> Markup {
@@ -209,7 +207,7 @@ mod tests {
             ..Default::default()
         };
 
-        let response = Ctx { db }.scope(search(query)).await;
+        let response = Ctx { db }.scope(catalog_search(query)).await;
 
         let doc = testing::html(response).await;
 

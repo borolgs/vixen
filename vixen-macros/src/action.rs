@@ -83,7 +83,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         // TODO: Recognize only unqualified or canonical standard-library `String` /
         // `Option<T>` paths (with exactly one type argument for `Option`); matching
         // only the final segment also catches qualified user-defined types.
-        let (field_type, val_expr) = match field_type {
+        let (field_type, val_expr, is_option) = match field_type {
             // String -> impl Into<String>
             Type::Path(type_path)
                 if type_path
@@ -95,6 +95,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                 (
                     quote! { impl ::std::convert::Into<::std::string::String> },
                     quote! { ::vixen::__private::serde_json::Value::String(::std::convert::Into::into(val)) },
+                    false,
                 )
             }
             // Option<T> -> T
@@ -114,17 +115,20 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                         (
                             quote! { impl ::std::convert::Into<::std::string::String> },
                             quote! { ::vixen::__private::serde_json::Value::String(::std::convert::Into::into(val)) },
+                            true,
                         )
                     }
                     _ => (
                         arg_type.to_token_stream(),
                         quote! { ::vixen::__private::serde_json::to_value(val).unwrap_or(::vixen::__private::serde_json::Value::Null) },
+                        true,
                     ),
                 }
             }
             _ => (
                 field_type.to_token_stream(),
                 quote! { ::vixen::__private::serde_json::to_value(val).unwrap_or(::vixen::__private::serde_json::Value::Null) },
+                false,
             ),
         };
 
@@ -137,6 +141,27 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
 
         action_setters.push(setter);
+
+        // Option<T> -> also fn maybe_field_name(val: Option<T>) {}
+        if is_option {
+            let maybe_name = format_ident!("maybe_{}", field_name, span = field_name.span());
+            let maybe_doc = format!(
+                "Sets `{}` when `Some`. `None` is a no-op and won't clear an earlier `.{0}(..)`, so don't chain both.",
+                key.value()
+            );
+            let maybe_setter = quote_spanned! { field_name.span() =>
+                #[doc = #maybe_doc]
+                #[allow(unused)]
+                #vis fn #maybe_name(self, val: ::std::option::Option<#field_type>) -> Self {
+                    match val {
+                        ::std::option::Option::Some(val) => self.#field_name(val),
+                        ::std::option::Option::None => self,
+                    }
+                }
+            };
+
+            action_setters.push(maybe_setter);
+        }
     }
 
     let doc = format!("Route: `POST {}`", path.value());

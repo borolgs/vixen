@@ -47,6 +47,7 @@ mod base_path;
 mod fragment;
 mod href;
 mod id;
+mod paged;
 mod partial;
 mod router;
 #[cfg(feature = "testing")]
@@ -61,6 +62,7 @@ pub use fragment::Fragment;
 pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;
+pub use paged::{Page, Paged, PagedAction};
 pub use vixen_bundler::{Config, build};
 
 pub use partial::{HxPartial, HxPartialResponse, Part, Parts, Selector};

@@ -16,6 +16,6 @@ const DETAIL: Drawer = Drawer::new("catalog-detail").content_class("px-4 pb-4");
 pub fn router() -> Router<AppState> {
     Router::new()
         .view(page::catalog)
-        .action(search::search)
+        .action(search::catalog_search)
         .view(quick_view::quick_view)
 }

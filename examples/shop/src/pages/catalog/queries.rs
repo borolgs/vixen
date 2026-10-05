@@ -1,4 +1,5 @@
 use rusqlite::{Connection, OptionalExtension, Row};
+use vixen::Page;
 
 use crate::{
     models::{Category, ProductSort},
@@ -22,11 +23,6 @@ pub struct Material {
     pub care: String,
 }
 
-pub struct CatalogPage {
-    pub cards: Vec<Product>,
-    pub next: Option<u32>,
-}
-
 const PRODUCT_COLUMNS: &str = "id, slug, name, tagline, category, price_cents, in_stock";
 
 fn product(row: &Row) -> rusqlite::Result<Product> {
@@ -41,7 +37,10 @@ fn product(row: &Row) -> rusqlite::Result<Product> {
     })
 }
 
-pub fn search_products(conn: &Connection, search: &SearchCatalog) -> anyhow::Result<CatalogPage> {
+pub fn search_products(
+    conn: &Connection,
+    search: &SearchCatalog,
+) -> anyhow::Result<Page<Product, u32>> {
     let pattern = search
         .q
         .trim()
@@ -67,21 +66,21 @@ pub fn search_products(conn: &Connection, search: &SearchCatalog) -> anyhow::Res
              limit ?3 offset ?4"
     ))?;
 
-    let mut cards = stmt
+    let mut items = stmt
         .query_map(
             (search.category, &pattern, PAGE_SIZE as i64 + 1, offset),
             product,
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let next = if cards.len() > PAGE_SIZE {
-        cards.truncate(PAGE_SIZE);
+    let next = if items.len() > PAGE_SIZE {
+        items.truncate(PAGE_SIZE);
         Some(offset + PAGE_SIZE as u32)
     } else {
         None
     };
 
-    Ok(CatalogPage { cards, next })
+    Ok(Page { items, next })
 }
 
 pub fn product_by_slug(conn: &Connection, slug: &str) -> anyhow::Result<Option<Product>> {

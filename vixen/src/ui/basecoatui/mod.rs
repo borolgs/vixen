@@ -37,12 +37,14 @@
 //!
 //! `examples/components` has the full wiring.
 
+mod combobox;
 mod dialog;
 mod drawer;
 mod head;
 mod modal;
 mod toast;
 
+pub use combobox::Combobox;
 pub use dialog::Dialog;
 pub use drawer::{Drawer, Side};
 pub use head::HEAD;

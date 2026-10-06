@@ -3,7 +3,7 @@ use vixen::Page;
 
 use crate::models::{After, Category, ProductSort};
 
-pub const PAGE_SIZE: usize = 8;
+pub const PAGE_SIZE: usize = 10;
 
 pub struct ProductQuery {
     pub category: Option<Category>,
@@ -20,14 +20,25 @@ pub struct Product {
     pub category: Category,
     pub price_cents: i64,
     pub in_stock: bool,
+    pub materials: String,
 }
 
-pub struct Material {
+pub struct ProductInput {
+    pub slug: String,
     pub name: String,
-    pub care: String,
+    pub tagline: String,
+    pub category: Category,
+    pub price_cents: i64,
+    pub in_stock: bool,
 }
 
-const PRODUCT_COLUMNS: &str = "id, slug, name, tagline, category, price_cents, in_stock";
+// The inner ORDER BY makes group_concat deterministic.
+const PRODUCT_COLUMNS: &str = "id, slug, name, tagline, category, price_cents, in_stock,
+    coalesce((select group_concat(name, ', ') from (
+        select m.name from product_materials pm
+        join materials m on m.id = pm.material_id
+        where pm.product_id = products.id
+        order by m.name)), '')";
 
 fn product(row: &Row) -> rusqlite::Result<Product> {
     Ok(Product {
@@ -38,6 +49,7 @@ fn product(row: &Row) -> rusqlite::Result<Product> {
         category: row.get(4)?,
         price_cents: row.get(5)?,
         in_stock: row.get(6)?,
+        materials: row.get(7)?,
     })
 }
 
@@ -66,7 +78,8 @@ pub fn search_products(
         "select {PRODUCT_COLUMNS}, cast({key} as text) from products
              where (?1 is null or category = ?1)
                and (name like '%' || ?2 || '%' escape '\\'
-                 or tagline like '%' || ?2 || '%' escape '\\')
+                 or tagline like '%' || ?2 || '%' escape '\\'
+                 or slug like '%' || ?2 || '%' escape '\\')
                and (?4 is null or ({key}, id) > ({after_key}, ?4))
              order by {key}, id
              limit ?5"
@@ -81,7 +94,7 @@ pub fn search_products(
                 after.map(|after| after.id),
                 PAGE_SIZE as i64 + 1,
             ),
-            |row| Ok((product(row)?, row.get::<_, String>(7)?)),
+            |row| Ok((product(row)?, row.get::<_, String>(8)?)),
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
@@ -101,11 +114,11 @@ pub fn search_products(
     })
 }
 
-pub fn product_by_slug(conn: &Connection, slug: &str) -> anyhow::Result<Option<Product>> {
+pub fn product_by_id(conn: &Connection, id: i64) -> anyhow::Result<Option<Product>> {
     let product = conn
         .query_row(
-            &format!("select {PRODUCT_COLUMNS} from products where slug = ?1"),
-            (slug,),
+            &format!("select {PRODUCT_COLUMNS} from products where id = ?1"),
+            (id,),
             product,
         )
         .optional()?;
@@ -113,21 +126,58 @@ pub fn product_by_slug(conn: &Connection, slug: &str) -> anyhow::Result<Option<P
     Ok(product)
 }
 
-pub fn product_materials(conn: &Connection, product_id: i64) -> anyhow::Result<Vec<Material>> {
-    let mut stmt = conn.prepare(
-        "select name, care from materials
-             where id in (select material_id from product_materials where product_id = ?1)
-             order by name",
+/// Whether a product other than `except` already uses `slug`.
+pub fn slug_taken(conn: &Connection, slug: &str, except: Option<i64>) -> anyhow::Result<bool> {
+    let taken = conn
+        .query_row(
+            "select 1 from products where slug = ?1 and id is not ?2",
+            (slug, except),
+            |_| Ok(()),
+        )
+        .optional()?
+        .is_some();
+
+    Ok(taken)
+}
+
+pub fn insert_product(conn: &Connection, input: &ProductInput) -> anyhow::Result<()> {
+    conn.execute(
+        "insert into products (slug, name, tagline, category, price_cents, in_stock)
+             values (?1, ?2, ?3, ?4, ?5, ?6)",
+        (
+            &input.slug,
+            &input.name,
+            &input.tagline,
+            input.category,
+            input.price_cents,
+            input.in_stock,
+        ),
     )?;
 
-    let materials = stmt
-        .query_map((product_id,), |row| {
-            Ok(Material {
-                name: row.get(0)?,
-                care: row.get(1)?,
-            })
-        })?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(())
+}
 
-    Ok(materials)
+pub fn update_product(conn: &Connection, id: i64, input: &ProductInput) -> anyhow::Result<()> {
+    conn.execute(
+        "update products
+             set slug = ?2, name = ?3, tagline = ?4, category = ?5, price_cents = ?6, in_stock = ?7
+             where id = ?1",
+        (
+            id,
+            &input.slug,
+            &input.name,
+            &input.tagline,
+            input.category,
+            input.price_cents,
+            input.in_stock,
+        ),
+    )?;
+
+    Ok(())
+}
+
+pub fn delete_product(conn: &Connection, id: i64) -> anyhow::Result<()> {
+    conn.execute("delete from products where id = ?1", (id,))?;
+
+    Ok(())
 }

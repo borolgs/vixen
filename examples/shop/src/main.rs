@@ -32,6 +32,7 @@ async fn main() {
 
     let router = Router::new()
         .merge(pages::catalog::router())
+        .merge(pages::admin_products::router())
         .merge(vixen::assets_router!())
         .layer(middleware::from_fn_with_state(
             state.clone(),

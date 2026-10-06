@@ -1,20 +1,19 @@
 use axum::response::Response;
 use strum::IntoEnumIterator;
 use vixen::{
-    HxAction, Page, Paged, PagedAction, SyncStrategy, action, fragment,
+    Page, fragment,
     maud::{Markup, html},
 };
 
 use crate::{
-    models::{Category, ProductSort},
+    models::{After, Category, ProductSort},
     pages::{
         catalog::{
-            DETAIL,
-            product_art::{ArtSize, art},
-            queries::{Product, search_products},
-            quick_view::QuickViewPath,
+            queries::{Product, ProductQuery, search_products},
+            routes::SearchCatalog,
+            ui::{CATALOG, DETAIL},
         },
-        shared::{TOASTER, price},
+        shared::TOASTER,
     },
     state::ctx,
 };
@@ -42,70 +41,6 @@ pub async fn catalog_index() -> Markup {
     }
 }
 
-#[derive(Clone, Default)]
-#[action("/catalog/search")]
-pub struct SearchCatalog {
-    pub category: Option<Category>,
-    #[serde(default)]
-    pub q: String,
-    #[serde(default)]
-    pub sort: ProductSort,
-    pub after: Option<u32>,
-}
-
-impl PagedAction for SearchCatalog {
-    type Cursor = u32;
-
-    fn cursor(&self) -> Option<u32> {
-        self.after
-    }
-
-    fn next(&self, after: u32) -> HxAction {
-        // TODO: Let `#[action]` build this from `self` via `Serialize`.
-        SearchCatalog::action()
-            .q(&self.q)
-            .sort(self.sort)
-            .maybe_category(self.category)
-            .after(after)
-            .hx()
-    }
-}
-
-const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", card)
-    .list(|id, rows| {
-        html! {
-            ul id=(id) class="mt-6 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-4" {
-                (rows)
-            }
-        }
-    })
-    .empty(|_| {
-        html! {
-            li class="text-muted-foreground col-span-full py-12 text-center text-sm" {
-                "Nothing on the shelf matches."
-            }
-        }
-    })
-    .loading(|next| {
-        html! {
-            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
-                hx-action=(next)
-            {
-                "Loading…"
-            }
-        }
-    })
-    .retry(|again| {
-        html! {
-            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
-                hx-action=(again)
-            {
-                "The rest did not load. "
-                button.btn type="button" data-variant="ghost" data-size="sm" { "Try again" }
-            }
-        }
-    });
-
 pub async fn catalog_search(search: SearchCatalog) -> Response {
     let page = load(&search)
         .await
@@ -114,13 +49,17 @@ pub async fn catalog_search(search: SearchCatalog) -> Response {
     CATALOG.respond(&search, page)
 }
 
-async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, u32>> {
+async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, After>> {
+    let query = ProductQuery {
+        category: search.category,
+        q: search.q.clone(),
+        sort: search.sort,
+        after: search.after.clone(),
+    };
+
     ctx()
         .db
-        .call({
-            let search = search.clone();
-            move |conn| search_products(conn, &search)
-        })
+        .call(move |conn| search_products(conn, &query))
         .await
         .inspect_err(|err| tracing::error!("search catalog: {err:#}"))
 }
@@ -155,33 +94,6 @@ pub fn catalog_search_form(search: &SearchCatalog) -> Markup {
             select class="select w-48" name=(SearchCatalog::FIELD.sort) aria-label="Sort" {
                 @for sort in ProductSort::iter() {
                     option value=(sort.as_ref()) selected[sort == search.sort] { (sort.label()) }
-                }
-            }
-        }
-    }
-}
-
-fn card(product: &Product) -> Markup {
-    html! {
-        li class="card gap-4 overflow-hidden pt-0" {
-            (art(product.category, ArtSize::Card))
-            header {
-                h3 { (product.name) }
-                p class="line-clamp-2" { (product.tagline) }
-            }
-            section class="flex items-center gap-2" {
-                span.badge data-variant="outline" { (product.category.label()) }
-                @if !product.in_stock {
-                    span.badge data-variant="secondary" { "Sold out" }
-                }
-            }
-            footer class="mt-auto items-center justify-between gap-2" {
-                span class="mr-auto font-medium" { (price(product.price_cents)) }
-                button.btn data-variant="outline" data-size="sm"
-                    hx-get=(QuickViewPath { slug: product.slug.clone() })
-                    hx-sync=(SyncStrategy::QueueLast.on(DETAIL))
-                {
-                    "Quick view"
                 }
             }
         }

@@ -1,4 +1,20 @@
-//! Helpers for inspecting response bodies in tests.
+//! Helpers for inspecting response bodies in tests, behind the `testing`
+//! feature.
+//!
+//! ```
+//! use axum::response::IntoResponse;
+//! use vixen::{maud::html, testing};
+//!
+//! # #[tokio::main(flavor = "current_thread")]
+//! # async fn main() {
+//! let response = html! { ul id="todos" { li { "milk" } } }.into_response();
+//!
+//! let doc = testing::html(response).await;
+//! assert!(testing::has(&doc, "#todos li"));
+//! # }
+//! ```
+//!
+//! [`scraper`] is re-exported for other queries.
 
 use axum::{
     body::{Body, to_bytes},

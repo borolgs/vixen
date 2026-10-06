@@ -10,10 +10,13 @@
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
+//! | paginate search results on scroll | [`Paged`], [`PagedAction`], [`Page`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
 //! | resolve a static file to its content-hashed URL | [`asset!`] |
 //! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
-//! | show a Basecoat toast from a handler | [`ui`], behind the `basecoatui` feature |
+//! | access an extractor anywhere in a request | [`#[derive(ReqCtx)]`](derive@ReqCtx) |
+//! | render Basecoat toasts, drawers, dialogs and comboboxes | [`ui`], behind the `basecoatui` feature |
+//! | inspect response bodies in tests | `vixen::testing`, behind the `testing` feature |
 //!
 //! ## Re-exports
 //!

@@ -62,10 +62,11 @@ mod route;
 ///   [`RouterExt::action`] infers the route from the last handler argument. The
 ///   macro also adds `Route: POST /path` to the struct's docs.
 /// - `Name::action()`, which returns a `NameAction` builder with one setter per
-///   field. `String` setters accept `impl Into<String>`, `Option<T>` setters
-///   accept `T`, and other setters use the declared type, which must implement
-///   `Serialize`. Fields without a value are omitted from `hx-vals`. The
-///   rendered path is prefixed with [`base_path!`].
+///   field. `String` setters accept `impl Into<String>`; `Option<T>` setters
+///   accept `T` and also have a `maybe_<field>(Option<T>)` variant that ignores
+///   `None`. Other setters use the declared type, which must implement
+///   `Serialize`. Unset fields are omitted from `hx-vals`. The rendered path
+///   is prefixed with [`base_path!`].
 /// - `NameAction`, which renders as the value of `hx-action`. Call `.hx()` to
 ///   add `trigger`, `target`, `swap`, or `sync` through [`HxAction`].
 /// - `Name::FIELD`, a set of `&'static str` field names for form controls.

@@ -1,5 +1,3 @@
-#![allow(missing_docs)] // TODO: document the public pagination API
-
 //! Helpers for cursor-paginated search results.
 //!
 //! [`Paged`] renders initial results, appends subsequent pages, and handles retry
@@ -18,12 +16,20 @@ const SEARCH_TRIGGER: &str =
     "submit, change[target.type!='search'], input[target.type=='search'] delay:300ms";
 const RETRY_TRIGGER: &str = "click from:'find button'";
 
+/// A page of cursor-paginated results.
 pub struct Page<Item, Cursor> {
+    /// Results in this page.
     pub items: Vec<Item>,
+    /// Cursor for the following page, or `None` if this is the last page.
     pub next: Option<Cursor>,
 }
 
+/// An action that fetches pages for a [`Paged`] list.
+///
+/// Implement this for the [`#[action]`](macro@crate::action) request used by
+/// the list's search form.
 pub trait PagedAction {
+    /// The cursor passed between consecutive requests.
     type Cursor;
 
     /// Returns `None` for the initial page.
@@ -33,6 +39,62 @@ pub trait PagedAction {
     fn next(&self, cursor: Self::Cursor) -> HxAction;
 }
 
+/// Search results that load the next page when scrolled into view.
+///
+/// Declare a `Paged` as a `const`. [`search`](Self::search) configures its form
+/// action, [`render`](Self::render) renders results, and
+/// [`respond`](Self::respond) handles both first and subsequent pages.
+///
+/// ```
+/// use axum::response::Response;
+/// use vixen::{
+///     HxAction, Page, Paged, PagedAction, Part, action,
+///     maud::{Markup, html},
+/// };
+///
+/// #[action("/todos/search")]
+/// struct SearchTodos {
+///     q: String,
+///     after: Option<u32>,
+/// }
+///
+/// impl PagedAction for SearchTodos {
+///     type Cursor = u32;
+///
+///     fn cursor(&self) -> Option<u32> {
+///         self.after
+///     }
+///
+///     fn next(&self, after: u32) -> HxAction {
+///         SearchTodos::action().q(&self.q).after(after).hx()
+///     }
+/// }
+///
+/// const TODOS: Paged<SearchTodos, String> =
+///     Paged::new("todos", |title| html! { div { (title) } });
+///
+/// fn view(search: &SearchTodos, page: Page<String, u32>) -> Markup {
+///     html! {
+///         form hx-action=(TODOS.search(SearchTodos::action())) {
+///             input type="search" name=(SearchTodos::FIELD.q);
+///         }
+///         (TODOS.render(search, page))
+///     }
+/// }
+///
+/// async fn search(search: SearchTodos) -> Response {
+///     let page = load(&search).await;
+///     TODOS.respond(&search, page)
+/// }
+/// # async fn load(_: &SearchTodos) -> Result<Page<String, u32>, Part> {
+/// #     Ok(Page { items: Vec::new(), next: None })
+/// # }
+/// ```
+///
+/// The first page includes the list container; following pages render only new
+/// items and, when present, another loading sentinel. The defaults use `div`s.
+/// Use [`list`](Self::list), [`empty`](Self::empty),
+/// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, Markup) -> Markup,
@@ -45,6 +107,7 @@ pub struct Paged<PAction, Item> {
 }
 
 impl<PAction: PagedAction, Item> Paged<PAction, Item> {
+    /// Creates a paged list with a container ID and item renderer.
     pub const fn new(id: &'static str, item: fn(&Item) -> Markup) -> Self {
         Self {
             id,
@@ -65,11 +128,15 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
         }
     }
 
+    /// Sets the list container renderer.
+    ///
+    /// The root element must use the provided ID and contain the rows.
     pub const fn list(mut self, list: fn(&'static str, Markup) -> Markup) -> Self {
         self.list = list;
         self
     }
 
+    /// Sets the renderer for an initial page with no items.
     pub const fn empty(mut self, empty: fn(&PAction) -> Markup) -> Self {
         self.empty = empty;
         self

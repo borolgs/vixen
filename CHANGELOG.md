@@ -6,7 +6,12 @@
 
 - `#[id]` on a one-field tuple struct: a dynamic id, `TodoId(7)` is `todo-7`.
 - `#[fragment(CartId)]` and `#[fragment(TodoId(todo.id))]`: a fragment with an existing `#[id]` struct, static or dynamic.
-- `ui::basecoatui::Combobox`: a combobox filtered in the browser or searched on the server.
+- `ui::basecoatui::Combobox`, with client-side filtering or server-side search.
+- `Paged` for cursor-based pagination on scroll.
+- `#[derive(ReqCtx)]` for request-local access to an axum extractor.
+- A `testing` feature with response body helpers.
+- `maybe_<field>(Option<T>)` setters on `#[action]` builders.
+- `examples/shop`, demonstrating `Paged`, `Combobox` and `ReqCtx`.
 
 ### Changed
 

@@ -7,8 +7,9 @@
 //! build actions for subsequent pages.
 
 use axum::response::{IntoResponse, Response};
-use axum_htmx::{HxReswap, SwapOption};
+use axum_htmx::{HxEvent, HxReswap, SwapOption};
 use maud::{Markup, html};
+use serde_json::json;
 
 use crate::{HxAction, HxPartial, Parts, Selector, SyncStrategy};
 
@@ -106,13 +107,26 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
     /// Configures an action for a search form.
     ///
     /// With the default trigger, text queries must use `input type="search"`.
+    /// The form also searches again on [`refresh`](Self::refresh).
     pub fn search(&self, action: impl Into<HxAction>) -> HxAction {
         action
             .into()
-            .trigger(self.search_trigger)
+            .trigger(format!(
+                "{}, {} from:document",
+                self.search_trigger,
+                self.refresh_event()
+            ))
             .sync(SyncStrategy::Replace)
             .target(self.sel())
             .swap(SwapOption::OuterHtml)
+    }
+
+    /// Returns an htmx event that repeats the form's search from the first page.
+    pub fn refresh(&self) -> HxEvent {
+        HxEvent {
+            name: self.refresh_event(),
+            data: Some(json!({})),
+        }
     }
 
     /// Renders the complete list for an initial page or rows for a subsequent page.
@@ -161,6 +175,10 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
 
     fn sel(&self) -> Selector {
         Selector(format!("#{}", self.id))
+    }
+
+    fn refresh_event(&self) -> String {
+        format!("{}:refresh", self.id)
     }
 }
 

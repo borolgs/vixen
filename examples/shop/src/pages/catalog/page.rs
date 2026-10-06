@@ -1,12 +1,9 @@
-use vixen::{
-    maud::{Markup, html},
-    route,
+use vixen::maud::{Markup, html};
+
+use crate::pages::{
+    catalog::{list::catalog_index, routes::CatalogPath},
+    shared::layout,
 };
-
-use crate::pages::{catalog::search::catalog_index, shared::layout};
-
-#[route("/")]
-pub struct CatalogPath;
 
 pub async fn catalog(_: CatalogPath) -> Markup {
     layout(

@@ -1,6 +1,83 @@
-use vixen::maud::{Markup, html};
+use vixen::{
+    Paged, SyncStrategy,
+    maud::{Markup, html},
+    ui::basecoatui::Drawer,
+};
 
-use crate::models::Category;
+use crate::{
+    models::Category,
+    pages::{
+        catalog::{
+            queries::Product,
+            routes::{QuickViewPath, SearchCatalog},
+        },
+        shared::price,
+    },
+};
+
+pub const DETAIL: Drawer = Drawer::new("catalog-detail").content_class("px-4 pb-4");
+
+pub const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", card)
+    .list(|id, rows| {
+        html! {
+            ul id=(id) class="mt-6 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-4" {
+                (rows)
+            }
+        }
+    })
+    .empty(|_| {
+        html! {
+            li class="text-muted-foreground col-span-full py-12 text-center text-sm" {
+                "Nothing on the shelf matches."
+            }
+        }
+    })
+    .loading(|next| {
+        html! {
+            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
+                hx-action=(next)
+            {
+                "Loading…"
+            }
+        }
+    })
+    .retry(|again| {
+        html! {
+            li class="text-muted-foreground col-span-full py-6 text-center text-sm"
+                hx-action=(again)
+            {
+                "The rest did not load. "
+                button.btn type="button" data-variant="ghost" data-size="sm" { "Try again" }
+            }
+        }
+    });
+
+fn card(product: &Product) -> Markup {
+    html! {
+        li class="card gap-4 overflow-hidden pt-0" {
+            (art(product.category, ArtSize::Card))
+            header {
+                h3 { (product.name) }
+                p class="line-clamp-2" { (product.tagline) }
+            }
+            section class="flex items-center gap-2" {
+                span.badge data-variant="outline" { (product.category.label()) }
+                @if !product.in_stock {
+                    span.badge data-variant="secondary" { "Sold out" }
+                }
+            }
+            footer class="mt-auto items-center justify-between gap-2" {
+                span class="mr-auto font-medium" { (price(product.price_cents)) }
+                button.btn data-variant="outline" data-size="sm"
+                    hx-get=(QuickViewPath { slug: product.slug.clone() })
+                    hx-sync=(SyncStrategy::QueueLast.on(DETAIL))
+                {
+                    "Quick view"
+                }
+            }
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum ArtSize {

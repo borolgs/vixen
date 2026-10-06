@@ -1,25 +1,17 @@
 use axum::response::{IntoResponse, Response};
-use vixen::{
-    maud::{Markup, html},
-    route,
-};
+use vixen::maud::{Markup, html};
 
 use crate::{
     pages::{
         catalog::{
-            DETAIL,
-            product_art::{ArtSize, art},
             queries::{Material, Product, product_by_slug, product_materials},
+            routes::QuickViewPath,
+            ui::{ArtSize, DETAIL, art},
         },
         shared::{TOASTER, price},
     },
     state::ctx,
 };
-
-#[route("/catalog/{slug}")]
-pub struct QuickViewPath {
-    pub slug: String,
-}
 
 pub async fn quick_view(QuickViewPath { slug }: QuickViewPath) -> Response {
     let found = ctx()

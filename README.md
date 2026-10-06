@@ -289,7 +289,7 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 | crate | what |
 |---|---|
 | [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, the bundler's `build` and `Config`, plus the macros |
-| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[route]`][route], [`#[id]`][id], [`#[fragment]`][fragment], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
+| [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[route]`][route], [`#[id]`][id], [`#[fragment]`][fragment], [`#[derive(ReqCtx)]`][req-ctx], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
 | [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun and copies static files under hashed names |
 
 ## Examples
@@ -306,12 +306,17 @@ dialog, styled with Tailwind.
 [`examples/config`][config-example] — demonstrates `Config::base_path`,
 `mount!`, and prefixed action, asset, and page links.
 
+[`examples/shop`][shop] — a catalog and two admin pages over in-memory SQLite,
+with cursor-paginated [`Paged`][paged] lists, client-filtered and
+server-searched comboboxes, and request-local database access through `ReqCtx`.
+
 ```bash
 bun install                      # once, for the frontend deps
 cargo run -p counter             # http://127.0.0.1:4002/
 cargo run -p todos               # http://127.0.0.1:4001/
 cargo run -p components          # http://127.0.0.1:4003/
 cargo run -p config              # http://127.0.0.1:4004/config/
+cargo run -p shop                # http://127.0.0.1:4005/
 ```
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
@@ -320,6 +325,8 @@ cargo run -p config              # http://127.0.0.1:4004/config/
 [id]: https://docs.rs/axum-vixen/latest/vixen/attr.id.html
 [fragment]: https://docs.rs/axum-vixen/latest/vixen/attr.fragment.html
 [partial]: https://docs.rs/axum-vixen/latest/vixen/macro.partial.html
+[paged]: https://docs.rs/axum-vixen/latest/vixen/struct.Paged.html
+[req-ctx]: https://docs.rs/axum-vixen/latest/vixen/derive.ReqCtx.html
 [assets]: https://docs.rs/axum-vixen/latest/vixen/macro.assets.html
 [asset]: https://docs.rs/axum-vixen/latest/vixen/macro.asset.html
 [assets_router]: https://docs.rs/axum-vixen/latest/vixen/macro.assets_router.html
@@ -334,3 +341,4 @@ cargo run -p config              # http://127.0.0.1:4004/config/
 [todos]: https://github.com/borolgs/vixen/tree/main/examples/todos
 [components]: https://github.com/borolgs/vixen/tree/main/examples/components
 [config-example]: https://github.com/borolgs/vixen/tree/main/examples/config
+[shop]: https://github.com/borolgs/vixen/tree/main/examples/shop

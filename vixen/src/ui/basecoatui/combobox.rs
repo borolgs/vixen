@@ -1,5 +1,3 @@
-#![allow(missing_docs)]
-
 use maud::{Markup, Render, html};
 
 use crate::HxAction;
@@ -11,6 +9,20 @@ const SEARCH_TRIGGER: &str = "input changed delay:300ms";
 /// The hidden input named `field` contains the selected option's `data-value`,
 /// or a JSON array in [`multiple`](Self::multiple) mode. With
 /// [`search`](Self::search), selections are `{value, label}` objects instead.
+///
+/// ```
+/// use vixen::{maud::html, ui::basecoatui::Combobox};
+///
+/// let category = Combobox::new("category", "category")
+///     .value("kitchen")
+///     .options(html! {
+///         div role="option" data-value="kitchen" { "Kitchen" }
+///         div role="option" data-value="textiles" { "Textiles" }
+///     });
+///
+/// let form = html! { form { (category) } };
+/// # assert!(form.into_string().contains(r#"name="category" value="kitchen""#));
+/// ```
 ///
 /// For paginated options, pass [`Paged::search`](crate::Paged::search) to
 /// [`search`](Self::search) and [`Paged::render`](crate::Paged::render) to
@@ -45,6 +57,7 @@ impl Combobox {
         }
     }
 
+    /// Enables multiple selection.
     pub fn multiple(mut self) -> Self {
         self.multiple = true;
         self
@@ -66,6 +79,7 @@ impl Combobox {
         self
     }
 
+    /// Sets the text input's placeholder.
     pub fn placeholder(mut self, text: &'static str) -> Self {
         self.placeholder = Some(text);
         self
@@ -77,11 +91,14 @@ impl Combobox {
         self
     }
 
+    /// Adds CSS classes to the root element.
     pub fn class(mut self, class: &'static str) -> Self {
         self.class = Some(class);
         self
     }
 
+    /// Sets the option markup. Selectable options need `role="option"` and a
+    /// `data-value`.
     pub fn options(mut self, options: impl Into<Markup>) -> Self {
         self.options = options.into();
         self

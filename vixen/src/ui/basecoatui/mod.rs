@@ -2,9 +2,10 @@
 //! feature.
 //!
 //! Basecoat itself is not bundled. Import its CSS from the page stylesheet and
-//! `basecoat-css/basecoat` from the page entry. Widgets with their own scripts
-//! need those too: `basecoat-css/toast` for [`Toaster`] and
-//! `basecoat-css/drawer` for [`Drawer`]. [`Dialog`] needs no script.
+//! `basecoat-css/basecoat` from the page entry. Widgets with scripts require
+//! their own modules too: `basecoat-css/toast` for [`Toaster`],
+//! `basecoat-css/drawer` for [`Drawer`], and `basecoat-css/combobox` for
+//! [`Combobox`]. [`Dialog`] needs no script.
 //!
 //! Render [`HEAD`] in `<head>` before the page's assets, and render each
 //! widget's shell once in the body:
@@ -35,7 +36,10 @@
 //! );
 //! ```
 //!
-//! `examples/components` has the full wiring.
+//! [`Combobox`] renders inline and does not have a shell.
+//!
+//! See `examples/components` for the modal and toast setup, and `examples/shop`
+//! for comboboxes.
 
 mod combobox;
 mod dialog;

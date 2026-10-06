@@ -18,9 +18,10 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   the macros sit at the root. It re-exports `vixen::maud`, all of `axum_htmx`
   as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and
   `vixen_bundler::{build, Config}`. Runtime support for the macros lives here
-  (`action`, `fragment`, `partial`, `assets`, `base_path`).
+  (`action`, `fragment`, `partial`, `assets`, `base_path`). Features:
+  `basecoatui` for `vixen::ui::basecoatui`, `testing` for `vixen::testing`.
 - `vixen-macros/` — proc macros: `#[action]`, `#[route]`, `#[id]`,
-  `#[fragment]`, `assets!`, `asset!`, `assets_router!`.
+  `#[fragment]`, `#[derive(ReqCtx)]`, `assets!`, `asset!`, `assets_router!`.
 - `vixen-bundler/` — the `build.rs` helper behind `vixen::{build, Config}`.
   Apps also list `vixen` under `[build-dependencies]`. It runs Bun over
   per-page entry points and passes `VIXEN_MANIFEST` to rustc, plus
@@ -33,3 +34,8 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
 - `examples/config/` — demonstrates `Config::base_path`, `vixen::mount!` and
   `asset!`.
   `cargo run -p config` → <http://127.0.0.1:4004/config/>.
+- `examples/components/` — the `basecoatui` toaster, drawer and dialog.
+  `cargo run -p components` → <http://127.0.0.1:4003/>.
+- `examples/shop/` — a catalog plus product and material admin pages over
+  in-memory SQLite, demonstrating `Paged`, `Combobox` and `ReqCtx`.
+  `cargo run -p shop` → <http://127.0.0.1:4005/>.

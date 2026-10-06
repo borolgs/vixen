@@ -2,7 +2,7 @@ use axum::Router;
 use vixen::{HxAction, PagedAction, RouterExt, action, route};
 
 use crate::{
-    models::{After, Category, ProductSort},
+    models::{After, Category, ProductSort, Selection},
     pages::admin_products::{delete, edit, list, page},
     state::AppState,
 };
@@ -66,6 +66,8 @@ pub struct CreateProduct {
     pub price: String,
     pub category: Category,
     #[serde(default)]
+    pub materials: Selection,
+    #[serde(default)]
     pub in_stock: bool,
 }
 
@@ -76,7 +78,9 @@ pub struct UpdateProduct {
     pub name: String,
     pub tagline: String,
     pub price: String,
-    pub category: Category,
+    pub category: Option<Category>,
+    #[serde(default)]
+    pub materials: Selection,
     #[serde(default)]
     pub in_stock: bool,
 }

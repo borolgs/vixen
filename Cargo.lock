@@ -1066,6 +1066,7 @@ dependencies = [
  "maud",
  "rusqlite",
  "serde",
+ "serde_json",
  "strum",
  "tokio",
  "tracing",

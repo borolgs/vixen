@@ -16,6 +16,7 @@ maud = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 anyhow = "1.0.104"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 strum = { version = "0.28.0", features = ["derive"] }

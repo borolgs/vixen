@@ -266,6 +266,22 @@ mod tests {
     }
 
     #[test]
+    fn a_maybe_setter_sets_some_and_skips_none() {
+        let html = html! {
+            a hx-action=(Search::action().maybe_after(Some(40))) {}
+            a hx-action=(Search::action().maybe_after(None)) {}
+        }
+        .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<a hx-action="/search" hx-vals="{&quot;after&quot;:40}" hx-method="post"></a>"#,
+                r#"<a hx-action="/search" hx-method="post"></a>"#,
+            )
+        );
+    }
+
+    #[test]
     fn options_render_from_the_same_value() {
         let html = html! {
             input hx-action=(Search::action().q("steel").after(40).hx()

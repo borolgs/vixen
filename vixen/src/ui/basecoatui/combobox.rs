@@ -138,3 +138,59 @@ impl Render for Combobox {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn renders_a_text_input_a_listbox_and_the_hidden_value() {
+        let html = Combobox::new("category", "category")
+            .value("kitchen")
+            .placeholder("Pick one")
+            .empty("No match.")
+            .class("w-full")
+            .options(html! { div role="option" data-value="kitchen" { "Kitchen" } })
+            .render()
+            .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<div class="combobox w-full" data-auto-highlight="true">"#,
+                r#"<input id="category" type="text" role="combobox" placeholder="Pick one" "#,
+                r#"autocomplete="off" autocorrect="off" spellcheck="false" "#,
+                r#"aria-autocomplete="list" aria-expanded="false" aria-controls="category-listbox">"#,
+                r#"<div data-popover aria-hidden="true">"#,
+                r#"<div id="category-listbox" role="listbox" aria-orientation="vertical" "#,
+                r#"data-empty="No match.">"#,
+                r#"<div role="option" data-value="kitchen">Kitchen</div>"#,
+                "</div></div>",
+                r#"<input type="hidden" name="category" value="kitchen">"#,
+                "</div>",
+            )
+        );
+    }
+
+    #[test]
+    fn multiple_starts_from_an_empty_array() {
+        let html = Combobox::new("tags", "tags")
+            .multiple()
+            .render()
+            .into_string();
+        assert!(html.contains(r#"aria-multiselectable="true""#));
+        assert!(html.contains(r#"<input type="hidden" name="tags" value="[]">"#));
+    }
+
+    #[test]
+    fn search_posts_the_typed_text_and_turns_filtering_off() {
+        let html = Combobox::new("tags", "tags")
+            .search("q", "/tags/options")
+            .render()
+            .into_string();
+        assert!(html.contains(r#"data-filter="manual" data-format="object""#));
+        assert!(html.contains(concat!(
+            r#"name="q" hx-action="/tags/options" "#,
+            r#"hx-trigger="input changed delay:300ms" hx-method="post">"#,
+        )));
+    }
+}

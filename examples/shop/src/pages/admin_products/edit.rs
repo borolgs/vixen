@@ -1,16 +1,17 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    fragment,
+    Page, fragment,
     hx::HxResponseTrigger,
     maud::{Markup, html},
     partial,
-    ui::basecoatui::Slots,
+    ui::basecoatui::Combobox,
 };
 
 use crate::{
-    models::Category,
+    models::{After, Category, Selection},
     pages::{
+        admin_materials::{Material, MaterialPickerId, material_options, material_picker},
         admin_products::{
             queries::{self, Product, ProductInput},
             routes::{CreateProduct, EditProductPath, NewProductPath, UpdateProduct},
@@ -21,28 +22,51 @@ use crate::{
     state::ctx,
 };
 
-pub async fn new_product(_: NewProductPath) -> Slots {
-    DRAWER
-        .header(html! {
-            h2 { "New product" }
-            p { "It goes on the shelf as soon as you save." }
-        })
-        .content(create_product_form(&CreateProduct::blank()))
+pub async fn new_product(_: NewProductPath) -> Response {
+    let options = ctx().db.call(|conn| material_options(conn, "", None)).await;
+
+    match options {
+        Ok(options) => DRAWER
+            .header(html! {
+                h2 { "New product" }
+                p { "It goes on the shelf as soon as you save." }
+            })
+            .content(create_product_form(&CreateProduct::blank(), options))
+            .into_response(),
+        Err(err) => {
+            tracing::error!("new product: {err:#}");
+
+            TOASTER
+                .error("That didn't go through", "Try again in a moment.")
+                .into_response()
+        }
+    }
 }
 
 pub async fn edit_product(EditProductPath { id }: EditProductPath) -> Response {
     let product = ctx()
         .db
-        .call(move |conn| queries::product_by_id(conn, id))
+        .call(move |conn| {
+            let Some(product) = queries::product_by_id(conn, id)? else {
+                return Ok(None);
+            };
+            let materials = queries::product_materials(conn, id)?;
+            let options = material_options(conn, "", None)?;
+
+            Ok(Some((product, materials, options)))
+        })
         .await;
 
     match product {
-        Ok(Some(product)) => DRAWER
+        Ok(Some((product, materials, options))) => DRAWER
             .header(html! {
                 h2 { "Edit " (product.name) }
                 p { "Changes show up in the shop right away." }
             })
-            .content(edit_product_form(&UpdateProduct::of(&product)))
+            .content(edit_product_form(
+                &UpdateProduct::of(&product, materials),
+                options,
+            ))
             .into_response(),
         Ok(None) => DRAWER
             .header(html! {
@@ -80,7 +104,8 @@ pub async fn create_product(form: CreateProduct) -> Response {
             if queries::slug_taken(&tx, &input.slug, None)? {
                 return Ok(Err("That slug is taken."));
             }
-            queries::insert_product(&tx, &input)?;
+            let id = queries::insert_product(&tx, &input)?;
+            queries::replace_product_materials(&tx, id, &input.materials)?;
 
             tx.commit()?;
 
@@ -118,6 +143,7 @@ pub async fn update_product(form: UpdateProduct) -> Response {
                 return Ok(Err("That slug is taken."));
             }
             queries::update_product(&tx, id, &input)?;
+            queries::replace_product_materials(&tx, id, &input.materials)?;
 
             let Some(product) = queries::product_by_id(&tx, id)? else {
                 return Ok(Err("That product is gone."));
@@ -155,6 +181,7 @@ impl CreateProduct {
             tagline: String::new(),
             price: String::new(),
             category: Category::Kitchen,
+            materials: Selection::default(),
             in_stock: true,
         }
     }
@@ -177,6 +204,13 @@ impl CreateProduct {
             return Err("The price should look like 42.00.");
         };
 
+        let materials = self
+            .materials
+            .0
+            .iter()
+            .filter_map(|picked| picked.value.parse().ok())
+            .collect();
+
         Ok(ProductInput {
             slug,
             name,
@@ -184,19 +218,21 @@ impl CreateProduct {
             category: self.category,
             price_cents,
             in_stock: self.in_stock,
+            materials,
         })
     }
 }
 
 impl UpdateProduct {
-    fn of(product: &Product) -> Self {
+    fn of(product: &Product, materials: Selection) -> Self {
         Self {
             id: product.id,
             slug: product.slug.clone(),
             name: product.name.clone(),
             tagline: product.tagline.clone(),
             price: dollars(product.price_cents),
-            category: product.category,
+            category: Some(product.category),
+            materials,
             in_stock: product.in_stock,
         }
     }
@@ -218,6 +254,16 @@ impl UpdateProduct {
         let Some(price_cents) = parse_dollars(&self.price) else {
             return Err("The price should look like 42.00.");
         };
+        let Some(category) = self.category else {
+            return Err("Pick a category.");
+        };
+
+        let materials = self
+            .materials
+            .0
+            .iter()
+            .filter_map(|picked| picked.value.parse().ok())
+            .collect();
 
         Ok((
             self.id,
@@ -225,15 +271,16 @@ impl UpdateProduct {
                 slug,
                 name,
                 tagline: self.tagline.trim().to_owned(),
-                category: self.category,
+                category,
                 price_cents,
                 in_stock: self.in_stock,
+                materials,
             },
         ))
     }
 }
 
-fn create_product_form(form: &CreateProduct) -> Markup {
+fn create_product_form(form: &CreateProduct, options: Page<Material, After>) -> Markup {
     html! {
         form class="fieldset gap-4" hx-action=(CreateProduct::action()) {
             div.field {
@@ -266,6 +313,10 @@ fn create_product_form(form: &CreateProduct) -> Markup {
                     }
                 }
             }
+            div.field {
+                label for=(MaterialPickerId) { "Materials" }
+                (material_picker(CreateProduct::FIELD.materials, &form.materials, options))
+            }
             div.field data-orientation="horizontal" {
                 input id="product-in-stock" type="checkbox"
                     name=(CreateProduct::FIELD.in_stock) value="true" checked[form.in_stock];
@@ -283,7 +334,7 @@ fn create_product_form(form: &CreateProduct) -> Markup {
     }
 }
 
-fn edit_product_form(form: &UpdateProduct) -> Markup {
+fn edit_product_form(form: &UpdateProduct, options: Page<Material, After>) -> Markup {
     html! {
         form class="fieldset gap-4" hx-action=(UpdateProduct::action().id(form.id)) {
             div.field {
@@ -308,13 +359,18 @@ fn edit_product_form(form: &UpdateProduct) -> Markup {
             }
             div.field {
                 label for="product-category" { "Category" }
-                select id="product-category" class="w-full" name=(UpdateProduct::FIELD.category) {
-                    @for category in Category::iter() {
-                        option value=(category.as_ref()) selected[category == form.category] {
-                            (category.label())
+                (Combobox::new("product-category", UpdateProduct::FIELD.category)
+                    .value(form.category.as_ref().map_or("", |category| category.as_ref()))
+                    .class("w-full")
+                    .options(html! {
+                        @for category in Category::iter() {
+                            div role="option" data-value=(category.as_ref()) { (category.label()) }
                         }
-                    }
-                }
+                    }))
+            }
+            div.field {
+                label for=(MaterialPickerId) { "Materials" }
+                (material_picker(UpdateProduct::FIELD.materials, &form.materials, options))
             }
             div.field data-orientation="horizontal" {
                 input id="product-in-stock" type="checkbox"

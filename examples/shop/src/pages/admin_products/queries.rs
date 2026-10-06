@@ -1,7 +1,7 @@
 use rusqlite::{Connection, OptionalExtension, Row};
 use vixen::Page;
 
-use crate::models::{After, Category, ProductSort};
+use crate::models::{After, Category, Picked, ProductSort, Selection};
 
 pub const PAGE_SIZE: usize = 10;
 
@@ -30,6 +30,7 @@ pub struct ProductInput {
     pub category: Category,
     pub price_cents: i64,
     pub in_stock: bool,
+    pub materials: Vec<i64>,
 }
 
 // The inner ORDER BY makes group_concat deterministic.
@@ -140,7 +141,28 @@ pub fn slug_taken(conn: &Connection, slug: &str, except: Option<i64>) -> anyhow:
     Ok(taken)
 }
 
-pub fn insert_product(conn: &Connection, input: &ProductInput) -> anyhow::Result<()> {
+/// A product's materials as the picker takes them.
+pub fn product_materials(conn: &Connection, product_id: i64) -> anyhow::Result<Selection> {
+    let mut stmt = conn.prepare(
+        "select m.id, m.name from product_materials pm
+             join materials m on m.id = pm.material_id
+             where pm.product_id = ?1
+             order by m.name",
+    )?;
+
+    let picked = stmt
+        .query_map((product_id,), |row| {
+            Ok(Picked {
+                value: row.get::<_, i64>(0)?.to_string(),
+                label: row.get(1)?,
+            })
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+
+    Ok(Selection(picked))
+}
+
+pub fn insert_product(conn: &Connection, input: &ProductInput) -> anyhow::Result<i64> {
     conn.execute(
         "insert into products (slug, name, tagline, category, price_cents, in_stock)
              values (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -154,7 +176,7 @@ pub fn insert_product(conn: &Connection, input: &ProductInput) -> anyhow::Result
         ),
     )?;
 
-    Ok(())
+    Ok(conn.last_insert_rowid())
 }
 
 pub fn update_product(conn: &Connection, id: i64, input: &ProductInput) -> anyhow::Result<()> {
@@ -172,6 +194,28 @@ pub fn update_product(conn: &Connection, id: i64, input: &ProductInput) -> anyho
             input.in_stock,
         ),
     )?;
+
+    Ok(())
+}
+
+/// Skips a product or a material that is gone.
+pub fn replace_product_materials(
+    conn: &Connection,
+    product_id: i64,
+    material_ids: &[i64],
+) -> anyhow::Result<()> {
+    conn.execute(
+        "delete from product_materials where product_id = ?1",
+        (product_id,),
+    )?;
+
+    let mut insert = conn.prepare(
+        "insert or ignore into product_materials (product_id, material_id)
+             select p.id, m.id from products p, materials m where p.id = ?1 and m.id = ?2",
+    )?;
+    for material_id in material_ids {
+        insert.execute((product_id, material_id))?;
+    }
 
     Ok(())
 }

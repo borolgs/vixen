@@ -76,7 +76,6 @@ insert into reviews (product_id, email, rating, message) values
     ((select id from products where slug = 'rolling-pin'), 'tomas@example.com',  3, 'Lovely wood, but I miss the handles.'),
     ((select id from products where slug = 'tote'),        'noor@example.com',   5, 'Carried a watermelon home in the rain. No complaints.');
 
--- Grouped by family because pagination uses IDs as cursors.
 insert into materials (name, care) values
     -- metals (1-12)
     ('Enamelled steel',          'Hand wash, dry at once.'),

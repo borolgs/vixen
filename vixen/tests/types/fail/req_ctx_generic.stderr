@@ -1,0 +1,5 @@
+error: `ReqCtx` does not support generic types
+ --> tests/types/fail/req_ctx_generic.rs:4:11
+  |
+4 | struct Ctx<T> {
+  |           ^^^

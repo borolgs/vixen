@@ -262,3 +262,130 @@ fn sentinel(next: HxAction) -> HxAction {
 fn retry(next: HxAction, trigger: &str) -> HxAction {
     next.trigger(trigger).swap(SwapOption::OuterHtml)
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::body::to_bytes;
+    use axum_htmx::HX_RESWAP;
+
+    use super::*;
+    use crate::{Part, action};
+
+    #[action("/todos/search")]
+    struct SearchTodos {
+        q: String,
+        after: Option<u32>,
+    }
+
+    impl PagedAction for SearchTodos {
+        type Cursor = u32;
+
+        fn cursor(&self) -> Option<u32> {
+            self.after
+        }
+
+        fn next(&self, after: u32) -> HxAction {
+            SearchTodos::action().q(&self.q).after(after).hx()
+        }
+    }
+
+    const TODOS: Paged<SearchTodos, &str> = Paged::new("todos", |title| html! { p { (title) } });
+
+    fn search(after: Option<u32>) -> SearchTodos {
+        SearchTodos {
+            q: "m".into(),
+            after,
+        }
+    }
+
+    fn page(items: &[&'static str], next: Option<u32>) -> Page<&'static str, u32> {
+        Page {
+            items: items.to_vec(),
+            next,
+        }
+    }
+
+    fn toast() -> Part {
+        Part::new("#toaster", html! { "oops" })
+    }
+
+    async fn body(res: Response) -> String {
+        let body = to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        String::from_utf8(body.to_vec()).unwrap()
+    }
+
+    #[test]
+    fn a_first_page_renders_the_list_with_a_sentinel() {
+        let html = TODOS
+            .render(&search(None), page(&["milk", "mint"], Some(2)))
+            .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<div id="todos"><p>milk</p><p>mint</p>"#,
+                r#"<div hx-action="/todos/search" "#,
+                r#"hx-vals="{&quot;after&quot;:2,&quot;q&quot;:&quot;m&quot;}" "#,
+                r#"hx-trigger="intersect once" hx-swap="outerHTML" hx-method="post">Loading…</div>"#,
+                "</div>",
+            )
+        );
+    }
+
+    #[test]
+    fn a_following_page_renders_rows_only() {
+        let html = TODOS
+            .render(&search(Some(2)), page(&["plum"], None))
+            .into_string();
+        assert_eq!(html, "<p>plum</p>");
+    }
+
+    #[test]
+    fn an_empty_first_page_renders_the_empty_slot() {
+        let html = TODOS.render(&search(None), page(&[], None)).into_string();
+        assert_eq!(html, r#"<div id="todos"><div>No results.</div></div>"#);
+    }
+
+    #[test]
+    fn search_replaces_the_list_and_listens_for_refresh() {
+        let todos = TODOS.search_trigger("submit");
+        let html = html! { form hx-action=(todos.search(SearchTodos::action())) {} }.into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<form hx-action="/todos/search" "#,
+                r#"hx-trigger="submit, todos:refresh from:document" "#,
+                r##"hx-target="#todos" hx-swap="outerHTML" hx-sync="replace" "##,
+                r#"hx-method="post"></form>"#,
+            )
+        );
+        assert_eq!(todos.refresh().name, "todos:refresh");
+    }
+
+    #[tokio::test]
+    async fn a_failed_following_page_becomes_a_retry_row() {
+        let res = TODOS
+            .retry_trigger("click")
+            .respond(&search(Some(2)), Err(toast()));
+        assert!(!res.headers().contains_key(HX_RESWAP));
+        assert_eq!(
+            body(res).await,
+            concat!(
+                r#"<div hx-action="/todos/search" "#,
+                r#"hx-vals="{&quot;after&quot;:2,&quot;q&quot;:&quot;m&quot;}" "#,
+                r#"hx-trigger="click" hx-swap="outerHTML" hx-method="post">"#,
+                r#"The rest did not load. <button type="button">Try again</button></div>"#,
+                r##"<hx-partial hx-target="#toaster">oops</hx-partial>"##,
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn a_failed_first_page_leaves_the_list() {
+        let res = TODOS.respond(&search(None), Err(toast()));
+        assert_eq!(res.headers()[HX_RESWAP], "none");
+        assert_eq!(
+            body(res).await,
+            r##"<hx-partial hx-target="#toaster">oops</hx-partial>"##
+        );
+    }
+}

@@ -48,3 +48,18 @@ where
     let body = to_bytes(res.into_body(), usize::MAX).await.unwrap();
     serde_json::from_slice::<T>(&body).unwrap()
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::{Json, response::IntoResponse};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn text_and_json_read_the_whole_body() {
+        assert_eq!(text("milk".into_response()).await, "milk");
+
+        let ids: Vec<u32> = json(Json([1, 2]).into_response()).await;
+        assert_eq!(ids, [1, 2]);
+    }
+}

@@ -13,6 +13,10 @@
 - `Fragment::new` takes the id: `Fragment::new(&id, markup)`.
 - `Selector` renders escaped.
 
+### Fixed
+
+- Empty `Drawer` and `Dialog` slots on close to prevent stale form values.
+
 ## 0.2.0 - 2026-09-27
 
 ### Added

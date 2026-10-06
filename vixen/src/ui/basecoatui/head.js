@@ -62,3 +62,57 @@ function promoteToaster(again = false) {
   }
   toaster.showPopover();
 }
+
+// Refresh Basecoat's option cache after an htmx swap.
+document.addEventListener('htmx:after:settle', (event) => {
+  event.target.closest?.('.combobox')?.refresh?.();
+});
+
+// Preserve the search across Basecoat's open-time refresh.
+document.addEventListener(
+  'basecoat:initialized',
+  (event) => {
+    const root = event.target;
+    if (!root.matches?.('.combobox')) return;
+
+    const input = root.querySelector('input[role="combobox"]');
+    const refresh = root.refresh;
+    root.refresh = () => {
+      const typed = input.value;
+      refresh();
+      input.value = typed;
+    };
+  },
+  true,
+);
+
+const searched = new WeakMap();
+
+document.addEventListener('input', (event) => {
+  const input = event.target;
+  if (input.matches?.('.combobox input[role="combobox"]')) searched.set(input, input.value);
+});
+
+// Basecoat clears multi-select searches without firing `input`.
+document.addEventListener('change', (event) => {
+  const root = event.target;
+  if (!root.matches?.('.combobox:has([aria-multiselectable="true"])')) return;
+
+  const input = root.querySelector('input[role="combobox"]');
+  if (input.value !== (searched.get(input) ?? '')) {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+});
+
+// Keep combobox keys from submitting its form or closing its dialog.
+document.addEventListener(
+  'keydown',
+  (event) => {
+    const input = event.target.closest?.('.combobox input[role="combobox"]');
+    if (!input) return;
+
+    const open = input.getAttribute('aria-expanded') === 'true';
+    if (event.key === 'Enter' || (event.key === 'Escape' && open)) event.preventDefault();
+  },
+  true,
+);

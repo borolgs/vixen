@@ -147,6 +147,15 @@ impl From<Vec<Part>> for Parts {
     }
 }
 
+// TODO: `None` and an empty `Vec` still make the builder `Filled`.
+impl From<Option<Part>> for Parts {
+    fn from(part: Option<Part>) -> Self {
+        Self {
+            parts: part.into_iter().collect(),
+        }
+    }
+}
+
 /// A CSS selector used by `hx-target` and `hx-sync`.
 ///
 /// APIs that target an element accept `impl Into<Selector>`. Strings are kept
@@ -301,7 +310,8 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 /// - `target => content` for a targeted swap;
 /// - `(target, swap) => content` for a targeted swap with the swap spelled out;
 /// - a [`Fragment`](crate::Fragment) for an `outerHTML` swap of its element;
-/// - a [`Part`] or anything convertible to [`Parts`], such as `Vec<Part>`.
+/// - a [`Part`] or anything convertible to [`Parts`], such as `Vec<Part>` or
+///   `Option<Part>`.
 ///
 /// The main swap, if present, must come first.
 ///

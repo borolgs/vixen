@@ -1,8 +1,9 @@
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
     Page, SyncStrategy,
     maud::{Markup, html},
+    partial,
 };
 
 use crate::{
@@ -39,21 +40,7 @@ pub async fn materials_index() -> Markup {
                         th {}
                     }
                 }
-                @match page {
-                    Ok(page) => { (MATERIALS.render(&search, page)) }
-                    Err(_) => {
-                        (MATERIALS.shell(html! {
-                            tr {
-                                td colspan="4" {
-                                    div class="alert" data-variant="destructive" {
-                                        h3 { "The stores are empty" }
-                                        section { p { "The database did not answer." } }
-                                    }
-                                }
-                            }
-                        }))
-                    }
-                }
+                (MATERIALS.view(&search, page))
             }
         }
         (DRAWER.shell())
@@ -62,11 +49,12 @@ pub async fn materials_index() -> Markup {
 }
 
 pub async fn materials_search(search: SearchMaterials) -> Response {
-    let page = load(&search)
-        .await
-        .map_err(|_| TOASTER.error("That didn't go through", "Try again in a moment."));
+    let page = load(&search).await;
+    let toast = page
+        .is_err()
+        .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
-    MATERIALS.respond(&search, page)
+    partial!(_ => MATERIALS.view(&search, page), toast).into_response()
 }
 
 async fn load(search: &SearchMaterials) -> anyhow::Result<Page<Material, After>> {

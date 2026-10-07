@@ -28,6 +28,18 @@ pub const PRODUCTS: Paged<SearchProducts, Product> =
                 }
             }
         })
+        .failed(|_| {
+            html! {
+                tr {
+                    td colspan="7" {
+                        div class="alert" data-variant="destructive" {
+                            h3 { "The shelf is empty" }
+                            section { p { "The database did not answer." } }
+                        }
+                    }
+                }
+            }
+        })
         .loading(|next| {
             html! {
                 tr hx-action=(next) {

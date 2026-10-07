@@ -32,6 +32,16 @@ pub const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", ca
             }
         }
     })
+    .failed(|_| {
+        html! {
+            li class="col-span-full" {
+                div class="alert" data-variant="destructive" {
+                    h3 { "The shelf is empty" }
+                    section { p { "The database did not answer." } }
+                }
+            }
+        }
+    })
     .loading(|next| {
         html! {
             li class="text-muted-foreground col-span-full py-6 text-center text-sm"

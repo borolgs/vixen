@@ -1,15 +1,14 @@
 //! Helpers for cursor-paginated search results.
 //!
-//! [`Paged`] renders initial results, appends subsequent pages, and handles retry
-//! responses. The request type implements [`PagedAction`] to expose its cursor and
-//! build actions for subsequent pages.
+//! [`Paged`] renders initial results, appends subsequent pages, and renders
+//! failures in place. The request type implements [`PagedAction`] to expose its
+//! cursor and build actions for subsequent pages.
 
-use axum::response::{IntoResponse, Response};
-use axum_htmx::{HxEvent, HxReswap, SwapOption};
+use axum_htmx::{HxEvent, SwapOption};
 use maud::{Markup, html};
 use serde_json::json;
 
-use crate::{HxAction, HxPartial, Parts, Selector, SyncStrategy};
+use crate::{HxAction, Selector, SyncStrategy};
 
 // Radio inputs emit both `input` and `change`; text inputs emit `change` on blur.
 const SEARCH_TRIGGER: &str =
@@ -42,13 +41,12 @@ pub trait PagedAction {
 /// Search results that load the next page when scrolled into view.
 ///
 /// Declare a `Paged` as a `const`. [`search`](Self::search) configures its form
-/// action, [`render`](Self::render) renders results, and
-/// [`respond`](Self::respond) handles both first and subsequent pages.
+/// action, and [`view`](Self::view) renders a loaded or failed page, both on
+/// the index and in the search handler.
 ///
 /// ```
-/// use axum::response::Response;
 /// use vixen::{
-///     HxAction, Page, Paged, PagedAction, Part, action,
+///     HxAction, Page, Paged, PagedAction, action,
 ///     maud::{Markup, html},
 /// };
 ///
@@ -73,33 +71,33 @@ pub trait PagedAction {
 /// const TODOS: Paged<SearchTodos, String> =
 ///     Paged::new("todos", |title| html! { div { (title) } });
 ///
-/// fn view(search: &SearchTodos, page: Page<String, u32>) -> Markup {
+/// async fn index(search: SearchTodos) -> Markup {
 ///     html! {
 ///         form hx-action=(TODOS.search(SearchTodos::action())) {
 ///             input type="search" name=(SearchTodos::FIELD.q);
 ///         }
-///         (TODOS.render(search, page))
+///         (TODOS.view(&search, load(&search).await))
 ///     }
 /// }
 ///
-/// async fn search(search: SearchTodos) -> Response {
-///     let page = load(&search).await;
-///     TODOS.respond(&search, page)
+/// async fn search(search: SearchTodos) -> Markup {
+///     TODOS.view(&search, load(&search).await)
 /// }
-/// # async fn load(_: &SearchTodos) -> Result<Page<String, u32>, Part> {
+/// # async fn load(_: &SearchTodos) -> std::io::Result<Page<String, u32>> {
 /// #     Ok(Page { items: Vec::new(), next: None })
 /// # }
 /// ```
 ///
 /// The first page includes the list container; following pages render only new
 /// items and, when present, another loading sentinel. The defaults use `div`s.
-/// Use [`list`](Self::list), [`empty`](Self::empty),
+/// Use [`list`](Self::list), [`empty`](Self::empty), [`failed`](Self::failed),
 /// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
     item: fn(&Item) -> Markup,
     empty: fn(&PAction) -> Markup,
+    failed: fn(&PAction) -> Markup,
     loading: fn(HxAction) -> Markup,
     retry: fn(HxAction) -> Markup,
     search_trigger: &'static str,
@@ -114,6 +112,7 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
             list: |id, _, rows| html! { div id=(id) { (rows) } },
             item,
             empty: |_| html! { div { "No results." } },
+            failed: |_| html! { div { "The results did not load." } },
             loading: |next| html! { div hx-action=(next) { "Loading…" } },
             retry: |again| {
                 html! {
@@ -140,6 +139,12 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
     /// Sets the renderer for an initial page with no items.
     pub const fn empty(mut self, empty: fn(&PAction) -> Markup) -> Self {
         self.empty = empty;
+        self
+    }
+
+    /// Sets the renderer for an initial page that failed to load.
+    pub const fn failed(mut self, failed: fn(&PAction) -> Markup) -> Self {
+        self.failed = failed;
         self
     }
 
@@ -217,31 +222,24 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
         )
     }
 
-    /// Wraps `rows` in the list container targeted by search actions.
-    pub fn shell(&self, search: &PAction, rows: Markup) -> Markup {
-        (self.list)(self.id, search, rows)
-    }
-
-    /// Converts a page or error parts into an htmx response.
+    /// Renders a page or its failure, on the index and in the search handler.
     ///
-    /// An initial-page error leaves the current list unchanged. A subsequent-page
-    /// error replaces the loading sentinel with retry markup.
-    pub fn respond(
+    /// An initial-page error renders [`failed`](Self::failed) inside the list. A
+    /// subsequent-page error replaces the loading sentinel with retry markup.
+    pub fn view<E>(
         &self,
         search: &PAction,
-        page: Result<Page<Item, PAction::Cursor>, impl Into<Parts>>,
-    ) -> Response {
+        page: Result<Page<Item, PAction::Cursor>, E>,
+    ) -> Markup {
         match (page, search.cursor()) {
-            (Ok(page), _) => self.render(search, page).into_response(),
-            (Err(parts), Some(cursor)) => HxPartial::new()
-                .main((self.retry)(retry(search.next(cursor), self.retry_trigger)))
-                .parts(parts)
-                .into_response(),
-            // Keep htmx from replacing the current list with an empty response.
-            (Err(parts), None) => {
-                (HxReswap(SwapOption::None), HxPartial::new().parts(parts)).into_response()
-            }
+            (Ok(page), _) => self.render(search, page),
+            (Err(_), Some(cursor)) => (self.retry)(retry(search.next(cursor), self.retry_trigger)),
+            (Err(_), None) => self.shell(search, (self.failed)(search)),
         }
+    }
+
+    fn shell(&self, search: &PAction, rows: Markup) -> Markup {
+        (self.list)(self.id, search, rows)
     }
 
     fn sel(&self) -> Selector {
@@ -269,11 +267,8 @@ fn retry(next: HxAction, trigger: &str) -> HxAction {
 
 #[cfg(test)]
 mod tests {
-    use axum::body::to_bytes;
-    use axum_htmx::HX_RESWAP;
-
     use super::*;
-    use crate::{Part, action};
+    use crate::action;
 
     #[action("/todos/search")]
     struct SearchTodos {
@@ -307,15 +302,6 @@ mod tests {
             items: items.to_vec(),
             next,
         }
-    }
-
-    fn toast() -> Part {
-        Part::new("#toaster", html! { "oops" })
-    }
-
-    async fn body(res: Response) -> String {
-        let body = to_bytes(res.into_body(), usize::MAX).await.unwrap();
-        String::from_utf8(body.to_vec()).unwrap()
     }
 
     #[test]
@@ -365,31 +351,29 @@ mod tests {
         assert_eq!(todos.refresh().name, "todos:refresh");
     }
 
-    #[tokio::test]
-    async fn a_failed_following_page_becomes_a_retry_row() {
-        let res = TODOS
+    #[test]
+    fn a_failed_following_page_becomes_a_retry_row() {
+        let html = TODOS
             .retry_trigger("click")
-            .respond(&search(Some(2)), Err(toast()));
-        assert!(!res.headers().contains_key(HX_RESWAP));
+            .view(&search(Some(2)), Err(()))
+            .into_string();
         assert_eq!(
-            body(res).await,
+            html,
             concat!(
                 r#"<div hx-action="/todos/search" "#,
                 r#"hx-vals="{&quot;after&quot;:2,&quot;q&quot;:&quot;m&quot;}" "#,
                 r#"hx-trigger="click" hx-swap="outerHTML" hx-method="post">"#,
                 r#"The rest did not load. <button type="button">Try again</button></div>"#,
-                r##"<hx-partial hx-target="#toaster">oops</hx-partial>"##,
             )
         );
     }
 
-    #[tokio::test]
-    async fn a_failed_first_page_leaves_the_list() {
-        let res = TODOS.respond(&search(None), Err(toast()));
-        assert_eq!(res.headers()[HX_RESWAP], "none");
+    #[test]
+    fn a_failed_first_page_renders_the_failed_slot() {
+        let html = TODOS.view(&search(None), Err(())).into_string();
         assert_eq!(
-            body(res).await,
-            r##"<hx-partial hx-target="#toaster">oops</hx-partial>"##
+            html,
+            r#"<div id="todos"><div>The results did not load.</div></div>"#
         );
     }
 }

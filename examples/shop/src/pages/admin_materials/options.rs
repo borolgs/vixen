@@ -1,4 +1,5 @@
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
+use vixen::partial;
 
 use crate::{
     pages::{
@@ -16,8 +17,15 @@ pub async fn material_options(search: MaterialOptions) -> Response {
         .db
         .call(move |conn| queries::material_options(conn, &q, after.as_ref()))
         .await
-        .inspect_err(|err| tracing::error!("material options: {err:#}"))
-        .map_err(|_| TOASTER.error("That didn't go through", "Try again in a moment."));
+        .inspect_err(|err| tracing::error!("material options: {err:#}"));
 
-    MATERIAL_OPTIONS.respond(&search, page)
+    let toast = page
+        .is_err()
+        .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
+
+    partial! {
+        _ => MATERIAL_OPTIONS.view(&search, page),
+        toast
+    }
+    .into_response()
 }

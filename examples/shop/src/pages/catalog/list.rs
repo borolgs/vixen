@@ -1,8 +1,9 @@
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
     Page, fragment,
     maud::{Markup, html},
+    partial,
 };
 
 use crate::{
@@ -24,29 +25,22 @@ pub async fn catalog_index() -> Markup {
 
     html! {
         (catalog_search_form(&search))
-        @match page {
-            Ok(page) => { (CATALOG.render(&search, page)) }
-            Err(_) => {
-                (CATALOG.shell(&search, html! {
-                    li class="col-span-full" {
-                        div class="alert" data-variant="destructive" {
-                            h3 { "The shelf is empty" }
-                            section { p { "The database did not answer." } }
-                        }
-                    }
-                }))
-            }
-        }
+        (CATALOG.view(&search, page))
         (DETAIL.shell())
     }
 }
 
 pub async fn catalog_search(search: SearchCatalog) -> Response {
-    let page = load(&search)
-        .await
-        .map_err(|_| TOASTER.error("That didn't go through", "Try again in a moment."));
+    let page = load(&search).await;
+    let toast = page
+        .is_err()
+        .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
-    CATALOG.respond(&search, page)
+    partial! {
+        _ => CATALOG.view(&search, page),
+        toast,
+    }
+    .into_response()
 }
 
 async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, After>> {

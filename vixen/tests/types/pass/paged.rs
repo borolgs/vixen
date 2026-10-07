@@ -1,6 +1,5 @@
-use axum::response::Response;
 use vixen::{
-    HxAction, Page, Paged, PagedAction, Part, Selector, action,
+    HxAction, Page, Paged, PagedAction, Selector, action,
     maud::{Markup, html},
     partial,
 };
@@ -36,12 +35,13 @@ const TODOS: Paged<SearchTodos, Todo> = Paged::new("todos", row)
     .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
     // A closure that reads the search names its type.
     .empty(|search: &SearchTodos| html! { tr { td { "Nothing for " (search.q) } } })
+    .failed(|_| html! { tr { td { "Down" } } })
     .loading(|next| html! { tr hx-action=(next) {} })
     .retry(|again| html! { tr hx-action=(again) { td { button { "Try again" } } } })
     .search_trigger("submit")
     .retry_trigger("click");
 
-fn load(_: &SearchTodos) -> Result<Page<Todo, u32>, Part> {
+fn load(_: &SearchTodos) -> std::io::Result<Page<Todo, u32>> {
     Ok(Page {
         items: Vec::new(),
         next: Some(10),
@@ -56,13 +56,15 @@ fn main() {
 
     let _ = html! {
         form hx-action=(TODOS.search(SearchTodos::action())) {}
-        @if let Ok(page) = load(&search) { (TODOS.render(&search, page)) }
-        (TODOS.shell(&search, html! { tr {} }))
+        (TODOS.view(&search, load(&search)))
     };
 
-    // The error side is anything `Into<Parts>`.
-    let _: Response = TODOS.respond(&search, load(&search));
-    let _ = TODOS.respond(&search, Err(Vec::<Part>::new()));
+    // The error side is any type.
+    let _: Markup = TODOS.view(&search, Err("down"));
+    // A page that cannot fail skips the `Result`.
+    if let Ok(page) = load(&search) {
+        let _: Markup = TODOS.render(&search, page);
+    }
 
     let _ = partial!(TODOS.refresh(), "#status" => html! { "Added" });
     let _: Selector = TODOS.into();

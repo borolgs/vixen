@@ -28,6 +28,18 @@ pub const MATERIALS: Paged<SearchMaterials, Material> =
                 }
             }
         })
+        .failed(|_| {
+            html! {
+                tr {
+                    td colspan="4" {
+                        div class="alert" data-variant="destructive" {
+                            h3 { "The stores are empty" }
+                            section { p { "The database did not answer." } }
+                        }
+                    }
+                }
+            }
+        })
         .loading(|next| {
             html! {
                 tr hx-action=(next) {
@@ -83,6 +95,13 @@ pub const MATERIAL_OPTIONS: Paged<MaterialOptions, Material> =
     // Not the listbox: basecoat keeps its listeners on it.
     .list(|id, _, rows| html! { div id=(id) role="presentation" { (rows) } })
     .empty(|_| html! {})
+    .failed(|_| {
+        html! {
+            div class="text-muted-foreground py-1.5 ps-2 text-sm" data-value="" {
+                "The materials did not load."
+            }
+        }
+    })
     .loading(|next| {
         html! {
             div role="option" aria-disabled="true" data-value="" hx-action=(next) { "Loading…" }

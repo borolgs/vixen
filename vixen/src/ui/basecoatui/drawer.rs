@@ -61,17 +61,17 @@ impl Drawer {
         }
     }
 
-    /// Starts a response with an update for the header slot.
+    /// Starts a response that sets the header.
     pub fn header(&self, header: impl Into<Markup>) -> Slots {
         self.modal.slots().header(header)
     }
 
-    /// Starts a response with an update for the content slot.
+    /// Starts a response that sets the content.
     pub fn content(&self, content: impl Into<Markup>) -> Slots {
         self.modal.slots().content(content)
     }
 
-    /// Starts a response with an update for the footer slot.
+    /// Starts a response that sets the footer.
     pub fn footer(&self, footer: impl Into<Markup>) -> Slots {
         self.modal.slots().footer(footer)
     }

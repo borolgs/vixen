@@ -27,12 +27,16 @@
 //!     r##"<hx-partial hx-target="#toaster" hx-swap="beforeend"><div class="toast" role="status""##
 //! ));
 //!
-//! // Filling a drawer slot opens the drawer.
+//! // Updating a drawer opens it and clears any omitted slots.
 //! let response = HxPartial::new()
 //!     .parts(DRAWER.header(html! { h2 { "Profile" } }));
 //! assert_eq!(
 //!     response.render().into_string(),
-//!     r##"<hx-partial hx-target="#profile-header"><h2>Profile</h2></hx-partial>"##
+//!     concat!(
+//!         r##"<hx-partial hx-target="#profile-header"><h2>Profile</h2></hx-partial>"##,
+//!         r##"<hx-partial hx-target="#profile-content"></hx-partial>"##,
+//!         r##"<hx-partial hx-target="#profile-footer"></hx-partial>"##,
+//!     )
 //! );
 //! ```
 //!

@@ -10,14 +10,19 @@ pub(super) struct Modal {
     content_class: Option<&'static str>,
 }
 
-/// Updates for a [`Drawer`](super::Drawer) or [`Dialog`](super::Dialog).
+/// Updates all slots in a [`Drawer`](super::Drawer) or [`Dialog`](super::Dialog).
 ///
-/// Build them from a widget's `header`, `content`, or `footer` method, then
-/// chain updates for the other slots. `Slots` can be returned directly from a
-/// handler or included in [`partial!`](crate::partial!).
+/// Start with the widget's `header`, `content`, or `footer` method, then chain
+/// setters for the other slots. `Slots` can be returned directly from a handler
+/// or included in [`partial!`](crate::partial!). Omitted slots are emptied.
+///
+/// To update only part of an open modal, target a
+/// [`#[fragment]`](macro@crate::fragment) inside a slot.
 pub struct Slots {
     id: &'static str,
-    parts: Vec<Part>,
+    header: Markup,
+    content: Markup,
+    footer: Markup,
 }
 
 const HEADER: &str = "header";
@@ -71,7 +76,9 @@ impl Modal {
     pub(super) fn slots(&self) -> Slots {
         Slots {
             id: self.id,
-            parts: Vec::new(),
+            header: html! {},
+            content: html! {},
+            footer: html! {},
         }
     }
 
@@ -90,31 +97,35 @@ impl From<Modal> for Selector {
 }
 
 impl Slots {
-    /// Adds an update for the header slot.
-    pub fn header(self, header: impl Into<Markup>) -> Self {
-        self.fill(HEADER, header.into())
+    /// Sets the header slot.
+    pub fn header(mut self, header: impl Into<Markup>) -> Self {
+        self.header = header.into();
+        self
     }
 
-    /// Adds an update for the content slot.
-    pub fn content(self, content: impl Into<Markup>) -> Self {
-        self.fill(CONTENT, content.into())
+    /// Sets the content slot.
+    pub fn content(mut self, content: impl Into<Markup>) -> Self {
+        self.content = content.into();
+        self
     }
 
-    /// Adds an update for the footer slot.
-    pub fn footer(self, footer: impl Into<Markup>) -> Self {
-        self.fill(FOOTER, footer.into())
-    }
-
-    fn fill(mut self, slot: &str, content: Markup) -> Self {
-        self.parts
-            .push(Part::new(format!("#{}", slot_id(self.id, slot)), content));
+    /// Sets the footer slot.
+    pub fn footer(mut self, footer: impl Into<Markup>) -> Self {
+        self.footer = footer.into();
         self
     }
 }
 
 impl From<Slots> for Parts {
     fn from(slots: Slots) -> Self {
-        slots.parts.into()
+        let id = slots.id;
+        let part = |slot, markup| Part::new(format!("#{}", slot_id(id, slot)), markup);
+        vec![
+            part(HEADER, slots.header),
+            part(CONTENT, slots.content),
+            part(FOOTER, slots.footer),
+        ]
+        .into()
     }
 }
 
@@ -139,11 +150,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn slots_target_the_ids_derived_from_the_name_in_order() {
+    fn slots_replace_every_target_in_order() {
         let html = HxPartial::from(
             Modal::new("m")
                 .slots()
                 .footer(html! { "f" })
+                .content(html! { "c" })
                 .header(html! { "h" }),
         )
         .render()
@@ -151,8 +163,24 @@ mod tests {
         assert_eq!(
             html,
             concat!(
-                r##"<hx-partial hx-target="#m-footer">f</hx-partial>"##,
                 r##"<hx-partial hx-target="#m-header">h</hx-partial>"##,
+                r##"<hx-partial hx-target="#m-content">c</hx-partial>"##,
+                r##"<hx-partial hx-target="#m-footer">f</hx-partial>"##,
+            )
+        );
+    }
+
+    #[test]
+    fn omitted_slots_are_empty() {
+        let html = HxPartial::from(Modal::new("m").slots().footer(html! { "f" }))
+            .render()
+            .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r##"<hx-partial hx-target="#m-header"></hx-partial>"##,
+                r##"<hx-partial hx-target="#m-content"></hx-partial>"##,
+                r##"<hx-partial hx-target="#m-footer">f</hx-partial>"##,
             )
         );
     }

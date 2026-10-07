@@ -22,6 +22,7 @@
 ### Fixed
 
 - Empty `Drawer` and `Dialog` slots on close to prevent stale form values.
+- Updating a `Drawer` or `Dialog` empties any omitted slots.
 
 ## 0.2.0 - 2026-09-27
 

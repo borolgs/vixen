@@ -1,5 +1,5 @@
 use axum::Router;
-use vixen::{HxAction, PagedAction, RouterExt, action, route};
+use vixen::{RouterExt, action, route};
 
 use crate::{
     models::{After, Category, ProductSort},
@@ -25,25 +25,8 @@ pub struct SearchCatalog {
     pub q: String,
     #[serde(default)]
     pub sort: ProductSort,
+    #[cursor]
     pub after: Option<After>,
-}
-
-impl PagedAction for SearchCatalog {
-    type Cursor = After;
-
-    fn cursor(&self) -> Option<After> {
-        self.after.clone()
-    }
-
-    fn next(&self, after: After) -> HxAction {
-        // TODO: Let `#[action]` build this from `self` via `Serialize`.
-        SearchCatalog::action()
-            .q(&self.q)
-            .sort(self.sort)
-            .maybe_category(self.category)
-            .after(after)
-            .hx()
-    }
 }
 
 #[route("/catalog/{slug}")]

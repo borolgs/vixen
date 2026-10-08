@@ -1,5 +1,5 @@
 use axum::Router;
-use vixen::{HxAction, PagedAction, RouterExt, action, route};
+use vixen::{RouterExt, action, route};
 
 use crate::{
     models::{After, MaterialSort},
@@ -30,23 +30,8 @@ pub struct SearchMaterials {
     pub q: String,
     #[serde(default)]
     pub sort: MaterialSort,
+    #[cursor]
     pub after: Option<After>,
-}
-
-impl PagedAction for SearchMaterials {
-    type Cursor = After;
-
-    fn cursor(&self) -> Option<After> {
-        self.after.clone()
-    }
-
-    fn next(&self, after: After) -> HxAction {
-        SearchMaterials::action()
-            .q(&self.q)
-            .sort(self.sort)
-            .after(after)
-            .hx()
-    }
 }
 
 #[derive(Default)]
@@ -54,19 +39,8 @@ impl PagedAction for SearchMaterials {
 pub struct MaterialOptions {
     #[serde(default)]
     pub q: String,
+    #[cursor]
     pub after: Option<After>,
-}
-
-impl PagedAction for MaterialOptions {
-    type Cursor = After;
-
-    fn cursor(&self) -> Option<After> {
-        self.after.clone()
-    }
-
-    fn next(&self, after: After) -> HxAction {
-        MaterialOptions::action().q(&self.q).after(after).hx()
-    }
 }
 
 #[route("/admin/materials/new")]

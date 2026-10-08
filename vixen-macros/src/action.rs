@@ -3,8 +3,9 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::ext::IdentExt;
-use syn::{Error, Fields, GenericArgument, ItemStruct, PathArguments, Type};
-use syn::{LitStr, parse_quote};
+use syn::punctuated::Punctuated;
+use syn::{Attribute, Error, Fields, GenericArgument, ItemStruct, Meta, PathArguments, Type};
+use syn::{LitStr, Token, parse_quote};
 
 /// One declaration per htmx endpoint: a struct that names its route type and
 /// lists the fields the request carries.
@@ -41,6 +42,10 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
+    if let Some(err) = serde_rename(&action_struct.attrs, "rename_all") {
+        return err.to_compile_error();
+    }
+
     let action_ident = action_struct.ident.clone();
     let vis = &action_struct.vis;
 
@@ -57,7 +62,10 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     // fn field_name(val: FieldType) {}
     let mut action_setters = Vec::new();
 
-    let Fields::Named(ref action_fields) = action_struct.fields else {
+    // #[cursor] field_name: Option<T> -> impl PagedAction
+    let mut paged_action = None;
+
+    let Fields::Named(ref mut action_fields) = action_struct.fields else {
         let err = Error::new(
             action_ident.span(),
             "`#[action]` expects a struct with named fields",
@@ -66,7 +74,14 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         return quote! { #err #action_struct };
     };
 
-    for field in action_fields.named.iter() {
+    for field in action_fields.named.iter_mut() {
+        if let Some(err) = serde_rename(&field.attrs, "rename") {
+            return err.to_compile_error();
+        }
+
+        let is_cursor = field.attrs.iter().any(|a| a.path().is_ident("cursor"));
+        field.attrs.retain(|a| !a.path().is_ident("cursor"));
+
         let field_name = &field.ident;
         let field_type = &field.ty;
 
@@ -79,11 +94,11 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         action_field_idents.push(field_name.clone());
         action_field_keys.push(key.clone());
 
-        // (val: #field_type, kv(key, #val_expr))
+        // (val: #field_type, kv(key, #val_expr), Option<T> -> T)
         // TODO: Recognize only unqualified or canonical standard-library `String` /
         // `Option<T>` paths (with exactly one type argument for `Option`); matching
         // only the final segment also catches qualified user-defined types.
-        let (field_type, val_expr, is_option) = match field_type {
+        let (field_type, val_expr, option_arg) = match field_type {
             // String -> impl Into<String>
             Type::Path(type_path)
                 if type_path
@@ -95,7 +110,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                 (
                     quote! { impl ::std::convert::Into<::std::string::String> },
                     quote! { ::vixen::__private::serde_json::Value::String(::std::convert::Into::into(val)) },
-                    false,
+                    None,
                 )
             }
             // Option<T> -> T
@@ -115,20 +130,20 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                         (
                             quote! { impl ::std::convert::Into<::std::string::String> },
                             quote! { ::vixen::__private::serde_json::Value::String(::std::convert::Into::into(val)) },
-                            true,
+                            Some(arg_type),
                         )
                     }
                     _ => (
                         arg_type.to_token_stream(),
                         quote! { ::vixen::__private::serde_json::to_value(val).unwrap_or(::vixen::__private::serde_json::Value::Null) },
-                        true,
+                        Some(arg_type),
                     ),
                 }
             }
             _ => (
                 field_type.to_token_stream(),
                 quote! { ::vixen::__private::serde_json::to_value(val).unwrap_or(::vixen::__private::serde_json::Value::Null) },
-                false,
+                None,
             ),
         };
 
@@ -143,7 +158,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         action_setters.push(setter);
 
         // Option<T> -> also fn maybe_field_name(val: Option<T>) {}
-        if is_option {
+        if option_arg.is_some() {
             let maybe_name = format_ident!("maybe_{}", field_name, span = field_name.span());
             let maybe_doc = format!(
                 "Sets `{}` when `Some`. `None` is a no-op and won't clear an earlier `.{0}(..)`, so don't chain both.",
@@ -161,6 +176,35 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
             };
 
             action_setters.push(maybe_setter);
+        }
+
+        if is_cursor {
+            let Some(option_arg) = option_arg else {
+                return Error::new_spanned(&field.ty, "`#[cursor]` expects an `Option<_>` field")
+                    .to_compile_error();
+            };
+
+            if paged_action.is_some() {
+                return Error::new(
+                    field_name.span(),
+                    "`#[action]` expects at most one `#[cursor]` field",
+                )
+                .to_compile_error();
+            }
+
+            paged_action = Some(quote_spanned! { field_name.span() =>
+                impl ::vixen::PagedAction for #action_ident {
+                    type Cursor = #option_arg;
+
+                    fn cursor(&self) -> ::std::option::Option<Self::Cursor> {
+                        ::std::clone::Clone::clone(&self.#field_name)
+                    }
+
+                    fn next(&self, val: Self::Cursor) -> ::vixen::HxAction {
+                        Self::action().hx().vals(self).val(#key, #val_expr)
+                    }
+                }
+            });
         }
     }
 
@@ -248,5 +292,26 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                 <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH
             }
         }
+
+        #paged_action
     }
+}
+
+// Serde renames would make the generated setters and `FIELD` keys inconsistent.
+fn serde_rename(attrs: &[Attribute], rename: &str) -> Option<Error> {
+    attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("serde"))
+        .filter_map(|attr| {
+            attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                .ok()
+        })
+        .flatten()
+        .find(|meta| meta.path().is_ident(rename))
+        .map(|meta| {
+            Error::new_spanned(
+                meta.path(),
+                format!("`#[action]` does not support `#[serde({rename})]`"),
+            )
+        })
 }

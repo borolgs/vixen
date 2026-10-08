@@ -2,6 +2,7 @@ use std::fmt::Write;
 
 use axum_htmx::SwapOption;
 use maud::{Escaper, Render};
+use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::Selector;
@@ -80,6 +81,15 @@ impl HxAction {
     pub fn val(mut self, key: &'static str, value: Value) -> Self {
         if !value.is_null() {
             self.vals.insert(key.into(), value);
+        }
+        self
+    }
+
+    /// Merges the non-null fields of `vals` into `hx-vals`.
+    pub fn vals(mut self, vals: &impl Serialize) -> Self {
+        if let Ok(Value::Object(vals)) = serde_json::to_value(vals) {
+            self.vals
+                .extend(vals.into_iter().filter(|(_, value)| !value.is_null()));
         }
         self
     }

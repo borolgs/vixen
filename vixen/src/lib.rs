@@ -9,7 +9,7 @@
 //! | register pages and actions on a router | [`RouterExt`] |
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
-//! | return a main swap and targeted parts | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
+//! | return main and targeted swaps with response events | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | paginate search results on scroll | [`Paged`], [`PagedAction`], [`Page`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
 //! | resolve a static file to its content-hashed URL | [`asset!`] |
@@ -68,7 +68,7 @@ pub use maud;
 pub use paged::{Page, Paged, PagedAction};
 pub use vixen_bundler::{Config, build};
 
-pub use partial::{HxPartial, HxPartialResponse, Part, Parts, Selector};
+pub use partial::{HxPartial, HxPartialResponse, Part, PartialEntry, Parts, Selector};
 pub use router::{LastElementIs, RouterExt};
 
 // Docs live on the definitions, where IDE hover finds them.

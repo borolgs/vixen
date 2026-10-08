@@ -1,9 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use vixen::{
-    hx::{HxResponseTrigger, SwapOption},
-    maud::html,
-    partial,
-};
+use vixen::{HxPartialResponse, hx::SwapOption, maud::html, partial};
 
 use crate::{
     pages::{
@@ -56,27 +52,24 @@ pub async fn confirm_delete_product(ConfirmDeleteProduct { id }: ConfirmDeletePr
     }
 }
 
-pub async fn delete_product(DeleteProduct { id }: DeleteProduct) -> Response {
+pub async fn delete_product(DeleteProduct { id }: DeleteProduct) -> HxPartialResponse {
     let deleted = ctx()
         .db
         .call(move |conn| queries::delete_product(conn, id))
         .await;
 
     match deleted {
-        Ok(_) => (
-            HxResponseTrigger::normal([CONFIRM.close()]),
-            partial!(
-                (ProductRowId(id), SwapOption::Delete) => html! {},
-                TOASTER.success("Deleted", "It came off the shelf."),
-            ),
-        )
-            .into_response(),
+        Ok(_) => partial! {
+            CONFIRM.close(),
+            (ProductRowId(id), SwapOption::Delete) => html! {},
+            TOASTER.success("Deleted", "It came off the shelf."),
+        },
         Err(err) => {
             tracing::error!("delete product {id}: {err:#}");
 
             TOASTER
                 .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+                .into()
         }
     }
 }

@@ -2,7 +2,7 @@ use axum::response::{IntoResponse, Response};
 use maud::{Markup, html};
 use serde_json::json;
 
-use crate::{HxPartial, Part, Parts, Selector, hx::HxEvent, markers::Filled};
+use crate::{HxPartial, Part, PartialEntry, Parts, Selector, hx::HxEvent, markers::Filled};
 
 #[derive(Clone, Copy)]
 pub(super) struct Modal {
@@ -132,6 +132,14 @@ impl From<Slots> for Parts {
 impl From<Slots> for HxPartial<Filled> {
     fn from(slots: Slots) -> Self {
         HxPartial::new().parts(slots)
+    }
+}
+
+impl PartialEntry for Slots {
+    type State<S> = Filled;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Filled, M> {
+        partial.parts(self)
     }
 }
 

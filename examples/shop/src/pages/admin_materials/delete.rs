@@ -1,9 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use vixen::{
-    hx::{HxResponseTrigger, SwapOption},
-    maud::html,
-    partial,
-};
+use vixen::{HxPartialResponse, hx::SwapOption, maud::html, partial};
 
 use crate::{
     pages::{
@@ -64,27 +60,24 @@ pub async fn confirm_delete_material(
     }
 }
 
-pub async fn delete_material(DeleteMaterial { id }: DeleteMaterial) -> Response {
+pub async fn delete_material(DeleteMaterial { id }: DeleteMaterial) -> HxPartialResponse {
     let deleted = ctx()
         .db
         .call(move |conn| queries::delete_material(conn, id))
         .await;
 
     match deleted {
-        Ok(_) => (
-            HxResponseTrigger::normal([CONFIRM.close()]),
-            partial!(
-                (MaterialRowId(id), SwapOption::Delete) => html! {},
-                TOASTER.success("Deleted", "It is out of the stores."),
-            ),
-        )
-            .into_response(),
+        Ok(_) => partial! {
+            CONFIRM.close(),
+            (MaterialRowId(id), SwapOption::Delete) => html! {},
+            TOASTER.success("Deleted", "It is out of the stores."),
+        },
         Err(err) => {
             tracing::error!("delete material {id}: {err:#}");
 
             TOASTER
                 .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+                .into()
         }
     }
 }

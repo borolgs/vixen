@@ -16,8 +16,7 @@ cargo run -p components   # http://127.0.0.1:4003/
   The toast is a `Part` configured to append itself to the toaster.
 - `open_drawer` and `confirm_delete` fill named header, content, and footer
   slots. htmx opens the corresponding shell after swapping those parts.
-- `save_profile` uses `#[fragment]` for inline validation. On success it sends
-  the drawer's close event with `HxResponseTrigger` and returns a toast as the
-  response body.
+- `save_profile` uses `#[fragment]` for inline validation. On success, one
+  partial response closes the drawer and appends a toast.
 - `build.ts` enables Tailwind. `app.css` imports Tailwind and Basecoat, while
   `app.ts` imports htmx and the Basecoat scripts used on the page.

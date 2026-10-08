@@ -1,7 +1,7 @@
 use axum::{Router, response::IntoResponse};
 use vixen::{
     HxPartial, RouterExt, action, fragment,
-    hx::{HxResponseTrigger, SwapOption},
+    hx::SwapOption,
     maud::{Markup, html},
     partial, route,
     ui::basecoatui::{Action, Category, Dialog, Drawer, Duration, HEAD, Toast, Toaster},
@@ -202,15 +202,13 @@ async fn save_profile(SaveProfile { name }: SaveProfile) -> impl IntoResponse {
     if name.is_empty() {
         return partial! {
             profile_name_input(name, Some("Enter a name."))
-        }
-        .into_response();
+        };
     }
 
-    (
-        HxResponseTrigger::normal([DRAWER.close()]),
+    partial! {
+        DRAWER.close(),
         TOASTER.success("Saved", format!("Hello, {name}.")),
-    )
-        .into_response()
+    }
 }
 
 #[fragment]
@@ -253,8 +251,8 @@ async fn confirm_delete(_: ConfirmDelete) -> impl IntoResponse {
 }
 
 async fn delete_shelf(_: DeleteShelf) -> impl IntoResponse {
-    (
-        HxResponseTrigger::normal([CONFIRM.close()]),
+    partial! {
+        CONFIRM.close(),
         TOASTER.success("Deleted", "The shelf is gone."),
-    )
+    }
 }

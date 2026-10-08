@@ -20,8 +20,8 @@ parts will still be reworked.
    abstractions:
     - [`#[action]`][action] uses one type for the route, its form fields, and
       the markup that calls it.
-    - [`partial!`][partial] puts the main swap and any number of targeted parts
-      into one response.
+    - [`partial!`][partial] combines a main swap, targeted parts, and
+      client-side events in one response.
 
 3. **TS and CSS live next to the page they belong to.** The browser is a
    JavaScript platform, and vixen embraces that boundary. When custom
@@ -283,6 +283,9 @@ vixen targets htmx 4, but `vixen::hx` re-exports
   attributes and headers instead.
 - `HxTrigger`, `HxTriggerName` and usually `HxPrompt` extract `None`; `HxTarget`
   contains `tag#id` or `tag` rather than a bare id.
+- Prefer `partial!` for response events. It serializes missing payloads as
+  `{}`. With `HxResponseTrigger`, mixing events with and without payloads
+  produces `null`, which htmx 4 rejects.
 
 ## Crates
 

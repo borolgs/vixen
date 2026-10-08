@@ -1,6 +1,5 @@
 use vixen::{
     HxPartialResponse, Part, SyncStrategy, fragment,
-    hx::HxResponseTrigger,
     maud::{Markup, html},
     partial,
     ui::basecoatui::{Dialog, Drawer, Side, Toaster},
@@ -23,10 +22,8 @@ fn open() -> HxPartialResponse {
 fn main() {
     let _ = open();
     let _ = partial!(CONFIRM.footer(html! { "Delete" }), TOASTER.success("Saved", "ok"));
-    let _ = (
-        HxResponseTrigger::normal([DRAWER.close(), CONFIRM.close()]),
-        TOASTER.success("Saved", "ok"),
-    );
+    let _: HxPartialResponse =
+        partial!(DRAWER.close(), CONFIRM.close(), TOASTER.success("Saved", "ok"));
     let _ = Part::new(DRAWER, html! {});
     let _ = SyncStrategy::QueueAll.on(CONFIRM);
 }

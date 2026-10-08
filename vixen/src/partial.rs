@@ -1,13 +1,14 @@
 use std::marker::PhantomData;
 
 use axum::{http::HeaderValue, response::IntoResponse};
-use axum_htmx::SwapOption;
+use axum_htmx::{HxEvent, HxResponseTrigger, SwapOption};
 use maud::{Markup, Render, html};
+use serde_json::{Value, json};
 
 use crate::Id;
 
-/// An htmx response with an optional main body and any number of targeted
-/// `<hx-partial>` blocks.
+/// An htmx response containing an optional swap for the request target,
+/// targeted `<hx-partial>` swaps, and client-side events.
 ///
 /// Most code uses [`partial!`](crate::partial!); `HxPartial` is the builder
 /// behind it.
@@ -35,8 +36,8 @@ use crate::Id;
 ///
 /// # Type state
 ///
-/// `S` tracks whether the response has any content, and `M` tracks whether its
-/// main body is set. The marker types are exported from
+/// `S` tracks whether the response contains markup; events do not count. `M`
+/// tracks whether the main body is set. The marker types are exported from
 /// [`markers`](crate::markers). Only `HxPartial<Filled, M>` implements
 /// `IntoResponse`, and [`main`](HxPartial::main) is available only while `M` is
 /// [`NoMain`]. Empty responses and a second main body therefore fail to compile.
@@ -48,8 +49,8 @@ pub struct HxPartial<S = Empty, M = NoMain> {
     _state: PhantomData<fn() -> (S, M)>,
 }
 
-/// A concrete handler return type for one or more targeted parts and no main
-/// body.
+/// A concrete handler return type for one or more targeted parts with no main
+/// body. The response can also trigger events.
 ///
 /// A [`Part`] converts directly into this type, so a branch can end in
 /// `.into()`:
@@ -79,6 +80,7 @@ pub struct HasMain;
 struct State {
     main: Option<Markup>,
     parts: Vec<Part>,
+    events: Vec<HxEvent>,
 }
 
 /// Content for an htmx target, with an optional swap strategy.
@@ -202,6 +204,7 @@ impl HxPartial<Empty, NoMain> {
             state: State {
                 main: None,
                 parts: Vec::new(),
+                events: Vec::new(),
             },
             _state: PhantomData,
         }
@@ -261,11 +264,42 @@ impl<S, M> HxPartial<S, M> {
         self.state.parts.extend(parts.into().parts);
         self.cast()
     }
+
+    /// Adds a part, event, or other bare [`partial!`](crate::partial!) entry.
+    pub fn entry<E: PartialEntry>(self, entry: E) -> HxPartial<E::State<S>, M> {
+        entry.add_to(self)
+    }
+
+    /// Adds an event to the response's `HX-Trigger` header.
+    ///
+    /// Missing or `null` event data is encoded as `{}` rather than the `null`
+    /// value that htmx 4 rejects.
+    ///
+    /// ```
+    /// use axum::response::IntoResponse;
+    /// use vixen::{HxPartial, maud::html};
+    ///
+    /// let response = HxPartial::new()
+    ///     .target("#status", html! { "saved" })
+    ///     .event("todos:refresh")
+    ///     .into_response();
+    ///
+    /// assert_eq!(response.headers()["hx-trigger"], r#"{"todos:refresh":{}}"#);
+    /// ```
+    pub fn event(mut self, event: impl Into<HxEvent>) -> Self {
+        let mut event = event.into();
+        if event.data.as_ref().is_none_or(Value::is_null) {
+            event.data = Some(json!({}));
+        }
+        self.state.events.push(event);
+        self
+    }
 }
 
 impl<M> HxPartial<Filled, M> {
     /// Renders the main body first, followed by one `<hx-partial>` block per
-    /// part in insertion order.
+    /// part in insertion order. Converting the value into a response adds the
+    /// events to `HX-Trigger`.
     pub fn render(self) -> Markup {
         html! {
             @if let Some(main) = self.state.main {
@@ -281,8 +315,60 @@ impl<M> HxPartial<Filled, M> {
 }
 
 impl<M> IntoResponse for HxPartial<Filled, M> {
-    fn into_response(self) -> axum::response::Response {
-        self.render().into_response()
+    fn into_response(mut self) -> axum::response::Response {
+        let events = std::mem::take(&mut self.state.events);
+        (HxResponseTrigger::normal(events), self.render()).into_response()
+    }
+}
+
+/// A type accepted by [`partial!`](crate::partial!) without `=>`.
+pub trait PartialEntry {
+    /// The content state after adding this entry. Use [`Filled`] when the entry
+    /// always adds markup; events and optional parts preserve `S`.
+    type State<S>;
+
+    /// Adds this entry to a partial response.
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Self::State<S>, M>;
+}
+
+impl PartialEntry for Part {
+    type State<S> = Filled;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Filled, M> {
+        partial.part(self)
+    }
+}
+
+impl PartialEntry for Parts {
+    type State<S> = Filled;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Filled, M> {
+        partial.parts(self)
+    }
+}
+
+impl PartialEntry for Vec<Part> {
+    type State<S> = Filled;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Filled, M> {
+        partial.parts(self)
+    }
+}
+
+impl PartialEntry for Option<Part> {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, mut partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        partial.state.parts.extend(self);
+        partial
+    }
+}
+
+impl PartialEntry for HxEvent {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        partial.event(self)
     }
 }
 
@@ -297,16 +383,27 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 ///
 /// Each entry can be:
 ///
-/// - `_ => content` for the main swap;
+/// - `_ => content` for the main response body;
 /// - `target => content` for a targeted swap;
-/// - `(target, swap) => content` for a targeted swap with the swap spelled out;
-/// - a [`Fragment`](crate::Fragment) for an `outerHTML` swap of its element;
-/// - a [`Part`] or anything convertible to [`Parts`], such as `Vec<Part>`.
+/// - `(target, swap) => content` for a targeted swap with an explicit strategy;
+/// - a [`Fragment`](crate::Fragment) for an `outerHTML` swap targeting its
+///   element;
+/// - a [`Part`], an optional `Part`, or a collection such as [`Parts`] or
+///   `Vec<Part>`;
+/// - an [`HxEvent`](crate::hx::HxEvent) for the `HX-Trigger` header;
+/// - any other type that implements [`PartialEntry`].
 ///
-/// The main swap, if present, must come first.
+/// The main body, when present, must come first. At least one entry must add
+/// markup; an event-only response does not compile.
 ///
 /// ```
-/// use vixen::{Part, fragment, hx::SwapOption, id, maud::{Markup, html}, partial};
+/// use vixen::{
+///     Part, fragment,
+///     hx::{HxEvent, SwapOption},
+///     id,
+///     maud::{Markup, html},
+///     partial,
+/// };
 ///
 /// #[fragment]
 /// fn review_list() -> Markup {
@@ -326,6 +423,7 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 ///     ShelfCountId => html! { "12" },
 ///     ("#reviews", SwapOption::AfterBegin) => html! { li { "Sturdy." } },
 ///     toast("Saved"),
+///     HxEvent::new("reviews:refresh"),
 /// );
 /// ```
 #[macro_export]
@@ -339,8 +437,8 @@ macro_rules! partial {
     (@acc $p:expr; $target:expr => $content:expr $(, $($rest:tt)*)?) => {
         $crate::partial!(@acc $p.target($target, $content); $($($rest)*)?)
     };
-    (@acc $p:expr; $parts:expr $(, $($rest:tt)*)?) => {
-        $crate::partial!(@acc $p.parts($parts); $($($rest)*)?)
+    (@acc $p:expr; $entry:expr $(, $($rest:tt)*)?) => {
+        $crate::partial!(@acc $p.entry($entry); $($($rest)*)?)
     };
     (_ => $main:expr $(, $($rest:tt)*)?) => {
         $crate::partial!(@acc $crate::HxPartial::new().main($main); $($($rest)*)?)
@@ -366,6 +464,12 @@ mod tests {
         vec![Part::new("#rows", rows()), toast()].into()
     }
 
+    fn trigger(response: impl IntoResponse) -> Option<Value> {
+        let response = response.into_response();
+        let header = response.headers().get("hx-trigger")?;
+        Some(serde_json::from_slice(header.as_bytes()).unwrap())
+    }
+
     #[test]
     fn a_bare_part_and_a_targeted_entry_render_in_order() {
         let html = partial!(toast(), "#rows" => rows()).render().into_string();
@@ -387,6 +491,59 @@ mod tests {
             html,
             r##"<hx-partial hx-target="#rows" hx-swap="afterend"><tr><td>row</td></tr></hx-partial>"##
         );
+    }
+
+    #[test]
+    fn entries_evaluate_in_order() {
+        let mut n = 0;
+        let mut next = || {
+            n += 1;
+            Part::new(format!("#p{n}"), html! {})
+        };
+        let html = partial!(next(), next()).render().into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r##"<hx-partial hx-target="#p1"></hx-partial>"##,
+                r##"<hx-partial hx-target="#p2"></hx-partial>"##,
+            )
+        );
+    }
+
+    #[test]
+    fn an_absent_part_renders_nothing() {
+        let html = partial!(None::<Part>, "#rows" => rows(), Some(toast()))
+            .render()
+            .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r##"<hx-partial hx-target="#rows"><tr><td>row</td></tr></hx-partial>"##,
+                r##"<hx-partial hx-target="#toaster" hx-swap="beforeend">saved</hx-partial>"##,
+            )
+        );
+    }
+
+    #[test]
+    fn events_are_sent_with_data() {
+        let close = HxEvent {
+            name: "dialog:close".to_owned(),
+            data: Some(json!({ "id": "m" })),
+        };
+        let nulled = HxEvent {
+            name: "nulled".to_owned(),
+            data: Some(Value::Null),
+        };
+        let response = partial!(close, toast(), HxEvent::new("rows:refresh"), nulled);
+        assert_eq!(
+            trigger(response),
+            Some(json!({ "dialog:close": { "id": "m" }, "rows:refresh": {}, "nulled": {} }))
+        );
+    }
+
+    #[test]
+    fn a_response_without_events_has_no_trigger() {
+        assert_eq!(trigger(partial!(toast())), None);
     }
 
     #[test]

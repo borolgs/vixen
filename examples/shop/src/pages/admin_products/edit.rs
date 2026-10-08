@@ -1,8 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    Page, fragment,
-    hx::HxResponseTrigger,
+    HxPartialResponse, Page, fragment,
     maud::{Markup, html},
     partial,
     ui::basecoatui::Combobox,
@@ -90,10 +89,10 @@ pub async fn edit_product(EditProductPath { id }: EditProductPath) -> Response {
     }
 }
 
-pub async fn create_product(form: CreateProduct) -> Response {
+pub async fn create_product(form: CreateProduct) -> HxPartialResponse {
     let input = match form.validate() {
         Ok(input) => input,
-        Err(message) => return partial!(product_form_error(message)).into_response(),
+        Err(message) => return partial!(product_form_error(message)),
     };
 
     let created = ctx()
@@ -119,19 +118,25 @@ pub async fn create_product(form: CreateProduct) -> Response {
         });
 
     match created {
-        Ok(()) => (
-            HxResponseTrigger::normal([DRAWER.close(), PRODUCTS.refresh()]),
+        Ok(()) => partial! {
+            DRAWER.close(),
+            PRODUCTS.refresh(),
             TOASTER.success("Added", "It is on the shelf now."),
-        )
-            .into_response(),
-        Err(message) => partial!(product_form_error(message)).into_response(),
+        },
+        Err(message) => partial! {
+            product_form_error(message)
+        },
     }
 }
 
-pub async fn update_product(form: UpdateProduct) -> Response {
+pub async fn update_product(form: UpdateProduct) -> HxPartialResponse {
     let (id, input) = match form.validate() {
         Ok(valid) => valid,
-        Err(message) => return partial!(product_form_error(message)).into_response(),
+        Err(message) => {
+            return partial! {
+                product_form_error(message)
+            };
+        }
     };
 
     let updated = ctx()
@@ -161,15 +166,14 @@ pub async fn update_product(form: UpdateProduct) -> Response {
         });
 
     match updated {
-        Ok(product) => (
-            HxResponseTrigger::normal([DRAWER.close()]),
-            partial!(
-                product_row(&product),
-                TOASTER.success("Saved", "Changes are live in the shop."),
-            ),
-        )
-            .into_response(),
-        Err(message) => partial!(product_form_error(message)).into_response(),
+        Ok(product) => partial! {
+            DRAWER.close(),
+            product_row(&product),
+            TOASTER.success("Saved", "Changes are live in the shop."),
+        },
+        Err(message) => partial! {
+            product_form_error(message)
+        },
     }
 }
 

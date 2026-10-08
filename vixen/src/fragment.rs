@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use axum_htmx::SwapOption;
 use maud::{Markup, Render};
 
-use crate::{Id, Part, Parts, Selector};
+use crate::{HxPartial, Id, Part, PartialEntry, Parts, Selector, markers::Filled};
 
 /// Markup for one element with a typed id.
 ///
@@ -75,6 +75,14 @@ impl<T: Id> From<Fragment<T>> for Part {
 impl<T: Id> From<Fragment<T>> for Parts {
     fn from(value: Fragment<T>) -> Self {
         Part::from(value).into()
+    }
+}
+
+impl<T: Id> PartialEntry for Fragment<T> {
+    type State<S> = Filled;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<Filled, M> {
+        partial.part(self)
     }
 }
 

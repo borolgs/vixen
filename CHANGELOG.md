@@ -11,6 +11,8 @@
 - `#[derive(ReqCtx)]` for request-local access to an axum extractor.
 - A `testing` feature with response body helpers.
 - `maybe_<field>(Option<T>)` setters on `#[action]` builders.
+- `partial!` accepts `HxEvent` entries, using `{}` for missing payloads as required by htmx 4.
+- `partial!` accepts optional parts (`Option<Part>`).
 - `examples/shop`, demonstrating `Paged`, `Combobox` and `ReqCtx`.
 
 ### Changed
@@ -18,6 +20,7 @@
 - `Id::sel(&self)` replaces the `ID` and `SEL` consts, which `#[id]` types lose too.
 - `Fragment::new` takes the id: `Fragment::new(&id, markup)`.
 - `Selector` renders escaped.
+- Bare `partial!` entries now use `PartialEntry` rather than implicit `Into<Parts>` conversions.
 
 ### Fixed
 

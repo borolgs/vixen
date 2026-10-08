@@ -1,7 +1,6 @@
 use axum::response::{IntoResponse, Response};
 use vixen::{
-    fragment,
-    hx::HxResponseTrigger,
+    HxPartialResponse, fragment,
     maud::{Markup, html},
     partial,
     ui::basecoatui::Slots,
@@ -64,10 +63,10 @@ pub async fn edit_material(EditMaterialPath { id }: EditMaterialPath) -> Respons
     }
 }
 
-pub async fn create_material(form: CreateMaterial) -> Response {
+pub async fn create_material(form: CreateMaterial) -> HxPartialResponse {
     let input = match form.validate() {
         Ok(input) => input,
-        Err(message) => return partial!(material_form_error(message)).into_response(),
+        Err(message) => return partial!(material_form_error(message)),
     };
 
     let created = ctx()
@@ -92,19 +91,21 @@ pub async fn create_material(form: CreateMaterial) -> Response {
         });
 
     match created {
-        Ok(()) => (
-            HxResponseTrigger::normal([DRAWER.close(), MATERIALS.refresh()]),
+        Ok(()) => partial! {
+            DRAWER.close(),
+            MATERIALS.refresh(),
             TOASTER.success("Added", "Products can pick it now."),
-        )
-            .into_response(),
-        Err(message) => partial!(material_form_error(message)).into_response(),
+        },
+        Err(message) => partial! {
+            material_form_error(message)
+        },
     }
 }
 
-pub async fn update_material(form: UpdateMaterial) -> Response {
+pub async fn update_material(form: UpdateMaterial) -> HxPartialResponse {
     let (id, input) = match form.validate() {
         Ok(valid) => valid,
-        Err(message) => return partial!(material_form_error(message)).into_response(),
+        Err(message) => return partial!(material_form_error(message)),
     };
 
     let updated = ctx()
@@ -133,15 +134,14 @@ pub async fn update_material(form: UpdateMaterial) -> Response {
         });
 
     match updated {
-        Ok(material) => (
-            HxResponseTrigger::normal([DRAWER.close()]),
-            partial!(
-                material_row(&material),
-                TOASTER.success("Saved", "Every product made of it follows."),
-            ),
-        )
-            .into_response(),
-        Err(message) => partial!(material_form_error(message)).into_response(),
+        Ok(material) => partial! {
+            DRAWER.close(),
+            material_row(&material),
+            TOASTER.success("Saved", "Every product made of it follows."),
+        },
+        Err(message) => partial! {
+            material_form_error(message)
+        },
     }
 }
 

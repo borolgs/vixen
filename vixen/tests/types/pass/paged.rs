@@ -1,8 +1,8 @@
 use axum::response::Response;
 use vixen::{
     HxAction, Page, Paged, PagedAction, Part, Selector, action,
-    hx::HxResponseTrigger,
     maud::{Markup, html},
+    partial,
 };
 
 #[action("/todos/search")]
@@ -64,6 +64,6 @@ fn main() {
     let _: Response = TODOS.respond(&search, load(&search));
     let _ = TODOS.respond(&search, Err(Vec::<Part>::new()));
 
-    let _ = HxResponseTrigger::normal([TODOS.refresh()]);
+    let _ = partial!(TODOS.refresh(), "#status" => html! { "Added" });
     let _: Selector = TODOS.into();
 }

@@ -17,46 +17,7 @@ pub const DRAWER: Drawer = Drawer::new("material-drawer").content_class("px-4 pb
 pub const CONFIRM: Dialog = Dialog::new("material-confirm");
 
 pub const MATERIALS: Paged<SearchMaterials, Material> =
-    Paged::new("material-rows", |material| material_row(material).into())
-        .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
-        .empty(|_| {
-            html! {
-                tr {
-                    td colspan="4" class="text-muted-foreground text-center" {
-                        "Nothing in the stores matches."
-                    }
-                }
-            }
-        })
-        .failed(|_| {
-            html! {
-                tr {
-                    td colspan="4" {
-                        div class="alert" data-variant="destructive" {
-                            h3 { "The stores are empty" }
-                            section { p { "The database did not answer." } }
-                        }
-                    }
-                }
-            }
-        })
-        .loading(|next| {
-            html! {
-                tr hx-action=(next) {
-                    td colspan="4" class="text-muted-foreground text-center" { "Loading…" }
-                }
-            }
-        })
-        .retry(|again| {
-            html! {
-                tr hx-action=(again) {
-                    td colspan="4" class="text-muted-foreground text-center" {
-                        "The rest did not load. "
-                        button.btn type="button" data-variant="ghost" data-size="sm" { "Try again" }
-                    }
-                }
-            }
-        });
+    Paged::new("material-rows", |material| material_row(material).into()).table::<4>();
 
 #[id]
 pub struct MaterialRowId(pub i64);
@@ -65,8 +26,8 @@ pub struct MaterialRowId(pub i64);
 pub fn material_row(material: &Material) -> Markup {
     html! {
         tr id=(Self) {
-            td class="font-medium" { (material.name) }
-            td class="text-muted-foreground min-w-48 text-xs whitespace-normal" { (material.care) }
+            td class="truncate font-medium" { (material.name) }
+            td class="text-muted-foreground text-xs whitespace-normal" { (material.care) }
             td { (material.products) }
             td {
                 div class="flex justify-end gap-1" {

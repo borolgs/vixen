@@ -17,46 +17,7 @@ pub const DRAWER: Drawer = Drawer::new("product-drawer").content_class("px-4 pb-
 pub const CONFIRM: Dialog = Dialog::new("product-confirm");
 
 pub const PRODUCTS: Paged<SearchProducts, Product> =
-    Paged::new("product-rows", |product| product_row(product).into())
-        .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
-        .empty(|_| {
-            html! {
-                tr {
-                    td colspan="7" class="text-muted-foreground text-center" {
-                        "Nothing on the shelf matches."
-                    }
-                }
-            }
-        })
-        .failed(|_| {
-            html! {
-                tr {
-                    td colspan="7" {
-                        div class="alert" data-variant="destructive" {
-                            h3 { "The shelf is empty" }
-                            section { p { "The database did not answer." } }
-                        }
-                    }
-                }
-            }
-        })
-        .loading(|next| {
-            html! {
-                tr hx-action=(next) {
-                    td colspan="7" class="text-muted-foreground text-center" { "Loading…" }
-                }
-            }
-        })
-        .retry(|again| {
-            html! {
-                tr hx-action=(again) {
-                    td colspan="7" class="text-muted-foreground text-center" {
-                        "The rest did not load. "
-                        button.btn type="button" data-variant="ghost" data-size="sm" { "Try again" }
-                    }
-                }
-            }
-        });
+    Paged::new("product-rows", |product| product_row(product).into()).table::<7>();
 
 #[id]
 pub struct ProductRowId(pub i64);
@@ -65,13 +26,13 @@ pub struct ProductRowId(pub i64);
 pub fn product_row(product: &Product) -> Markup {
     html! {
         tr id=(Self) {
-            td class="min-w-56 whitespace-normal" {
+            td class="whitespace-normal" {
                 div class="font-medium" { (product.name) }
                 div class="text-muted-foreground text-xs" { (product.tagline) }
             }
-            td { code { (product.slug) } }
+            td class="truncate" { code { (product.slug) } }
             td { span.badge data-variant="outline" { (product.category.label()) } }
-            td class="text-muted-foreground min-w-32 text-xs whitespace-normal" {
+            td class="text-muted-foreground text-xs whitespace-normal" {
                 @if product.materials.is_empty() { "—" } @else { (product.materials) }
             }
             td { (price(product.price_cents)) }

@@ -50,6 +50,7 @@ mod dialog;
 mod drawer;
 mod head;
 mod modal;
+mod table;
 mod toast;
 
 pub use combobox::Combobox;

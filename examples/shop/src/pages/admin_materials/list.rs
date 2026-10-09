@@ -31,13 +31,13 @@ pub async fn materials_index() -> Markup {
             }
         }
         div class="mt-4 overflow-x-auto" {
-            table.table {
+            table class="table min-w-3xl table-fixed" {
                 thead {
                     tr {
-                        th { "Name" }
+                        th class="w-64" { "Name" }
                         th { "Care" }
-                        th { "Products" }
-                        th {}
+                        th class="w-24" { "Products" }
+                        th class="w-36" {}
                     }
                 }
                 (MATERIALS.view(&search, page))

@@ -31,16 +31,16 @@ pub async fn products_index() -> Markup {
             }
         }
         div class="mt-4 overflow-x-auto" {
-            table.table {
+            table class="table min-w-5xl table-fixed" {
                 thead {
                     tr {
                         th { "Name" }
-                        th { "Slug" }
-                        th { "Category" }
-                        th { "Materials" }
-                        th { "Price" }
-                        th { "Stock" }
-                        th {}
+                        th class="w-32" { "Slug" }
+                        th class="w-28" { "Category" }
+                        th class="w-52" { "Materials" }
+                        th class="w-20" { "Price" }
+                        th class="w-24" { "Stock" }
+                        th class="w-36" {}
                     }
                 }
                 (PRODUCTS.view(&search, page))

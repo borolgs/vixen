@@ -27,7 +27,7 @@ pub async fn catalog_index() -> Markup {
         @match page {
             Ok(page) => { (CATALOG.render(&search, page)) }
             Err(_) => {
-                (CATALOG.shell(html! {
+                (CATALOG.shell(&search, html! {
                     li class="col-span-full" {
                         div class="alert" data-variant="destructive" {
                             h3 { "The shelf is empty" }

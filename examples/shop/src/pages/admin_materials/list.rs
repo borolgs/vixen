@@ -42,7 +42,7 @@ pub async fn materials_index() -> Markup {
                 @match page {
                     Ok(page) => { (MATERIALS.render(&search, page)) }
                     Err(_) => {
-                        (MATERIALS.shell(html! {
+                        (MATERIALS.shell(&search, html! {
                             tr {
                                 td colspan="4" {
                                     div class="alert" data-variant="destructive" {

@@ -33,7 +33,7 @@ fn row(todo: &Todo) -> Markup {
 
 // Every slot is a `fn`, so the list is a `const`.
 const TODOS: Paged<SearchTodos, Todo> = Paged::new("todos", row)
-    .list(|id, rows| html! { tbody id=(id) { (rows) } })
+    .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
     // A closure that reads the search names its type.
     .empty(|search: &SearchTodos| html! { tr { td { "Nothing for " (search.q) } } })
     .loading(|next| html! { tr hx-action=(next) {} })
@@ -57,7 +57,7 @@ fn main() {
     let _ = html! {
         form hx-action=(TODOS.search(SearchTodos::action())) {}
         @if let Ok(page) = load(&search) { (TODOS.render(&search, page)) }
-        (TODOS.shell(html! { tr {} }))
+        (TODOS.shell(&search, html! { tr {} }))
     };
 
     // The error side is anything `Into<Parts>`.

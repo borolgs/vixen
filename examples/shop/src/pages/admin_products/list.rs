@@ -45,7 +45,7 @@ pub async fn products_index() -> Markup {
                 @match page {
                     Ok(page) => { (PRODUCTS.render(&search, page)) }
                     Err(_) => {
-                        (PRODUCTS.shell(html! {
+                        (PRODUCTS.shell(&search, html! {
                             tr {
                                 td colspan="7" {
                                     div class="alert" data-variant="destructive" {

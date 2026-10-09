@@ -18,7 +18,7 @@ pub const CONFIRM: Dialog = Dialog::new("material-confirm");
 
 pub const MATERIALS: Paged<SearchMaterials, Material> =
     Paged::new("material-rows", |material| material_row(material).into())
-        .list(|id, rows| html! { tbody id=(id) { (rows) } })
+        .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
         .empty(|_| {
             html! {
                 tr {
@@ -81,7 +81,7 @@ pub const MATERIAL_OPTIONS: Paged<MaterialOptions, Material> =
         html! { div role="option" data-value=(material.id) { (material.name) } }
     })
     // Not the listbox: basecoat keeps its listeners on it.
-    .list(|id, rows| html! { div id=(id) role="presentation" { (rows) } })
+    .list(|id, _, rows| html! { div id=(id) role="presentation" { (rows) } })
     .empty(|_| html! {})
     .loading(|next| {
         html! {

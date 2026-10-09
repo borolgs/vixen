@@ -18,7 +18,7 @@ use crate::{
 pub const DETAIL: Drawer = Drawer::new("catalog-detail").content_class("px-4 pb-4");
 
 pub const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", card)
-    .list(|id, rows| {
+    .list(|id, _, rows| {
         html! {
             ul id=(id) class="mt-6 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-4" {
                 (rows)

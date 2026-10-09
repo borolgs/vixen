@@ -97,7 +97,7 @@ pub trait PagedAction {
 /// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
 pub struct Paged<PAction, Item> {
     id: &'static str,
-    list: fn(&'static str, Markup) -> Markup,
+    list: fn(&'static str, &PAction, Markup) -> Markup,
     item: fn(&Item) -> Markup,
     empty: fn(&PAction) -> Markup,
     loading: fn(HxAction) -> Markup,
@@ -111,7 +111,7 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
     pub const fn new(id: &'static str, item: fn(&Item) -> Markup) -> Self {
         Self {
             id,
-            list: |id, rows| html! { div id=(id) { (rows) } },
+            list: |id, _, rows| html! { div id=(id) { (rows) } },
             item,
             empty: |_| html! { div { "No results." } },
             loading: |next| html! { div hx-action=(next) { "Loading…" } },
@@ -130,8 +130,9 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
 
     /// Sets the list container renderer.
     ///
-    /// The root element must use the provided ID and contain the rows.
-    pub const fn list(mut self, list: fn(&'static str, Markup) -> Markup) -> Self {
+    /// The root element must use the provided ID and contain the rows. The current
+    /// search is available when rendering the initial page.
+    pub const fn list(mut self, list: fn(&'static str, &PAction, Markup) -> Markup) -> Self {
         self.list = list;
         self
     }
@@ -207,15 +208,18 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
             return rows;
         }
 
-        self.shell(html! {
-            @if page.items.is_empty() { ((self.empty)(search)) }
-            (rows)
-        })
+        self.shell(
+            search,
+            html! {
+                @if page.items.is_empty() { ((self.empty)(search)) }
+                (rows)
+            },
+        )
     }
 
     /// Wraps `rows` in the list container targeted by search actions.
-    pub fn shell(&self, rows: Markup) -> Markup {
-        (self.list)(self.id, rows)
+    pub fn shell(&self, search: &PAction, rows: Markup) -> Markup {
+        (self.list)(self.id, search, rows)
     }
 
     /// Converts a page or error parts into an htmx response.

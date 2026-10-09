@@ -18,7 +18,7 @@ pub const CONFIRM: Dialog = Dialog::new("product-confirm");
 
 pub const PRODUCTS: Paged<SearchProducts, Product> =
     Paged::new("product-rows", |product| product_row(product).into())
-        .list(|id, rows| html! { tbody id=(id) { (rows) } })
+        .list(|id, _, rows| html! { tbody id=(id) { (rows) } })
         .empty(|_| {
             html! {
                 tr {

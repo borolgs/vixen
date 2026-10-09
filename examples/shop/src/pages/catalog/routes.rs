@@ -21,7 +21,7 @@ pub struct CatalogPath;
 #[action("/catalog/search")]
 pub struct SearchCatalog {
     pub category: Option<Category>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub q: String,
     #[serde(default)]
     pub sort: ProductSort,

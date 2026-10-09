@@ -26,7 +26,7 @@ pub struct MaterialsPath;
 #[derive(Default)]
 #[action("/admin/materials/search")]
 pub struct SearchMaterials {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub q: String,
     #[serde(default)]
     pub sort: MaterialSort,

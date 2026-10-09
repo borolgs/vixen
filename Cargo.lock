@@ -133,6 +133,7 @@ dependencies = [
  "maud",
  "scraper",
  "serde",
+ "serde_html_form",
  "serde_json",
  "tokio",
  "tower",

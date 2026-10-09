@@ -1,11 +1,15 @@
+use axum_extra::extract::Query;
 use vixen::maud::{Markup, html};
 
 use crate::pages::{
-    admin_products::{list::products_index, routes::ProductsPath},
+    admin_products::{
+        list::products_index,
+        routes::{ProductsPath, SearchProducts},
+    },
     shared::layout,
 };
 
-pub async fn products(_: ProductsPath) -> Markup {
+pub async fn products(_: ProductsPath, Query(search): Query<SearchProducts>) -> Markup {
     layout(
         "Products",
         html! { (vixen::assets!()) },
@@ -15,7 +19,7 @@ pub async fn products(_: ProductsPath) -> Markup {
                 "Everything on the shelf. Edit in place, or add something new."
             }
 
-            (products_index().await)
+            (products_index(search).await)
         },
     )
 }

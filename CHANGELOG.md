@@ -10,6 +10,7 @@
 - `Paged` for cursor-based pagination on scroll.
 - `#[cursor]` to derive `PagedAction` from an optional `#[action]` field.
 - `Paged::table::<COLS>()` for Basecoat table bodies.
+- `Paged::replace_url` to mirror the search in the browser URL.
 - `HxAction::vals` for merging serializable values into `hx-vals`.
 - `#[derive(ReqCtx)]` for request-local access to an axum extractor.
 - A `testing` feature with response body helpers.

@@ -1,7 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    Page, fragment,
+    Page, fragment, href,
     maud::{Markup, html},
     partial,
 };
@@ -11,7 +11,7 @@ use crate::{
     pages::{
         catalog::{
             queries::{Product, ProductQuery, search_products},
-            routes::SearchCatalog,
+            routes::{CatalogPath, SearchCatalog},
             ui::{CATALOG, DETAIL},
         },
         shared::TOASTER,
@@ -19,8 +19,11 @@ use crate::{
     state::ctx,
 };
 
-pub async fn catalog_index() -> Markup {
-    let search = SearchCatalog::default();
+pub async fn catalog_index(search: SearchCatalog) -> Markup {
+    let search = SearchCatalog {
+        after: None,
+        ..search
+    };
     let page = load(&search).await;
 
     html! {
@@ -36,11 +39,14 @@ pub async fn catalog_search(search: SearchCatalog) -> Response {
         .is_err()
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
-    partial! {
-        _ => CATALOG.view(&search, page),
-        toast,
-    }
-    .into_response()
+    (
+        CATALOG.replace_url(&search, href!(CatalogPath)),
+        partial! {
+            _ => CATALOG.view(&search, page),
+            toast,
+        },
+    )
+        .into_response()
 }
 
 async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, After>> {

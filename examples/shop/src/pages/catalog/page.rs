@@ -1,11 +1,15 @@
+use axum_extra::extract::Query;
 use vixen::maud::{Markup, html};
 
 use crate::pages::{
-    catalog::{list::catalog_index, routes::CatalogPath},
+    catalog::{
+        list::catalog_index,
+        routes::{CatalogPath, SearchCatalog},
+    },
     shared::layout,
 };
 
-pub async fn catalog(_: CatalogPath) -> Markup {
+pub async fn catalog(_: CatalogPath, Query(search): Query<SearchCatalog>) -> Markup {
     layout(
         "Shop",
         html! { (vixen::assets!()) },
@@ -15,7 +19,7 @@ pub async fn catalog(_: CatalogPath) -> Markup {
                 "Things for the kitchen and the table, made to be used for a long time."
             }
 
-            (catalog_index().await)
+            (catalog_index(search).await)
         },
     )
 }

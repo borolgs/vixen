@@ -1,11 +1,15 @@
+use axum_extra::extract::Query;
 use vixen::maud::{Markup, html};
 
 use crate::pages::{
-    admin_materials::{list::materials_index, routes::MaterialsPath},
+    admin_materials::{
+        list::materials_index,
+        routes::{MaterialsPath, SearchMaterials},
+    },
     shared::layout,
 };
 
-pub async fn materials(_: MaterialsPath) -> Markup {
+pub async fn materials(_: MaterialsPath, Query(search): Query<SearchMaterials>) -> Markup {
     layout(
         "Materials",
         html! { (vixen::assets!()) },
@@ -15,7 +19,7 @@ pub async fn materials(_: MaterialsPath) -> Markup {
                 "What things are made of. A product picks from this list."
             }
 
-            (materials_index().await)
+            (materials_index(search).await)
         },
     )
 }

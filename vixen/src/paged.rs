@@ -4,11 +4,14 @@
 //! failures in place. The request type implements [`PagedAction`] to expose its
 //! cursor and build actions for subsequent pages.
 
-use axum_htmx::{HxEvent, SwapOption};
+use std::fmt::Display;
+
+use axum_htmx::{HxEvent, HxReplaceUrl, SwapOption};
 use maud::{Markup, html};
+use serde::Serialize;
 use serde_json::json;
 
-use crate::{HxAction, Selector, SyncStrategy};
+use crate::{Href, HxAction, Selector, SyncStrategy};
 
 // Radio inputs emit both `input` and `change`; text inputs emit `change` on blur.
 const SEARCH_TRIGGER: &str =
@@ -82,6 +85,7 @@ pub trait PagedAction {
 /// Use [`list`](Self::list), [`empty`](Self::empty), [`failed`](Self::failed),
 /// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
 /// With the `basecoatui` feature, `Paged::table` configures a `<tbody>`.
+/// [`replace_url`](Self::replace_url) adds the search parameters to the browser URL.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
@@ -228,6 +232,25 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
         }
     }
 
+    /// Creates an `HX-Replace-Url` response header for the initial page.
+    ///
+    /// The URL is `href` with the search fields encoded as query parameters.
+    /// Returns `None` for subsequent pages or when serialization fails.
+    pub fn replace_url(&self, search: &PAction, href: Href<impl Display>) -> Option<HxReplaceUrl>
+    where
+        PAction: Serialize,
+    {
+        if search.cursor().is_some() {
+            return None;
+        }
+        let query = serde_html_form::to_string(search).ok()?;
+        Some(HxReplaceUrl(if query.is_empty() {
+            href.to_string()
+        } else {
+            format!("{href}?{query}")
+        }))
+    }
+
     fn shell(&self, search: &PAction, rows: Markup) -> Markup {
         (self.list)(self.id, search, rows)
     }
@@ -338,6 +361,28 @@ mod tests {
             )
         );
         assert_eq!(todos.refresh().name, "todos:refresh");
+    }
+
+    #[test]
+    fn only_a_first_page_replaces_the_url() {
+        let href = Href::new("/app", "/todos");
+
+        let first = TODOS.replace_url(&search(None), href).unwrap();
+        assert_eq!(first.0, "/app/todos?q=m");
+        assert!(TODOS.replace_url(&search(Some(2)), href).is_none());
+    }
+
+    #[test]
+    fn an_empty_search_replaces_the_url_without_a_query() {
+        #[action("/todos/all")]
+        struct AllTodos {
+            #[cursor]
+            after: Option<u32>,
+        }
+        let todos: Paged<AllTodos, &str> = Paged::new("todos", |_| html! {});
+
+        let url = todos.replace_url(&AllTodos { after: None }, Href::new("", "/todos"));
+        assert_eq!(url.unwrap().0, "/todos");
     }
 
     #[test]

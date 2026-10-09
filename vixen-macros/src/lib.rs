@@ -71,10 +71,13 @@ mod route;
 ///   add `trigger`, `target`, `swap`, or `sync` through [`HxAction`].
 /// - `Name::FIELD`, a set of `&'static str` field names for form controls.
 /// - `Name::PATH`, `name.path()`, and the generated `NamePath` unit struct.
+/// - [`PagedAction`] for `Name` when `#[cursor]` marks an `Option<_>` field.
 ///
 /// # Requirements
 ///
-/// `#[action]` accepts a struct with named fields and no generics.
+/// `#[action]` accepts a non-generic struct with named fields. Serde field
+/// renaming is unsupported because generated `hx-vals` keys and `Name::FIELD`
+/// use Rust field names.
 ///
 /// `Name` consumes the request body and must be the handler's last argument.
 /// Put extractors such as `State` before it.
@@ -86,6 +89,7 @@ mod route;
 /// [`RouterExt::action`]: ../vixen/trait.RouterExt.html#tymethod.action
 /// [`base_path!`]: ../vixen/macro.base_path.html
 /// [`HxAction`]: ../vixen/struct.HxAction.html
+/// [`PagedAction`]: ../vixen/trait.PagedAction.html
 #[proc_macro_attribute]
 pub fn action(attr: TokenStream, item: TokenStream) -> TokenStream {
     action::expand(attr.into(), item.into()).into()

@@ -1,5 +1,5 @@
 use vixen::{
-    HxAction, Page, Paged, PagedAction, Selector, action,
+    Page, Paged, Selector, action,
     maud::{Markup, html},
     partial,
 };
@@ -7,19 +7,8 @@ use vixen::{
 #[action("/todos/search")]
 struct SearchTodos {
     q: String,
-    after: Option<u32>,
-}
-
-impl PagedAction for SearchTodos {
-    type Cursor = u32;
-
-    fn cursor(&self) -> Option<u32> {
-        self.after
-    }
-
-    fn next(&self, after: u32) -> HxAction {
-        SearchTodos::action().q(&self.q).after(after).hx()
-    }
+    #[cursor]
+    after: Option<String>,
 }
 
 struct Todo {
@@ -41,10 +30,10 @@ const TODOS: Paged<SearchTodos, Todo> = Paged::new("todos", row)
     .search_trigger("submit")
     .retry_trigger("click");
 
-fn load(_: &SearchTodos) -> std::io::Result<Page<Todo, u32>> {
+fn load(_: &SearchTodos) -> std::io::Result<Page<Todo, String>> {
     Ok(Page {
         items: Vec::new(),
-        next: Some(10),
+        next: Some("10".into()),
     })
 }
 

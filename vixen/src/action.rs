@@ -238,7 +238,7 @@ mod tests {
     use maud::html;
 
     use super::*;
-    use crate::{action, id};
+    use crate::{PagedAction, action, id};
 
     #[action("/save")]
     struct Save {
@@ -249,6 +249,7 @@ mod tests {
     #[action("/search")]
     struct Search {
         q: String,
+        #[cursor]
         after: Option<i64>,
     }
 
@@ -287,6 +288,41 @@ mod tests {
             concat!(
                 r#"<a hx-action="/search" hx-vals="{&quot;after&quot;:40}" hx-method="post"></a>"#,
                 r#"<a hx-action="/search" hx-method="post"></a>"#,
+            )
+        );
+    }
+
+    #[test]
+    fn vals_merges_fields_and_skips_none() {
+        let search = Search {
+            q: "steel".into(),
+            after: None,
+        };
+        let html = html! { a hx-action=(Search::action().hx().vals(&search)) {} }.into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<a hx-action="/search" hx-vals="{&quot;q&quot;:&quot;steel&quot;}" "#,
+                r#"hx-method="post"></a>"#,
+            )
+        );
+    }
+
+    #[test]
+    fn a_cursor_field_implements_paged_action() {
+        let search = Search {
+            q: "steel".into(),
+            after: Some(40),
+        };
+        assert_eq!(search.cursor(), Some(40));
+
+        let html = html! { a hx-action=(search.next(80)) {} }.into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r#"<a hx-action="/search" "#,
+                r#"hx-vals="{&quot;after&quot;:80,&quot;q&quot;:&quot;steel&quot;}" "#,
+                r#"hx-method="post"></a>"#,
             )
         );
     }

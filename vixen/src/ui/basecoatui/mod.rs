@@ -41,9 +41,10 @@
 //! ```
 //!
 //! [`Combobox`] renders inline and does not have a shell.
+//! [`Paged::table`](crate::Paged::table) configures a paged Basecoat table.
 //!
 //! See `examples/components` for the modal and toast setup, and `examples/shop`
-//! for comboboxes.
+//! for comboboxes and paged tables.
 
 mod combobox;
 mod dialog;

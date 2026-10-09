@@ -1,0 +1,11 @@
+error: `#[action]` does not support `#[serde(rename)]`
+ --> tests/types/fail/action_serde_rename.rs:5:13
+  |
+5 |     #[serde(rename = "title")]
+  |             ^^^^^^
+
+error: `#[action]` does not support `#[serde(rename_all)]`
+  --> tests/types/fail/action_serde_rename.rs:10:9
+   |
+10 | #[serde(rename_all = "camelCase")]
+   |         ^^^^^^^^^^

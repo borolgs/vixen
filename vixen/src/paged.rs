@@ -25,8 +25,8 @@ pub struct Page<Item, Cursor> {
 
 /// An action that fetches pages for a [`Paged`] list.
 ///
-/// Implement this for the [`#[action]`](macro@crate::action) request used by
-/// the list's search form.
+/// An [`#[action]`](macro@crate::action) request implements this when one
+/// `Option<_>` field is marked `#[cursor]`.
 pub trait PagedAction {
     /// The cursor passed between consecutive requests.
     type Cursor;
@@ -46,26 +46,15 @@ pub trait PagedAction {
 ///
 /// ```
 /// use vixen::{
-///     HxAction, Page, Paged, PagedAction, action,
+///     Page, Paged, action,
 ///     maud::{Markup, html},
 /// };
 ///
 /// #[action("/todos/search")]
 /// struct SearchTodos {
 ///     q: String,
+///     #[cursor]
 ///     after: Option<u32>,
-/// }
-///
-/// impl PagedAction for SearchTodos {
-///     type Cursor = u32;
-///
-///     fn cursor(&self) -> Option<u32> {
-///         self.after
-///     }
-///
-///     fn next(&self, after: u32) -> HxAction {
-///         SearchTodos::action().q(&self.q).after(after).hx()
-///     }
 /// }
 ///
 /// const TODOS: Paged<SearchTodos, String> =
@@ -92,6 +81,7 @@ pub trait PagedAction {
 /// items and, when present, another loading sentinel. The defaults use `div`s.
 /// Use [`list`](Self::list), [`empty`](Self::empty), [`failed`](Self::failed),
 /// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
+/// With the `basecoatui` feature, `Paged::table` configures a `<tbody>`.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
@@ -273,19 +263,8 @@ mod tests {
     #[action("/todos/search")]
     struct SearchTodos {
         q: String,
+        #[cursor]
         after: Option<u32>,
-    }
-
-    impl PagedAction for SearchTodos {
-        type Cursor = u32;
-
-        fn cursor(&self) -> Option<u32> {
-            self.after
-        }
-
-        fn next(&self, after: u32) -> HxAction {
-            SearchTodos::action().q(&self.q).after(after).hx()
-        }
     }
 
     const TODOS: Paged<SearchTodos, &str> = Paged::new("todos", |title| html! { p { (title) } });
@@ -333,6 +312,16 @@ mod tests {
     fn an_empty_first_page_renders_the_empty_slot() {
         let html = TODOS.render(&search(None), page(&[], None)).into_string();
         assert_eq!(html, r#"<div id="todos"><div>No results.</div></div>"#);
+    }
+
+    #[test]
+    fn the_list_reads_the_search() {
+        let todos =
+            TODOS.list(|id, search, rows| html! { ul id=(id) data-q=(search.q) { (rows) } });
+        let html = todos
+            .render(&search(None), page(&["milk"], None))
+            .into_string();
+        assert_eq!(html, r#"<ul id="todos" data-q="m"><p>milk</p></ul>"#);
     }
 
     #[test]

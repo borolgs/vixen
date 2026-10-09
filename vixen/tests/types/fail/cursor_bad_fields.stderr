@@ -1,0 +1,11 @@
+error: `#[cursor]` expects an `Option<_>` field
+ --> tests/types/fail/cursor_bad_fields.rs:6:12
+  |
+6 |     after: u32,
+  |            ^^^
+
+error: `#[action]` expects at most one `#[cursor]` field
+  --> tests/types/fail/cursor_bad_fields.rs:14:5
+   |
+14 |     before: Option<u32>,
+   |     ^^^^^^

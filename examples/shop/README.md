@@ -9,8 +9,8 @@ cargo run -p shop   # http://127.0.0.1:4005/
 
 ## Highlights
 
-- The catalog grid and both admin tables use `Paged` with an `After` keyset
-  cursor. The same handler serves a new search and each following page.
+- The catalog grid and admin tables use `Paged` with `#[cursor]` keyset
+  pagination; `Paged::table` renders the table states.
 - Admin rows are dynamic `#[fragment]`s, so creates, updates and deletes can
   refresh or replace only the affected content.
 - The product form has a client-filtered category `Combobox` and a

@@ -8,6 +8,9 @@
 - `#[fragment(CartId)]` and `#[fragment(TodoId(todo.id))]`: a fragment with an existing `#[id]` struct, static or dynamic.
 - `ui::basecoatui::Combobox`, with client-side filtering or server-side search.
 - `Paged` for cursor-based pagination on scroll.
+- `#[cursor]` to derive `PagedAction` from an optional `#[action]` field.
+- `Paged::table::<COLS>()` for Basecoat table bodies.
+- `HxAction::vals` for merging serializable values into `hx-vals`.
 - `#[derive(ReqCtx)]` for request-local access to an axum extractor.
 - A `testing` feature with response body helpers.
 - `maybe_<field>(Option<T>)` setters on `#[action]` builders.
@@ -21,6 +24,7 @@
 - `Fragment::new` takes the id: `Fragment::new(&id, markup)`.
 - `Selector` renders escaped.
 - Bare `partial!` entries now use `PartialEntry` rather than implicit `Into<Parts>` conversions.
+- `#[action]` no longer accepts Serde field renaming.
 
 ### Fixed
 

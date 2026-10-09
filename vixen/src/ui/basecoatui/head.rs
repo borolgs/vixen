@@ -10,6 +10,7 @@ use maud::PreEscaped;
 /// widgets to htmx: swapped content opens drawers and dialogs, their slots are
 /// cleared on close, and swapped combobox options refresh their cache. It also
 /// keeps toasts interactive above a modal and handles combobox keyboard events.
+/// It styles the state rows rendered by [`Paged::table`](crate::Paged::table).
 pub const HEAD: PreEscaped<&str> = PreEscaped(concat!(
     "<style>\n",
     include_str!("./head.css"),

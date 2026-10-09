@@ -1,11 +1,11 @@
 use vixen::{
-    Page, Paged, SyncStrategy, fragment, id,
+    After, Page, Paged, SyncStrategy, fragment, id,
     maud::{Markup, Render, html},
     ui::basecoatui::{Combobox, Dialog, Drawer},
 };
 
 use crate::{
-    models::{After, Selection},
+    models::Selection,
     pages::admin_materials::{
         queries::Material,
         routes::{ConfirmDeleteMaterial, EditMaterialPath, MaterialOptions, SearchMaterials},
@@ -85,7 +85,7 @@ pub struct MaterialPickerId;
 pub fn material_picker(
     field: &'static str,
     selected: &Selection,
-    options: Page<Material, After>,
+    options: Page<Material, After<i64>>,
 ) -> Markup {
     Combobox::new(MaterialPickerId, field)
         .multiple()

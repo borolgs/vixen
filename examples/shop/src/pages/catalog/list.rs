@@ -1,13 +1,13 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    Page, fragment, href,
+    After, Page, fragment, href,
     maud::{Markup, html},
     partial,
 };
 
 use crate::{
-    models::{After, Category, ProductSort},
+    models::{Category, ProductSort},
     pages::{
         catalog::{
             queries::{Product, ProductQuery, search_products},
@@ -49,7 +49,7 @@ pub async fn catalog_search(search: SearchCatalog) -> Response {
         .into_response()
 }
 
-async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, After>> {
+async fn load(search: &SearchCatalog) -> anyhow::Result<Page<Product, After<i64>>> {
     let query = ProductQuery {
         category: search.category,
         q: search.q.clone(),

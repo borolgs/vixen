@@ -1,8 +1,8 @@
 use axum::Router;
-use vixen::{RouterExt, action, route};
+use vixen::{After, RouterExt, action, route};
 
 use crate::{
-    models::{After, Category, ProductSort, Selection},
+    models::{Category, ProductSort, Selection},
     pages::admin_products::{delete, edit, list, page},
     state::AppState,
 };
@@ -31,7 +31,7 @@ pub struct SearchProducts {
     #[serde(default)]
     pub sort: ProductSort,
     #[cursor]
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 #[route("/admin/products/new")]

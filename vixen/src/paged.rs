@@ -4,11 +4,11 @@
 //! failures in place. The request type implements [`PagedAction`] to expose its
 //! cursor and build actions for subsequent pages.
 
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use axum_htmx::{HxEvent, HxReplaceUrl, SwapOption};
 use maud::{Markup, html};
-use serde::Serialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_json::json;
 
 use crate::{Href, HxAction, Selector, SyncStrategy};
@@ -24,6 +24,95 @@ pub struct Page<Item, Cursor> {
     pub items: Vec<Item>,
     /// Cursor for the following page, or `None` if this is the last page.
     pub next: Option<Cursor>,
+}
+
+impl<Item, Cursor> Page<Item, Cursor> {
+    /// Builds a page from rows fetched with `LIMIT limit + 1`.
+    ///
+    /// If the extra row is present, it is removed and `cursor` builds
+    /// [`next`](Self::next) from the last retained row.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `limit` is zero.
+    pub fn from_rows(
+        mut rows: Vec<Item>,
+        limit: usize,
+        cursor: impl FnOnce(&Item) -> Cursor,
+    ) -> Self {
+        assert!(limit > 0, "a page limit must not be zero");
+
+        let next = if rows.len() > limit {
+            rows.truncate(limit);
+            rows.last().map(cursor)
+        } else {
+            None
+        };
+
+        Self { items: rows, next }
+    }
+
+    /// Maps the items without changing the cursor.
+    pub fn map<T>(self, f: impl FnMut(Item) -> T) -> Page<T, Cursor> {
+        Page {
+            items: self.items.into_iter().map(f).collect(),
+            next: self.next,
+        }
+    }
+}
+
+/// A keyset cursor containing one sort key and a row ID.
+///
+/// Serialized as `{id}:{key}`. The ID must not contain `:`. Use a custom
+/// [`PagedAction::Cursor`] for more than one sort key.
+///
+/// Example query for [`Page::from_rows`]:
+///
+/// ```sql
+/// select id, title from todos
+///     where :after_id is null or (title, id) > (:after_key, :after_id)
+///     order by title, id
+///     limit :limit + 1
+/// ```
+///
+/// ```
+/// use vixen::{After, Page};
+///
+/// # struct Todo { id: i64, title: String }
+/// # let rows: Vec<Todo> = Vec::new();
+/// let page = Page::from_rows(rows, 20, |todo| After {
+///     id: todo.id,
+///     key: todo.title.clone(),
+/// });
+/// ```
+#[derive(Clone, Debug, PartialEq)]
+pub struct After<I> {
+    /// The row ID, used to break ties between equal keys.
+    pub id: I,
+    /// The value of the sort column.
+    pub key: String,
+}
+
+impl<I: Display> Serialize for After<I> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&format_args!("{}:{}", self.id, self.key))
+    }
+}
+
+impl<'de, I: FromStr> Deserialize<'de> for After<I> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let cursor = String::deserialize(deserializer)?;
+
+        cursor
+            .split_once(':')
+            .and_then(|(id, key)| {
+                Some(After {
+                    id: id.parse().ok()?,
+                    key: key.to_owned(),
+                })
+            })
+            .ok_or_else(|| D::Error::custom("not a cursor"))
+    }
 }
 
 /// An action that fetches pages for a [`Paged`] list.
@@ -86,6 +175,7 @@ pub trait PagedAction {
 /// [`loading`](Self::loading) and [`retry`](Self::retry) to customize them.
 /// With the `basecoatui` feature, `Paged::table` configures a `<tbody>`.
 /// [`replace_url`](Self::replace_url) adds the search parameters to the browser URL.
+/// Use [`After`] and [`Page::from_rows`] for single-column keyset pagination.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
@@ -409,5 +499,57 @@ mod tests {
             html,
             r#"<div id="todos"><div>The results did not load.</div></div>"#
         );
+    }
+
+    #[test]
+    fn an_extra_row_is_dropped_and_sets_the_next_cursor() {
+        let full = Page::from_rows(vec![3, 5, 8], 2, |last| *last);
+        assert_eq!((full.items, full.next), (vec![3, 5], Some(5)));
+
+        let last = Page::from_rows(vec![3, 5], 2, |last| *last);
+        assert_eq!((last.items, last.next), (vec![3, 5], None));
+    }
+
+    #[test]
+    #[should_panic(expected = "a page limit must not be zero")]
+    fn a_zero_limit_panics() {
+        Page::from_rows(vec![3], 0, |last| *last);
+    }
+
+    #[test]
+    fn map_keeps_the_cursor() {
+        let page = Page::from_rows(vec![(3, "milk"), (5, "mint")], 1, |(id, _)| *id)
+            .map(|(_, title)| title);
+        assert_eq!((page.items, page.next), (vec!["milk"], Some(3)));
+    }
+
+    #[action("/todos/after")]
+    struct TodosAfter {
+        #[cursor]
+        after: Option<After<u32>>,
+    }
+
+    #[test]
+    fn after_is_an_id_and_a_key_in_a_form() {
+        let after = After {
+            id: 7,
+            key: "elm:x".to_owned(),
+        };
+        let search = TodosAfter {
+            after: Some(after.clone()),
+        };
+
+        let body = serde_html_form::to_string(&search).unwrap();
+        assert_eq!(body, "after=7%3Aelm%3Ax");
+
+        let parsed: TodosAfter = serde_html_form::from_str(&body).unwrap();
+        assert_eq!(parsed.cursor(), Some(after));
+    }
+
+    #[test]
+    fn a_malformed_after_is_rejected() {
+        for body in ["after=7", "after=x%3Aelm"] {
+            assert!(serde_html_form::from_str::<TodosAfter>(body).is_err());
+        }
     }
 }

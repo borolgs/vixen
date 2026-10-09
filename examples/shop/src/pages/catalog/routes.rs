@@ -1,8 +1,8 @@
 use axum::Router;
-use vixen::{RouterExt, action, route};
+use vixen::{After, RouterExt, action, route};
 
 use crate::{
-    models::{After, Category, ProductSort},
+    models::{Category, ProductSort},
     pages::catalog::{list, page, quick_view},
     state::AppState,
 };
@@ -26,7 +26,7 @@ pub struct SearchCatalog {
     #[serde(default)]
     pub sort: ProductSort,
     #[cursor]
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 #[route("/catalog/{slug}")]

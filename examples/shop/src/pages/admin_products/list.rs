@@ -1,13 +1,13 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    Page, SyncStrategy, href,
+    After, Page, SyncStrategy, href,
     maud::{Markup, html},
     partial,
 };
 
 use crate::{
-    models::{After, Category, ProductSort},
+    models::{Category, ProductSort},
     pages::{
         admin_products::{
             queries::{Product, ProductQuery, search_products},
@@ -70,7 +70,7 @@ pub async fn products_search(search: SearchProducts) -> Response {
         .into_response()
 }
 
-async fn load(search: &SearchProducts) -> anyhow::Result<Page<Product, After>> {
+async fn load(search: &SearchProducts) -> anyhow::Result<Page<Product, After<i64>>> {
     let query = ProductQuery {
         category: search.category,
         q: search.q.clone(),

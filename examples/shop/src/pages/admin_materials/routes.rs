@@ -1,8 +1,8 @@
 use axum::Router;
-use vixen::{RouterExt, action, route};
+use vixen::{After, RouterExt, action, route};
 
 use crate::{
-    models::{After, MaterialSort},
+    models::MaterialSort,
     pages::admin_materials::{delete, edit, list, options, page},
     state::AppState,
 };
@@ -31,7 +31,7 @@ pub struct SearchMaterials {
     #[serde(default)]
     pub sort: MaterialSort,
     #[cursor]
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 #[derive(Default)]
@@ -40,7 +40,7 @@ pub struct MaterialOptions {
     #[serde(default)]
     pub q: String,
     #[cursor]
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 #[route("/admin/materials/new")]

@@ -10,7 +10,7 @@
 //! | share an element ID between a page and its responses | [`#[id]`](macro@id), [`Selector`] |
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return main and targeted swaps with response events | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
-//! | paginate search results on scroll | [`Paged`], [`PagedAction`], [`Page`] |
+//! | paginate search results on scroll | [`Paged`], [`PagedAction`], [`Page`], [`After`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
 //! | resolve a static file to its content-hashed URL | [`asset!`] |
 //! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
@@ -65,7 +65,7 @@ pub use fragment::Fragment;
 pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;
-pub use paged::{Page, Paged, PagedAction};
+pub use paged::{After, Page, Paged, PagedAction};
 pub use vixen_bundler::{Config, build};
 
 pub use partial::{HxPartial, HxPartialResponse, Part, PartialEntry, Parts, Selector};

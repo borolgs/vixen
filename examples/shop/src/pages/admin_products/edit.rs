@@ -1,14 +1,14 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    HxPartialResponse, Page, fragment,
+    After, HxPartialResponse, Page, fragment,
     maud::{Markup, html},
     partial,
     ui::basecoatui::Combobox,
 };
 
 use crate::{
-    models::{After, Category, Selection},
+    models::{Category, Selection},
     pages::{
         admin_materials::{Material, MaterialPickerId, material_options, material_picker},
         admin_products::{
@@ -284,7 +284,7 @@ impl UpdateProduct {
     }
 }
 
-fn create_product_form(form: &CreateProduct, options: Page<Material, After>) -> Markup {
+fn create_product_form(form: &CreateProduct, options: Page<Material, After<i64>>) -> Markup {
     html! {
         form class="fieldset gap-4" hx-action=(CreateProduct::action()) {
             div.field {
@@ -338,7 +338,7 @@ fn create_product_form(form: &CreateProduct, options: Page<Material, After>) -> 
     }
 }
 
-fn edit_product_form(form: &UpdateProduct, options: Page<Material, After>) -> Markup {
+fn edit_product_form(form: &UpdateProduct, options: Page<Material, After<i64>>) -> Markup {
     html! {
         form class="fieldset gap-4" hx-action=(UpdateProduct::action().id(form.id)) {
             div.field {

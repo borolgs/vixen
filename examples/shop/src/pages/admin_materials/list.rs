@@ -1,13 +1,13 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    Page, SyncStrategy, href,
+    After, Page, SyncStrategy, href,
     maud::{Markup, html},
     partial,
 };
 
 use crate::{
-    models::{After, MaterialSort},
+    models::MaterialSort,
     pages::{
         admin_materials::{
             queries::{Material, MaterialQuery, search_materials},
@@ -64,7 +64,7 @@ pub async fn materials_search(search: SearchMaterials) -> Response {
         .into_response()
 }
 
-async fn load(search: &SearchMaterials) -> anyhow::Result<Page<Material, After>> {
+async fn load(search: &SearchMaterials) -> anyhow::Result<Page<Material, After<i64>>> {
     let query = MaterialQuery {
         q: search.q.clone(),
         sort: search.sort,

@@ -1,7 +1,7 @@
 use rusqlite::{Connection, OptionalExtension, Row};
-use vixen::Page;
+use vixen::{After, Page};
 
-use crate::models::{After, Category, Picked, ProductSort, Selection};
+use crate::models::{Category, Picked, ProductSort, Selection};
 
 pub const PAGE_SIZE: usize = 10;
 
@@ -9,7 +9,7 @@ pub struct ProductQuery {
     pub category: Option<Category>,
     pub q: String,
     pub sort: ProductSort,
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 pub struct Product {
@@ -57,7 +57,7 @@ fn product(row: &Row) -> rusqlite::Result<Product> {
 pub fn search_products(
     conn: &Connection,
     query: &ProductQuery,
-) -> anyhow::Result<Page<Product, After>> {
+) -> anyhow::Result<Page<Product, After<i64>>> {
     let pattern = query
         .q
         .trim()
@@ -86,7 +86,7 @@ pub fn search_products(
              limit ?5"
     ))?;
 
-    let mut rows = stmt
+    let rows = stmt
         .query_map(
             (
                 query.category,
@@ -99,20 +99,12 @@ pub fn search_products(
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let next = if rows.len() > PAGE_SIZE {
-        rows.truncate(PAGE_SIZE);
-        rows.last().map(|(product, key)| After {
-            id: product.id,
-            key: key.clone(),
-        })
-    } else {
-        None
-    };
+    let page = Page::from_rows(rows, PAGE_SIZE, |(product, key)| After {
+        id: product.id,
+        key: key.clone(),
+    });
 
-    Ok(Page {
-        items: rows.into_iter().map(|(product, _)| product).collect(),
-        next,
-    })
+    Ok(page.map(|(product, _)| product))
 }
 
 pub fn product_by_id(conn: &Connection, id: i64) -> anyhow::Result<Option<Product>> {

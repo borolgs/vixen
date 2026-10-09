@@ -1,14 +1,14 @@
 use rusqlite::{Connection, OptionalExtension, Row};
-use vixen::Page;
+use vixen::{After, Page};
 
-use crate::models::{After, MaterialSort};
+use crate::models::MaterialSort;
 
 pub const PAGE_SIZE: usize = 20;
 
 pub struct MaterialQuery {
     pub q: String,
     pub sort: MaterialSort,
-    pub after: Option<After>,
+    pub after: Option<After<i64>>,
 }
 
 pub struct Material {
@@ -38,7 +38,7 @@ fn material(row: &Row) -> rusqlite::Result<Material> {
 pub fn search_materials(
     conn: &Connection,
     query: &MaterialQuery,
-) -> anyhow::Result<Page<Material, After>> {
+) -> anyhow::Result<Page<Material, After<i64>>> {
     let pattern = query
         .q
         .trim()
@@ -65,7 +65,7 @@ pub fn search_materials(
              limit ?4"
     ))?;
 
-    let mut rows = stmt
+    let rows = stmt
         .query_map(
             (
                 &pattern,
@@ -77,27 +77,19 @@ pub fn search_materials(
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let next = if rows.len() > PAGE_SIZE {
-        rows.truncate(PAGE_SIZE);
-        rows.last().map(|(material, key)| After {
-            id: material.id,
-            key: key.clone(),
-        })
-    } else {
-        None
-    };
+    let page = Page::from_rows(rows, PAGE_SIZE, |(material, key)| After {
+        id: material.id,
+        key: key.clone(),
+    });
 
-    Ok(Page {
-        items: rows.into_iter().map(|(material, _)| material).collect(),
-        next,
-    })
+    Ok(page.map(|(material, _)| material))
 }
 
 pub fn material_options(
     conn: &Connection,
     q: &str,
-    after: Option<&After>,
-) -> anyhow::Result<Page<Material, After>> {
+    after: Option<&After<i64>>,
+) -> anyhow::Result<Page<Material, After<i64>>> {
     let pattern = q
         .trim()
         .replace('\\', "\\\\")
@@ -112,7 +104,7 @@ pub fn material_options(
              limit ?4"
     ))?;
 
-    let mut materials = stmt
+    let materials = stmt
         .query_map(
             (
                 &pattern,
@@ -124,20 +116,10 @@ pub fn material_options(
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
-    let next = if materials.len() > PAGE_SIZE {
-        materials.truncate(PAGE_SIZE);
-        materials.last().map(|material| After {
-            id: material.id,
-            key: material.name.clone(),
-        })
-    } else {
-        None
-    };
-
-    Ok(Page {
-        items: materials,
-        next,
-    })
+    Ok(Page::from_rows(materials, PAGE_SIZE, |material| After {
+        id: material.id,
+        key: material.name.clone(),
+    }))
 }
 
 pub fn material_by_id(conn: &Connection, id: i64) -> anyhow::Result<Option<Material>> {

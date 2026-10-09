@@ -83,33 +83,6 @@ impl MaterialSort {
     }
 }
 
-/// The last row of a page: its id and its sort key, `{id}:{key}` on the wire.
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub struct After {
-    pub id: i64,
-    pub key: String,
-}
-
-impl From<After> for String {
-    fn from(after: After) -> Self {
-        format!("{}:{}", after.id, after.key)
-    }
-}
-
-impl TryFrom<String> for After {
-    type Error = &'static str;
-
-    fn try_from(cursor: String) -> Result<Self, Self::Error> {
-        let (id, key) = cursor.split_once(':').ok_or("not a cursor")?;
-
-        Ok(After {
-            id: id.parse().map_err(|_| "not a cursor")?,
-            key: key.to_owned(),
-        })
-    }
-}
-
 /// What a multiple combobox posts: basecoat's object format, a JSON array in one field.
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]

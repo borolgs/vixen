@@ -150,7 +150,7 @@ pub trait PagedAction {
 /// }
 ///
 /// const TODOS: Paged<SearchTodos, String> =
-///     Paged::new("todos", |title| html! { div { (title) } });
+///     Paged::new("todos", |title, _| html! { div { (title) } });
 ///
 /// async fn index(search: SearchTodos) -> Markup {
 ///     html! {
@@ -179,7 +179,7 @@ pub trait PagedAction {
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
-    item: fn(&Item) -> Markup,
+    item: fn(&Item, &PAction) -> Markup,
     empty: fn(&PAction) -> Markup,
     failed: fn(&PAction) -> Markup,
     loading: fn(HxAction) -> Markup,
@@ -190,7 +190,9 @@ pub struct Paged<PAction, Item> {
 
 impl<PAction: PagedAction, Item> Paged<PAction, Item> {
     /// Creates a paged list with a container ID and item renderer.
-    pub const fn new(id: &'static str, item: fn(&Item) -> Markup) -> Self {
+    ///
+    /// The item renderer also receives the current search.
+    pub const fn new(id: &'static str, item: fn(&Item, &PAction) -> Markup) -> Self {
         Self {
             id,
             list: |id, _, rows| html! { div id=(id) { (rows) } },
@@ -289,7 +291,7 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
     /// Renders the complete list for an initial page or rows for a subsequent page.
     pub fn render(&self, search: &PAction, page: Page<Item, PAction::Cursor>) -> Markup {
         let rows = html! {
-            @for item in &page.items { ((self.item)(item)) }
+            @for item in &page.items { ((self.item)(item, search)) }
             @if let Some(next) = page.next { ((self.loading)(sentinel(search.next(next)))) }
         };
 
@@ -380,7 +382,7 @@ mod tests {
         after: Option<u32>,
     }
 
-    const TODOS: Paged<SearchTodos, &str> = Paged::new("todos", |title| html! { p { (title) } });
+    const TODOS: Paged<SearchTodos, &str> = Paged::new("todos", |title, _| html! { p { (title) } });
 
     fn search(after: Option<u32>) -> SearchTodos {
         SearchTodos {
@@ -438,6 +440,18 @@ mod tests {
     }
 
     #[test]
+    fn an_item_reads_the_search() {
+        let todos: Paged<SearchTodos, &str> = Paged::new(
+            "todos",
+            |title, search| html! { p data-q=(search.q) { (title) } },
+        );
+        let html = todos
+            .render(&search(Some(2)), page(&["plum"], None))
+            .into_string();
+        assert_eq!(html, r#"<p data-q="m">plum</p>"#);
+    }
+
+    #[test]
     fn search_replaces_the_list_and_listens_for_refresh() {
         let todos = TODOS.search_trigger("submit");
         let html = html! { form hx-action=(todos.search(SearchTodos::action())) {} }.into_string();
@@ -469,7 +483,7 @@ mod tests {
             #[cursor]
             after: Option<u32>,
         }
-        let todos: Paged<AllTodos, &str> = Paged::new("todos", |_| html! {});
+        let todos: Paged<AllTodos, &str> = Paged::new("todos", |_, _| html! {});
 
         let url = todos.replace_url(&AllTodos { after: None }, Href::new("", "/todos"));
         assert_eq!(url.unwrap().0, "/todos");

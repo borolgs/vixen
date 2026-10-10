@@ -63,7 +63,7 @@ mod tests {
 
     const TODOS: Paged<SearchTodos, &str> = Paged::new(
         "todos",
-        |title| html! { tr { td { (title) } td { "Open" } } },
+        |title, _| html! { tr { td { (title) } td { "Open" } } },
     )
     .table::<2>();
 

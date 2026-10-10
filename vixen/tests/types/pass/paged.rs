@@ -15,8 +15,8 @@ struct Todo {
     title: String,
 }
 
-fn row(todo: &Todo) -> Markup {
-    html! { tr { td { (todo.title) } } }
+fn row(todo: &Todo, search: &SearchTodos) -> Markup {
+    html! { tr data-q=(search.q) { td { (todo.title) } } }
 }
 
 // Every slot is a `fn`, so the list is a `const`.

@@ -17,7 +17,7 @@ pub const DRAWER: Drawer = Drawer::new("material-drawer").content_class("px-4 pb
 pub const CONFIRM: Dialog = Dialog::new("material-confirm");
 
 pub const MATERIALS: Paged<SearchMaterials, Material> =
-    Paged::new("material-rows", |material| material_row(material).into()).table::<4>();
+    Paged::new("material-rows", |material, _| material_row(material).into()).table::<4>();
 
 #[id]
 pub struct MaterialRowId(pub i64);
@@ -50,7 +50,7 @@ pub fn material_row(material: &Material) -> Markup {
 
 /// The combobox's options, inside basecoat's listbox.
 pub const MATERIAL_OPTIONS: Paged<MaterialOptions, Material> =
-    Paged::new("material-options", |material: &Material| {
+    Paged::new("material-options", |material: &Material, _| {
         html! { div role="option" data-value=(material.id) { (material.name) } }
     })
     // Not the listbox: basecoat keeps its listeners on it.

@@ -62,7 +62,7 @@ pub const CATALOG: Paged<SearchCatalog, Product> = Paged::new("catalog-grid", ca
         }
     });
 
-fn card(product: &Product) -> Markup {
+fn card(product: &Product, _: &SearchCatalog) -> Markup {
     html! {
         li class="card gap-4 overflow-hidden pt-0" {
             (art(product.category, ArtSize::Card))

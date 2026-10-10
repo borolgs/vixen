@@ -17,7 +17,7 @@ pub const DRAWER: Drawer = Drawer::new("product-drawer").content_class("px-4 pb-
 pub const CONFIRM: Dialog = Dialog::new("product-confirm");
 
 pub const PRODUCTS: Paged<SearchProducts, Product> =
-    Paged::new("product-rows", |product| product_row(product).into()).table::<7>();
+    Paged::new("product-rows", |product, _| product_row(product).into()).table::<7>();
 
 #[id]
 pub struct ProductRowId(pub i64);

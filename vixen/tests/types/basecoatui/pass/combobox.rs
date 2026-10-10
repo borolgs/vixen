@@ -20,7 +20,7 @@ impl PagedAction for TagOptions {
 
 const OPTIONS: Paged<TagOptions, String> = Paged::new(
     "tag-options",
-    |tag| html! { div role="option" data-value=(tag) { (tag) } },
+    |tag, _| html! { div role="option" data-value=(tag) { (tag) } },
 );
 
 #[id]

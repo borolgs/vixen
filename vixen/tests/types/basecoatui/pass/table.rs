@@ -10,7 +10,7 @@ struct SearchTodos {
 }
 
 const TODOS: Paged<SearchTodos, String> =
-    Paged::new("todos", |title| html! { tr { td { (title) } } }).table::<1>();
+    Paged::new("todos", |title, _| html! { tr { td { (title) } } }).table::<1>();
 
 fn main() {
     let search = SearchTodos { after: None };

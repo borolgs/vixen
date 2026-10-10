@@ -44,17 +44,17 @@ impl Dialog {
         }
     }
 
-    /// Starts a response that sets the header.
+    /// Starts a response with an update for the header slot.
     pub fn header(&self, header: impl Into<Markup>) -> Slots {
         self.modal.slots().header(header)
     }
 
-    /// Starts a response that sets the content.
+    /// Starts a response with an update for the content slot.
     pub fn content(&self, content: impl Into<Markup>) -> Slots {
         self.modal.slots().content(content)
     }
 
-    /// Starts a response that sets the footer.
+    /// Starts a response with an update for the footer slot.
     pub fn footer(&self, footer: impl Into<Markup>) -> Slots {
         self.modal.slots().footer(footer)
     }

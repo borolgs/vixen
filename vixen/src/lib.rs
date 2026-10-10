@@ -11,6 +11,7 @@
 //! | render and replace an element by its typed ID | [`#[fragment]`](macro@fragment), [`Fragment`] |
 //! | return main and targeted swaps with response events | [`partial!`], [`HxPartial`], [`Part`], [`Parts`] |
 //! | paginate search results on scroll | [`Paged`], [`PagedAction`], [`Page`], [`After`] |
+//! | read the page's query string in an action | [`HxCurrentQuery`] |
 //! | bundle and serve page-local TS and CSS | [`assets!`], [`assets_router!`], and [`build`] in `build.rs` |
 //! | resolve a static file to its content-hashed URL | [`asset!`] |
 //! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
@@ -52,11 +53,11 @@ mod href;
 mod id;
 mod paged;
 mod partial;
+mod query;
 mod router;
 #[cfg(feature = "testing")]
 pub mod testing;
 pub mod ui;
-
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
@@ -66,6 +67,7 @@ pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;
 pub use paged::{After, Page, Paged, PagedAction};
+pub use query::HxCurrentQuery;
 pub use vixen_bundler::{Config, build};
 
 pub use partial::{HxPartial, HxPartialResponse, Part, PartialEntry, Parts, Selector};

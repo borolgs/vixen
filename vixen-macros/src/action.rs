@@ -196,6 +196,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                 impl ::vixen::PagedAction for #action_ident {
                     type Cursor = #option_arg;
 
+                    #[allow(clippy::clone_on_copy)]
                     fn cursor(&self) -> ::std::option::Option<Self::Cursor> {
                         ::std::clone::Clone::clone(&self.#field_name)
                     }

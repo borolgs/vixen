@@ -20,6 +20,8 @@
 - `maybe_<field>(Option<T>)` setters on `#[action]` builders.
 - `partial!` accepts `HxEvent` entries, using `{}` for missing payloads as required by htmx 4.
 - `partial!` accepts optional parts (`Option<Part>`).
+- `HxPartial::event` and `HxPartial::entry`, the builder methods behind those entries.
+- `Dialog::cancel` and `Drawer::cancel`, an `onclick` script for a close button.
 - `examples/shop`, demonstrating `Paged`, `Combobox` and `ReqCtx`.
 - `examples/backlog`, demonstrating inline editing, a sortable `Paged` table and `HxCurrentQuery`.
 

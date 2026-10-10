@@ -39,3 +39,7 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
 - `examples/shop/` — a catalog plus product and material admin pages over
   in-memory SQLite, demonstrating `Paged`, `Combobox` and `ReqCtx`.
   `cargo run -p shop` → <http://127.0.0.1:4005/>.
+- `examples/backlog/` — a one-page issue tracker over in-memory SQLite,
+  demonstrating inline cell editing, a sortable `Paged` table and
+  `HxCurrentQuery`.
+  `cargo run -p backlog` → <http://127.0.0.1:4006/>.

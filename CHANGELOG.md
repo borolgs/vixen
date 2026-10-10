@@ -21,6 +21,7 @@
 - `partial!` accepts `HxEvent` entries, using `{}` for missing payloads as required by htmx 4.
 - `partial!` accepts optional parts (`Option<Part>`).
 - `examples/shop`, demonstrating `Paged`, `Combobox` and `ReqCtx`.
+- `examples/backlog`, demonstrating inline editing, a sortable `Paged` table and `HxCurrentQuery`.
 
 ### Changed
 

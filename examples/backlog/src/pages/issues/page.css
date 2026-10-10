@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "basecoat-css";
+
+@source "../../";
+
+@layer components {
+  /* A control that reads as text until it is hovered or focused. */
+  .cell {
+    @apply h-8 w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 text-sm outline-none;
+    @apply hover:border-input focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
+  }
+
+  select.cell {
+    @apply appearance-none;
+  }
+
+  input.cell[type="number"] {
+    appearance: textfield;
+  }
+
+  input.cell[type="date"]:not([value]):not(:focus) {
+    @apply text-muted-foreground/60;
+  }
+
+  input.cell[type="date"]:not(:hover, :focus)::-webkit-calendar-picker-indicator {
+    opacity: 0;
+  }
+}
+
+/* The bulk bar counts the checked rows and shows itself while there are any. */
+body {
+  counter-reset: selected;
+}
+
+#issue-rows input[name="ids"]:checked {
+  counter-increment: selected;
+}
+
+.bulk {
+  display: none;
+}
+
+body:has(#issue-rows input[name="ids"]:checked) .bulk {
+  display: flex;
+}
+
+.bulk-count::before {
+  content: counter(selected) " selected";
+}
+
+#issue-rows tr:has(input[name="ids"]:checked) {
+  background-color: var(--muted);
+}
+
+/* A row added above an empty list. */
+#issue-rows tr[data-paged="empty"]:not(:only-child) {
+  display: none;
+}

@@ -313,6 +313,10 @@ dialog, styled with Tailwind.
 with cursor-paginated [`Paged`][paged] lists, client-filtered and
 server-searched comboboxes, and request-local database access through `ReqCtx`.
 
+[`examples/backlog`][backlog] — a one-page issue tracker over in-memory SQLite,
+with inline cell editing, a sortable [`Paged`][paged] table, bulk actions, and
+undoable deletes.
+
 ```bash
 bun install                      # once, for the frontend deps
 cargo run -p counter             # http://127.0.0.1:4002/
@@ -320,6 +324,7 @@ cargo run -p todos               # http://127.0.0.1:4001/
 cargo run -p components          # http://127.0.0.1:4003/
 cargo run -p config              # http://127.0.0.1:4004/config/
 cargo run -p shop                # http://127.0.0.1:4005/
+cargo run -p backlog             # http://127.0.0.1:4006/
 ```
 
 [action]: https://docs.rs/axum-vixen/latest/vixen/attr.action.html
@@ -345,3 +350,4 @@ cargo run -p shop                # http://127.0.0.1:4005/
 [components]: https://github.com/borolgs/vixen/tree/main/examples/components
 [config-example]: https://github.com/borolgs/vixen/tree/main/examples/config
 [shop]: https://github.com/borolgs/vixen/tree/main/examples/shop
+[backlog]: https://github.com/borolgs/vixen/tree/main/examples/backlog

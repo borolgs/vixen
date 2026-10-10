@@ -28,6 +28,7 @@ pub struct Slots {
 const HEADER: &str = "header";
 const CONTENT: &str = "content";
 const FOOTER: &str = "footer";
+pub(super) const CANCEL: &str = "this.closest('dialog').close()";
 
 impl Modal {
     pub(super) const fn new(id: &'static str) -> Self {

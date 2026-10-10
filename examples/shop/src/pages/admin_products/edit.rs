@@ -4,7 +4,7 @@ use vixen::{
     After, HxPartialResponse, Page, fragment,
     maud::{Markup, html},
     partial,
-    ui::basecoatui::Combobox,
+    ui::basecoatui::{Combobox, Drawer},
 };
 
 use crate::{
@@ -332,7 +332,7 @@ fn create_product_form(form: &CreateProduct, options: Page<Material, After<i64>>
             div class="flex gap-2" {
                 button.btn type="submit" { "Save" }
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Cancel" }
+                    onclick=(Drawer::cancel()) { "Cancel" }
             }
         }
     }
@@ -387,7 +387,7 @@ fn edit_product_form(form: &UpdateProduct, options: Page<Material, After<i64>>) 
             div class="flex gap-2" {
                 button.btn type="submit" { "Save" }
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Cancel" }
+                    onclick=(Drawer::cancel()) { "Cancel" }
             }
         }
     }

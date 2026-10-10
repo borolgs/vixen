@@ -193,7 +193,7 @@ async fn open_drawer(_: OpenDrawer) -> impl IntoResponse {
         })
         .footer(html! {
             button.btn type="submit" form="profile-form" { "Save" }
-            button.btn data-variant="outline" type="button" onclick="this.closest('dialog').close()" { "Cancel" }
+            button.btn data-variant="outline" type="button" onclick=(Drawer::cancel()) { "Cancel" }
         })
 }
 
@@ -245,7 +245,7 @@ async fn confirm_delete(_: ConfirmDelete) -> impl IntoResponse {
             p { "Everything on it goes too." }
         })
         .footer(html! {
-            button.btn data-variant="outline" type="button" onclick="this.closest('dialog').close()" { "Cancel" }
+            button.btn data-variant="outline" type="button" onclick=(Dialog::cancel()) { "Cancel" }
             button.btn data-variant="destructive" type="button" hx-action=(DeleteShelf::action()) { "Delete" }
         })
 }

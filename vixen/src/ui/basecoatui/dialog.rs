@@ -1,6 +1,9 @@
 use maud::{Markup, html};
 
-use super::{Slots, modal::Modal};
+use super::{
+    Slots,
+    modal::{CANCEL, Modal},
+};
 use crate::{Selector, hx::HxEvent};
 
 /// A server-driven [Basecoat dialog](https://basecoatui.com/components/dialog/).
@@ -54,6 +57,11 @@ impl Dialog {
     /// Starts a response that sets the footer.
     pub fn footer(&self, footer: impl Into<Markup>) -> Slots {
         self.modal.slots().footer(footer)
+    }
+
+    /// Returns an `onclick` script that closes the dialog.
+    pub const fn cancel() -> &'static str {
+        CANCEL
     }
 
     /// Returns an htmx event that closes the dialog.

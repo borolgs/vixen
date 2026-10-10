@@ -3,7 +3,7 @@ use vixen::{
     HxPartialResponse, fragment,
     maud::{Markup, html},
     partial,
-    ui::basecoatui::Slots,
+    ui::basecoatui::{Drawer, Slots},
 };
 
 use crate::{
@@ -212,7 +212,7 @@ fn create_material_form(form: &CreateMaterial) -> Markup {
             div class="flex gap-2" {
                 button.btn type="submit" { "Save" }
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Cancel" }
+                    onclick=(Drawer::cancel()) { "Cancel" }
             }
         }
     }
@@ -237,7 +237,7 @@ fn edit_material_form(form: &UpdateMaterial) -> Markup {
             div class="flex gap-2" {
                 button.btn type="submit" { "Save" }
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Cancel" }
+                    onclick=(Drawer::cancel()) { "Cancel" }
             }
         }
     }

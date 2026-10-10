@@ -1,5 +1,5 @@
 use axum::response::{IntoResponse, Response};
-use vixen::{HxPartialResponse, hx::SwapOption, maud::html, partial};
+use vixen::{HxPartialResponse, hx::SwapOption, maud::html, partial, ui::basecoatui::Dialog};
 
 use crate::{
     pages::{
@@ -35,7 +35,7 @@ pub async fn confirm_delete_material(
             })
             .footer(html! {
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Cancel" }
+                    onclick=(Dialog::cancel()) { "Cancel" }
                 button.btn data-variant="destructive" type="button"
                     hx-action=(DeleteMaterial::action().id(material.id)) { "Delete" }
             })
@@ -47,7 +47,7 @@ pub async fn confirm_delete_material(
             })
             .footer(html! {
                 button.btn data-variant="outline" type="button"
-                    onclick="this.closest('dialog').close()" { "Close" }
+                    onclick=(Dialog::cancel()) { "Close" }
             })
             .into_response(),
         Err(err) => {

@@ -1,5 +1,8 @@
 use axum::response::{IntoResponse, Response};
-use vixen::maud::{Markup, html};
+use vixen::{
+    maud::{Markup, html},
+    ui::basecoatui::Drawer,
+};
 
 use crate::{
     pages::{
@@ -92,6 +95,6 @@ fn product_details(product: &Product, materials: &[Material]) -> Markup {
 fn close_button() -> Markup {
     html! {
         button.btn data-variant="outline" type="button"
-            onclick="this.closest('dialog').close()" { "Close" }
+            onclick=(Drawer::cancel()) { "Close" }
     }
 }

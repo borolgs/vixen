@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `Part::{before_begin, after_begin, before_end, after_end, delete}`: a part with that swap.
+
 ## 0.3.0 - 2026-10-10
 
 ### Added

@@ -100,6 +100,31 @@ impl Part {
         }
     }
 
+    /// Inserts `content` before `target` (`beforebegin`).
+    pub fn before_begin(target: impl Into<Selector>, content: impl Into<Markup>) -> Self {
+        Self::new(target, content.into()).swap(SwapOption::BeforeBegin)
+    }
+
+    /// Inserts `content` before the first child of `target` (`afterbegin`).
+    pub fn after_begin(target: impl Into<Selector>, content: impl Into<Markup>) -> Self {
+        Self::new(target, content.into()).swap(SwapOption::AfterBegin)
+    }
+
+    /// Inserts `content` after the last child of `target` (`beforeend`).
+    pub fn before_end(target: impl Into<Selector>, content: impl Into<Markup>) -> Self {
+        Self::new(target, content.into()).swap(SwapOption::BeforeEnd)
+    }
+
+    /// Inserts `content` after `target` (`afterend`).
+    pub fn after_end(target: impl Into<Selector>, content: impl Into<Markup>) -> Self {
+        Self::new(target, content.into()).swap(SwapOption::AfterEnd)
+    }
+
+    /// Removes `target` (`delete`).
+    pub fn delete(target: impl Into<Selector>) -> Self {
+        Self::new(target, html! {}).swap(SwapOption::Delete)
+    }
+
     /// Sets the swap strategy.
     pub fn swap(mut self, swap: SwapOption) -> Self {
         self.swap = Some(swap);
@@ -414,7 +439,7 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 /// struct ShelfCountId;
 ///
 /// fn toast(text: &str) -> Part {
-///     Part::new("#toaster", html! { (text) }).swap(SwapOption::BeforeEnd)
+///     Part::before_end("#toaster", html! { (text) })
 /// }
 ///
 /// let response = partial!(
@@ -490,6 +515,29 @@ mod tests {
         assert_eq!(
             html,
             r##"<hx-partial hx-target="#rows" hx-swap="afterend"><tr><td>row</td></tr></hx-partial>"##
+        );
+    }
+
+    #[test]
+    fn constructors_set_the_swap() {
+        let html = partial!(
+            Part::before_begin("#rows", html! { "1" }),
+            Part::after_begin("#rows", html! { "2" }),
+            Part::before_end("#rows", html! { "3" }),
+            Part::after_end("#rows", html! { "4" }),
+            Part::delete("#row-5"),
+        )
+        .render()
+        .into_string();
+        assert_eq!(
+            html,
+            concat!(
+                r##"<hx-partial hx-target="#rows" hx-swap="beforebegin">1</hx-partial>"##,
+                r##"<hx-partial hx-target="#rows" hx-swap="afterbegin">2</hx-partial>"##,
+                r##"<hx-partial hx-target="#rows" hx-swap="beforeend">3</hx-partial>"##,
+                r##"<hx-partial hx-target="#rows" hx-swap="afterend">4</hx-partial>"##,
+                r##"<hx-partial hx-target="#row-5" hx-swap="delete"></hx-partial>"##,
+            )
         );
     }
 

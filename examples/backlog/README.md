@@ -15,9 +15,10 @@ cargo run -p backlog   # http://127.0.0.1:4006/
   cursor contains the sort key and issue id. `SortHead` in `src/sort.rs`
   renders column headers that re-sort through the search form.
 - `Paged::replace_url` keeps the search, status filter, and sort in the URL.
-  `issue_title`, `issue_status` and `issues_move` use `HxCurrentQuery` to remove
-  rows that no longer match the current filter.
-- `issue_add` prepends a row with `SwapOption::AfterBegin`; it does not reload
+  `issue_title`, `issue_status` and `issues_move` use `HxCurrentQuery` to find
+  rows that no longer match the current filter and remove them with
+  `Part::delete`.
+- `issue_add` prepends a row with `Part::after_begin`; it does not reload
   the list.
 - Row checkboxes join the bulk-action form through the `form` attribute. CSS
   shows the bulk bar when rows are selected. `page.ts` handles select-all and

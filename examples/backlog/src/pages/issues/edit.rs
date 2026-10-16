@@ -2,7 +2,6 @@ use anyhow::Context;
 use axum::{Router, response::Response};
 use vixen::{
     HxCurrentQuery, HxPartialResponse, Part, RouterExt, action,
-    hx::SwapOption,
     maud::html,
     partial,
     ui::basecoatui::{Action, Category, Duration, Toast},
@@ -60,7 +59,7 @@ async fn issue_add(
     match added {
         Ok((issue, stats)) => partial!(
             add_issue_row(),
-            (IssueRowsId, SwapOption::AfterBegin) => issue_row(&issue).into(),
+            Part::after_begin(IssueRowsId, issue_row(&issue)),
             issue_stats(&stats),
         ),
         Err(err) => failed("add issue", err),
@@ -102,7 +101,7 @@ async fn issue_title(
 
     let Some(issue) = issue else {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
             TOASTER.info("Already deleted", "Someone got here first."),
         };
@@ -119,7 +118,7 @@ async fn issue_title(
 
     if !search.lists(&issue) {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
         };
     }
@@ -161,7 +160,7 @@ async fn issue_status(
 
     let Some(issue) = issue else {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
             TOASTER.info("Already deleted", "Someone got here first."),
         };
@@ -169,7 +168,7 @@ async fn issue_status(
 
     if !search.lists(&issue) {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
         };
     }
@@ -204,7 +203,7 @@ async fn issue_priority(IssuePriority { id, priority }: IssuePriority) -> HxPart
 
     let Some(issue) = issue else {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
             TOASTER.info("Already deleted", "Someone got here first."),
         };
@@ -249,7 +248,7 @@ async fn issue_estimate(IssueEstimate { id, estimate }: IssueEstimate) -> HxPart
 
     let Some(issue) = issue else {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
             TOASTER.info("Already deleted", "Someone got here first."),
         };
@@ -294,7 +293,7 @@ async fn issue_due(IssueDue { id, due }: IssueDue) -> HxPartialResponse {
 
     let Some(issue) = issue else {
         return partial! {
-            (IssueRowId(id), SwapOption::Delete) => html! {},
+            Part::delete(IssueRowId(id)),
             stats,
             TOASTER.info("Already deleted", "Someone got here first."),
         };
@@ -341,7 +340,7 @@ async fn issues_move(
         .iter()
         .map(|issue| {
             if !search.lists(issue) {
-                return Part::new(IssueRowId(issue.id), html! {}).swap(SwapOption::Delete);
+                return Part::delete(IssueRowId(issue.id));
             }
             issue_row(issue).into()
         })
@@ -367,7 +366,7 @@ pub struct IssuesTrash {
 async fn issues_trash(IssuesTrash { ids }: IssuesTrash) -> HxPartialResponse {
     let rows: Vec<Part> = ids
         .iter()
-        .map(|id| Part::new(IssueRowId(*id), html! {}).swap(SwapOption::Delete))
+        .map(|id| Part::delete(IssueRowId(*id)))
         .collect();
 
     let trashed = ctx()

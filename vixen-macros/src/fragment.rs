@@ -135,6 +135,8 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     fragment_fn.attrs.push(parse_quote!(#[doc = #doc]));
 
     let id_decl = html_id.map(|html_id| {
+        // TODO: add CSS escape
+        let selector = LitStr::new(&format!("#{}", html_id.value()), Span::call_site());
         quote! {
             #[::vixen::id(#html_id)]
             #vis struct #id_struct_ident;
@@ -146,6 +148,11 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                     ::vixen::maud::html! {
                         div id=#html_id style="display: none;" {}
                     }
+                }
+
+                /// The fragment's id as a CSS selector.
+                pub fn sel() -> ::vixen::Selector {
+                    ::vixen::Selector::from(#selector)
                 }
             }
         }

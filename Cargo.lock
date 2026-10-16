@@ -1281,6 +1281,8 @@ dependencies = [
  "axum-extra",
  "axum-vixen",
  "maud",
+ "serde",
+ "strum",
  "tokio",
 ]
 

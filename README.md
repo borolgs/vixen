@@ -300,8 +300,8 @@ vixen targets htmx 4, but `vixen::hx` re-exports
 [`examples/counter`][counter] — a counter in one `main.rs` that fits on a
 screen, with its `index.ts` and `index.css` beside it. Start here.
 
-[`examples/todos`][todos] — a todo list on one page: every macro once, plus a
-per-page `index.ts`.
+[`examples/todos`][todos] — a todo list on one page: every macro once, a
+search kept in the URL, and a per-page `index.ts`.
 
 [`examples/components`][components] — the `basecoatui` toaster, drawer and
 dialog, styled with Tailwind.

@@ -6,25 +6,30 @@ body {
   line-height: 1.5;
 }
 
-form,
-nav {
+form {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin: 1rem 0;
 }
 
 button,
-form input {
+form > input:not([type="checkbox"]) {
   font: inherit;
   padding: 0.25rem 0.75rem;
 }
 
-form input {
+form > input:not([type="checkbox"]) {
   flex: 1;
 }
 
-nav [aria-pressed="true"] {
-  font-weight: bold;
+fieldset {
+  display: flex;
+  flex-basis: 100%;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 ul {
@@ -33,7 +38,7 @@ ul {
 }
 
 li,
-li label {
+label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -54,7 +59,21 @@ li:has(:checked) label {
   text-decoration: line-through;
 }
 
-[data-show="active"] li:has(:checked),
-[data-show="done"] li:not(:has(:checked, form)) {
-  display: none;
+.status {
+  display: flex;
+  gap: 1rem;
+  height: 1lh;
+  margin: 1rem 0;
+}
+
+.status p {
+  margin: 0;
+}
+
+#todo-message {
+  color: seagreen;
+}
+
+#todo-message.error {
+  color: crimson;
 }

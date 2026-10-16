@@ -1,7 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    After, Page, SyncStrategy, href,
+    After, Page, SyncStrategy,
     maud::{Markup, html},
     partial,
 };
@@ -11,7 +11,7 @@ use crate::{
     pages::{
         admin_products::{
             queries::{Product, ProductQuery, search_products},
-            routes::{NewProductPath, ProductsPath, SearchProducts},
+            routes::{NewProductPath, SearchProducts},
             ui::{CONFIRM, DRAWER, PRODUCTS},
         },
         shared::TOASTER,
@@ -61,7 +61,7 @@ pub async fn products_search(search: SearchProducts) -> Response {
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
     (
-        PRODUCTS.replace_url(&search, href!(ProductsPath)),
+        PRODUCTS.replace_url(&search),
         partial! {
             _ => PRODUCTS.view(&search, page),
             toast

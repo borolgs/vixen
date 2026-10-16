@@ -5,6 +5,11 @@
 ### Added
 
 - `Part::{before_begin, after_begin, before_end, after_end, delete}`: a part with that swap.
+- `replace_query` to mirror any action's search in the page's query string.
+
+### Changed
+
+- `Paged::replace_url(&search)` drops the `href` argument and writes a relative `?query`.
 
 ## 0.3.0 - 2026-10-10
 

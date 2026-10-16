@@ -1,7 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use strum::IntoEnumIterator;
 use vixen::{
-    After, Page, SyncStrategy, href,
+    After, Page, SyncStrategy,
     maud::{Markup, html},
     partial,
 };
@@ -11,7 +11,7 @@ use crate::{
     pages::{
         admin_materials::{
             queries::{Material, MaterialQuery, search_materials},
-            routes::{MaterialsPath, NewMaterialPath, SearchMaterials},
+            routes::{NewMaterialPath, SearchMaterials},
             ui::{CONFIRM, DRAWER, MATERIALS},
         },
         shared::TOASTER,
@@ -58,7 +58,7 @@ pub async fn materials_search(search: SearchMaterials) -> Response {
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
     (
-        MATERIALS.replace_url(&search, href!(MaterialsPath)),
+        MATERIALS.replace_url(&search),
         partial!(_ => MATERIALS.view(&search, page), toast),
     )
         .into_response()

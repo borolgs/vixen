@@ -364,10 +364,7 @@ pub struct IssuesTrash {
 }
 
 async fn issues_trash(IssuesTrash { ids }: IssuesTrash) -> HxPartialResponse {
-    let rows: Vec<Part> = ids
-        .iter()
-        .map(|id| Part::delete(IssueRowId(*id)))
-        .collect();
+    let rows: Vec<Part> = ids.iter().map(|id| Part::delete(IssueRowId(*id))).collect();
 
     let trashed = ctx()
         .db

@@ -1,9 +1,8 @@
 use axum::response::IntoResponse;
-use vixen::{After, Page, action, href, partial};
+use vixen::{After, Page, action, partial};
 
 use super::{
     model::{Issue, SortField, Status},
-    page::BacklogPath,
     queries::search_issues,
     ui::ISSUES,
 };
@@ -40,7 +39,7 @@ pub async fn issue_search(search: IssueSearch) -> impl IntoResponse {
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
 
     (
-        ISSUES.replace_url(&search, href!(BacklogPath)),
+        ISSUES.replace_url(&search),
         partial!(_ => ISSUES.view(&search, page), toast),
     )
 }

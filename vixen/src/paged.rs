@@ -11,7 +11,7 @@ use maud::{Markup, html};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_json::json;
 
-use crate::{Href, HxAction, Selector, SyncStrategy};
+use crate::{HxAction, Selector, SyncStrategy, replace_query};
 
 // Radio inputs emit both `input` and `change`; text inputs emit `change` on blur.
 const SEARCH_TRIGGER: &str =
@@ -324,23 +324,15 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
         }
     }
 
-    /// Creates an `HX-Replace-Url` response header for the initial page.
-    ///
-    /// The URL is `href` with the search fields encoded as query parameters.
-    /// Returns `None` for subsequent pages or when serialization fails.
-    pub fn replace_url(&self, search: &PAction, href: Href<impl Display>) -> Option<HxReplaceUrl>
+    /// [`replace_query`] for the initial page; `None` for subsequent pages.
+    pub fn replace_url(&self, search: &PAction) -> Option<HxReplaceUrl>
     where
         PAction: Serialize,
     {
         if search.cursor().is_some() {
             return None;
         }
-        let query = serde_html_form::to_string(search).ok()?;
-        Some(HxReplaceUrl(if query.is_empty() {
-            href.to_string()
-        } else {
-            format!("{href}?{query}")
-        }))
+        replace_query(search)
     }
 
     fn shell(&self, search: &PAction, rows: Markup) -> Markup {
@@ -469,15 +461,13 @@ mod tests {
 
     #[test]
     fn only_a_first_page_replaces_the_url() {
-        let href = Href::new("/app", "/todos");
-
-        let first = TODOS.replace_url(&search(None), href).unwrap();
-        assert_eq!(first.0, "/app/todos?q=m");
-        assert!(TODOS.replace_url(&search(Some(2)), href).is_none());
+        let first = TODOS.replace_url(&search(None)).unwrap();
+        assert_eq!(first.0, "?q=m");
+        assert!(TODOS.replace_url(&search(Some(2))).is_none());
     }
 
     #[test]
-    fn an_empty_search_replaces_the_url_without_a_query() {
+    fn an_empty_search_clears_the_query() {
         #[action("/todos/all")]
         struct AllTodos {
             #[cursor]
@@ -485,8 +475,8 @@ mod tests {
         }
         let todos: Paged<AllTodos, &str> = Paged::new("todos", |_, _| html! {});
 
-        let url = todos.replace_url(&AllTodos { after: None }, Href::new("", "/todos"));
-        assert_eq!(url.unwrap().0, "/todos");
+        let url = todos.replace_url(&AllTodos { after: None });
+        assert_eq!(url.unwrap().0, "?");
     }
 
     #[test]

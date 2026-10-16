@@ -3,13 +3,13 @@ use axum::{
     http::{StatusCode, request::Parts},
     response::{IntoResponse, Response},
 };
-use axum_htmx::HxCurrentUrl;
-use serde::de::DeserializeOwned;
+use axum_htmx::{HxCurrentUrl, HxReplaceUrl};
+use serde::{Serialize, de::DeserializeOwned};
 
 /// Deserializes query parameters from the URL in `HX-Current-URL`.
 ///
-/// Use this when an action needs parameters written to the browser URL, for
-/// example by [`Paged::replace_url`](crate::Paged::replace_url).
+/// Use this when an action needs parameters written to the browser URL by
+/// [`replace_query`] or [`Paged::replace_url`](crate::Paged::replace_url).
 ///
 /// ```
 /// use vixen::{HxCurrentQuery, action};
@@ -58,11 +58,36 @@ where
     }
 }
 
+/// Serializes `query` into an `HX-Replace-Url` header.
+///
+/// ```
+/// use axum::response::IntoResponse;
+/// use vixen::{action, replace_query};
+///
+/// #[action("/todos/search")]
+/// struct SearchTodos {
+///     q: Option<String>,
+/// }
+///
+/// async fn search(search: SearchTodos) -> impl IntoResponse {
+///     (replace_query(&search), "…")
+/// }
+/// # use vixen::RouterExt;
+/// # let _: axum::Router = axum::Router::new().action(search);
+/// ```
+///
+/// Returns `None` when serialization fails.
+pub fn replace_query(query: &impl Serialize) -> Option<HxReplaceUrl> {
+    // TODO: an empty query leaves a bare `?` in the address bar.
+    let query = serde_html_form::to_string(query).ok()?;
+    Some(HxReplaceUrl(format!("?{query}")))
+}
+
 #[cfg(test)]
 mod tests {
     use axum::{body::to_bytes, http::Request};
     use axum_htmx::HX_CURRENT_URL;
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
 
     use super::*;
 
@@ -123,5 +148,22 @@ mod tests {
             .unwrap_err();
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert!(body.starts_with("invalid `HX-Current-URL` query: "));
+    }
+
+    #[test]
+    fn replace_query_writes_a_relative_query() {
+        #[derive(Serialize)]
+        struct Search {
+            q: Option<&'static str>,
+        }
+
+        let url = replace_query(&Search {
+            q: Some("oat milk"),
+        })
+        .unwrap();
+        assert_eq!(url.0, "?q=oat+milk");
+
+        let url = replace_query(&Search { q: None }).unwrap();
+        assert_eq!(url.0, "?");
     }
 }

@@ -33,8 +33,8 @@ cargo run -p todos    # http://127.0.0.1:4001/
 - **`todo_message`** sits next to the count. The page renders
   `todo_message::slot()`; `add` and `save` fill it with a `Message::Info` that
   empties itself after 3s via `hx-on="load delay:3s -> …"`. An empty title or a
-  stale id gets a `Message::Error` instead of a status code, and it stays until
-  the next message.
+  stale id gets a `Message::Error` with a 422 or 404, which htmx 4 still
+  swaps, and it stays until the next message.
 - **The search lives in the URL.** `search_form` is one `hx-action` for the
   text and the All / Active / Done radios, sent on input. `replace_query`
   writes `?q=milk&filter=Active`. `home` reads it back with `Query`, `add` and

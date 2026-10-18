@@ -1,4 +1,4 @@
-use axum::{Router, response::IntoResponse};
+use axum::{Router, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::Query;
 use strum::IntoEnumIterator;
 use vixen::{
@@ -84,7 +84,8 @@ async fn add(
 ) -> HxPartialResponse {
     if title.is_empty() {
         return partial! {
-            todo_message(Message::Error("A todo needs a title."))
+            StatusCode::UNPROCESSABLE_ENTITY,
+            todo_message(Message::Error("A todo needs a title.")),
         };
     }
 
@@ -92,9 +93,9 @@ async fn add(
 
     let todo = Todo {
         id: todos.len(),
-        title: title,
+        title,
         done: false,
-        priority: priority,
+        priority,
     };
     todos.push(todo.clone());
 
@@ -154,7 +155,10 @@ struct EditTodo {
 async fn edit(EditTodo { id }: EditTodo) -> HxPartialResponse {
     let todos = ctx().todos.lock_owned().await;
     let Some(todo) = todos.get(id) else {
-        return partial!(todo_message(Message::Error("That todo is gone.")));
+        return partial!(
+            StatusCode::NOT_FOUND,
+            todo_message(Message::Error("That todo is gone.")),
+        );
     };
 
     partial!(todo_item_edit_form(todo))
@@ -180,7 +184,10 @@ async fn save(
 ) -> HxPartialResponse {
     let mut todos = ctx().todos.lock_owned().await;
     let Some(todo) = todos.get_mut(id) else {
-        return partial!(todo_message(Message::Error("That todo is gone.")));
+        return partial!(
+            StatusCode::NOT_FOUND,
+            todo_message(Message::Error("That todo is gone.")),
+        );
     };
     todo.title = title;
     todo.done = done;
@@ -207,7 +214,10 @@ struct CancelEdit {
 async fn cancel(CancelEdit { id }: CancelEdit) -> HxPartialResponse {
     let todos = ctx().todos.lock_owned().await;
     let Some(todo) = todos.get(id) else {
-        return partial!(todo_message(Message::Error("That todo is gone.")));
+        return partial!(
+            StatusCode::NOT_FOUND,
+            todo_message(Message::Error("That todo is gone.")),
+        );
     };
 
     partial!(todo_item(todo))

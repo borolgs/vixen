@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
 
-use axum::{http::HeaderValue, response::IntoResponse};
+use axum::{
+    http::{HeaderValue, StatusCode},
+    response::IntoResponse,
+};
 use axum_htmx::{HxEvent, HxResponseTrigger, SwapOption};
 use maud::{Markup, Render, html};
 use serde_json::{Value, json};
@@ -81,6 +84,7 @@ struct State {
     main: Option<Markup>,
     parts: Vec<Part>,
     events: Vec<HxEvent>,
+    status: StatusCode,
 }
 
 /// Content for an htmx target, with an optional swap strategy.
@@ -230,6 +234,7 @@ impl HxPartial<Empty, NoMain> {
                 main: None,
                 parts: Vec::new(),
                 events: Vec::new(),
+                status: StatusCode::OK,
             },
             _state: PhantomData,
         }
@@ -319,6 +324,13 @@ impl<S, M> HxPartial<S, M> {
         self.state.events.push(event);
         self
     }
+
+    /// Sets the response status; htmx 4 swaps 4xx/5xx too, so an error partial
+    /// can carry its status.
+    pub fn status(mut self, status: StatusCode) -> Self {
+        self.state.status = status;
+        self
+    }
 }
 
 impl<M> HxPartial<Filled, M> {
@@ -342,7 +354,12 @@ impl<M> HxPartial<Filled, M> {
 impl<M> IntoResponse for HxPartial<Filled, M> {
     fn into_response(mut self) -> axum::response::Response {
         let events = std::mem::take(&mut self.state.events);
-        (HxResponseTrigger::normal(events), self.render()).into_response()
+        (
+            self.state.status,
+            HxResponseTrigger::normal(events),
+            self.render(),
+        )
+            .into_response()
     }
 }
 
@@ -397,6 +414,14 @@ impl PartialEntry for HxEvent {
     }
 }
 
+impl PartialEntry for StatusCode {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        partial.status(self)
+    }
+}
+
 pub(crate) fn swap_attr(swap: SwapOption) -> String {
     HeaderValue::from(swap)
         .to_str()
@@ -416,6 +441,7 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 /// - a [`Part`], an optional `Part`, or a collection such as [`Parts`] or
 ///   `Vec<Part>`;
 /// - an [`HxEvent`](crate::hx::HxEvent) for the `HX-Trigger` header;
+/// - a [`StatusCode`](axum::http::StatusCode) for the response status;
 /// - any other type that implements [`PartialEntry`].
 ///
 /// The main body, when present, must come first. At least one entry must add
@@ -592,6 +618,12 @@ mod tests {
     #[test]
     fn a_response_without_events_has_no_trigger() {
         assert_eq!(trigger(partial!(toast())), None);
+    }
+
+    #[test]
+    fn a_status_entry_sets_the_response_status() {
+        let response = partial!(StatusCode::UNPROCESSABLE_ENTITY, toast()).into_response();
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
 
     #[test]

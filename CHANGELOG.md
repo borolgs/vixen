@@ -6,6 +6,7 @@
 
 - `Part::{before_begin, after_begin, before_end, after_end, delete}`: a part with that swap.
 - `replace_query` to mirror any action's search in the page's query string.
+- `HxPartial::status` and `StatusCode` entries in `partial!`: an error partial with its status, which htmx 4 still swaps.
 
 ### Changed
 

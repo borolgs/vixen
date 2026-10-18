@@ -7,10 +7,12 @@
 - `Part::{before_begin, after_begin, before_end, after_end, delete}`: a part with that swap.
 - `replace_query` to mirror any action's search in the page's query string.
 - `HxPartial::status` and `StatusCode` entries in `partial!`: an error partial with its status, which htmx 4 still swaps.
+- `agent::skill(app)` and `agent::SKILL`: the skill an agent needs to drive the app with curl, inlined in the page as `<script type="text/llms.txt">`.
 
 ### Changed
 
 - `Paged::replace_url(&search)` drops the `href` argument and writes a relative `?query`.
+- `Paged` pages start with an HTML comment naming the row count and the next page's `hx-action`, for agents.
 
 ## 0.3.0 - 2026-10-10
 

@@ -127,9 +127,10 @@ async fn toggle(
     let mut todos = ctx().todos.lock_owned().await;
 
     let Some(todo) = todos.get_mut(id) else {
-        return partial! {
-            todo_count(&todos)
-        };
+        return partial!(
+            StatusCode::NOT_FOUND,
+            todo_message(Message::Error("That todo is gone.")),
+        );
     };
 
     todo.done = !todo.done;
@@ -182,6 +183,13 @@ async fn save(
         priority,
     }: SaveTodo,
 ) -> HxPartialResponse {
+    if title.is_empty() {
+        return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            todo_message(Message::Error("A todo needs a title.")),
+        };
+    }
+
     let mut todos = ctx().todos.lock_owned().await;
     let Some(todo) = todos.get_mut(id) else {
         return partial!(
@@ -322,10 +330,12 @@ fn todo_message(message: Message) -> Markup {
     html! {
         @match message {
             Message::Info(text) => {
-                p id=(Self) hx-on="load delay:3s -> this.replaceChildren()" { (text) }
+                p id=(Self) role="status" hx-on="load delay:3s -> this.replaceChildren()" {
+                    (text)
+                }
             }
             Message::Error(text) => {
-                p.error id=(Self) { (text) }
+                p id=(Self) role="alert" { (text) }
             }
         }
     }
@@ -350,6 +360,7 @@ pub fn page(head: Markup, content: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 (head)
+                (vixen::agent::skill("A todo list on one page. No login."))
             }
             body { (content) }
         }

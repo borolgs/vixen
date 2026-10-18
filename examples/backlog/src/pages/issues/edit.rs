@@ -1,5 +1,5 @@
 use anyhow::Context;
-use axum::{Router, response::Response};
+use axum::{Router, http::StatusCode, response::Response};
 use vixen::{
     HxCurrentQuery, HxPartialResponse, Part, RouterExt, action,
     maud::html,
@@ -43,7 +43,10 @@ async fn issue_add(
     let status = search.status.unwrap_or(Status::Todo);
     let title = title.trim().to_owned();
     if title.is_empty() {
-        return TOASTER.error("Not added", "An issue needs a title.").into();
+        return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            TOASTER.error("Not added", "An issue needs a title."),
+        };
     }
 
     let added = ctx()
@@ -101,15 +104,17 @@ async fn issue_title(
 
     let Some(issue) = issue else {
         return partial! {
+            StatusCode::NOT_FOUND,
             Part::delete(IssueRowId(id)),
             stats,
-            TOASTER.info("Already deleted", "Someone got here first."),
+            TOASTER.error("Already deleted", "Someone got here first."),
         };
     };
 
     // The row from the database puts the cell back.
     if let Some(why) = rejected {
         return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
             issue_row(&issue),
             stats,
             TOASTER.error("Not saved", why),
@@ -160,9 +165,10 @@ async fn issue_status(
 
     let Some(issue) = issue else {
         return partial! {
+            StatusCode::NOT_FOUND,
             Part::delete(IssueRowId(id)),
             stats,
-            TOASTER.info("Already deleted", "Someone got here first."),
+            TOASTER.error("Already deleted", "Someone got here first."),
         };
     };
 
@@ -203,9 +209,10 @@ async fn issue_priority(IssuePriority { id, priority }: IssuePriority) -> HxPart
 
     let Some(issue) = issue else {
         return partial! {
+            StatusCode::NOT_FOUND,
             Part::delete(IssueRowId(id)),
             stats,
-            TOASTER.info("Already deleted", "Someone got here first."),
+            TOASTER.error("Already deleted", "Someone got here first."),
         };
     };
 
@@ -248,15 +255,17 @@ async fn issue_estimate(IssueEstimate { id, estimate }: IssueEstimate) -> HxPart
 
     let Some(issue) = issue else {
         return partial! {
+            StatusCode::NOT_FOUND,
             Part::delete(IssueRowId(id)),
             stats,
-            TOASTER.info("Already deleted", "Someone got here first."),
+            TOASTER.error("Already deleted", "Someone got here first."),
         };
     };
 
     // The row from the database puts the cell back.
     if let Some(why) = rejected {
         return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
             issue_row(&issue),
             stats,
             TOASTER.error("Not saved", why),
@@ -293,9 +302,10 @@ async fn issue_due(IssueDue { id, due }: IssueDue) -> HxPartialResponse {
 
     let Some(issue) = issue else {
         return partial! {
+            StatusCode::NOT_FOUND,
             Part::delete(IssueRowId(id)),
             stats,
-            TOASTER.info("Already deleted", "Someone got here first."),
+            TOASTER.error("Already deleted", "Someone got here first."),
         };
     };
 
@@ -416,9 +426,10 @@ async fn issues_restore(IssuesRestore { batch }: IssuesRestore) -> HxPartialResp
 fn failed(what: &str, err: anyhow::Error) -> HxPartialResponse {
     tracing::error!("{what}: {err:#}");
 
-    TOASTER
-        .error("That didn't go through", "Try again in a moment.")
-        .into()
+    partial! {
+        StatusCode::INTERNAL_SERVER_ERROR,
+        TOASTER.error("That didn't go through", "Try again in a moment."),
+    }
 }
 
 fn count(issues: usize) -> String {

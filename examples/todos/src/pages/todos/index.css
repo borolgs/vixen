@@ -74,6 +74,6 @@ li:has(:checked) label {
   color: seagreen;
 }
 
-#todo-message.error {
+#todo-message[role="alert"] {
   color: crimson;
 }

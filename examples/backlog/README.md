@@ -10,7 +10,8 @@ cargo run -p backlog   # http://127.0.0.1:4006/
 ## What it shows
 
 - Each editable cell posts on `change`. Its action returns the updated row and
-  stats; validation errors restore the saved row and show a toast.
+  stats; validation errors restore the saved row and show a toast with a 422, a
+  gone id removes the row with a 404. htmx 4 swaps both.
 - `ISSUES` uses `Paged::table` with sort-aware keyset pagination. Its `After`
   cursor contains the sort key and issue id. `SortHead` in `src/sort.rs`
   renders column headers that re-sort through the search form.

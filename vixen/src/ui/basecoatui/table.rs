@@ -86,7 +86,10 @@ mod tests {
         assert_eq!(
             html,
             concat!(
-                r#"<tbody id="todos"><tr><td>milk</td><td>Open</td></tr>"#,
+                r#"<tbody id="todos">"#,
+                r#"<!-- 1 row; next page: hx-action="/todos/search" "#,
+                r#"hx-vals="{&quot;after&quot;:2}" hx-method="post" -->"#,
+                r#"<tr><td>milk</td><td>Open</td></tr>"#,
                 r#"<tr data-paged="loading" hx-action="/todos/search" "#,
                 r#"hx-vals="{&quot;after&quot;:2}" "#,
                 r#"hx-trigger="intersect once" hx-swap="outerHTML" hx-method="post">"#,
@@ -99,7 +102,10 @@ mod tests {
     fn first_page_states_span_all_columns() {
         assert_eq!(
             TODOS.render(&search(None), page(&[], None)).into_string(),
-            r#"<tbody id="todos"><tr data-paged="empty"><td colspan="2">No results.</td></tr></tbody>"#
+            concat!(
+                r#"<tbody id="todos"><!-- 0 rows; last page -->"#,
+                r#"<tr data-paged="empty"><td colspan="2">No results.</td></tr></tbody>"#,
+            )
         );
         assert_eq!(
             TODOS.view(&search(None), Err(())).into_string(),

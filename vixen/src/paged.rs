@@ -7,7 +7,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use axum_htmx::{HxEvent, HxReplaceUrl, SwapOption};
-use maud::{Markup, html};
+use maud::{Markup, PreEscaped, Render, html};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_json::json;
 
@@ -176,6 +176,8 @@ pub trait PagedAction {
 /// With the `basecoatui` feature, `Paged::table` configures a `<tbody>`.
 /// [`replace_url`](Self::replace_url) adds the search parameters to the browser URL.
 /// Use [`After`] and [`Page::from_rows`] for single-column keyset pagination.
+/// Each page starts with an HTML comment containing its row count and the next
+/// page's `hx-action`.
 pub struct Paged<PAction, Item> {
     id: &'static str,
     list: fn(&'static str, &PAction, Markup) -> Markup,
@@ -290,18 +292,21 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
 
     /// Renders the complete list for an initial page or rows for a subsequent page.
     pub fn render(&self, search: &PAction, page: Page<Item, PAction::Cursor>) -> Markup {
+        let next = page.next.map(|cursor| search.next(cursor));
+        let hint = hint(page.items.len(), next.as_ref());
         let rows = html! {
             @for item in &page.items { ((self.item)(item, search)) }
-            @if let Some(next) = page.next { ((self.loading)(sentinel(search.next(next)))) }
+            @if let Some(next) = next { ((self.loading)(sentinel(next))) }
         };
 
         if search.cursor().is_some() {
-            return rows;
+            return html! { (hint) (rows) };
         }
 
         self.shell(
             search,
             html! {
+                (hint)
                 @if page.items.is_empty() { ((self.empty)(search)) }
                 (rows)
             },
@@ -358,6 +363,23 @@ fn sentinel(next: HxAction) -> HxAction {
     next.trigger("intersect once").swap(SwapOption::OuterHtml)
 }
 
+fn hint(rows: usize, next: Option<&HxAction>) -> Markup {
+    let mut text = match rows {
+        1 => "1 row; ".to_owned(),
+        n => format!("{n} rows; "),
+    };
+    match next {
+        Some(next) => {
+            text.push_str("next page: hx-action=\"");
+            next.render_to(&mut text);
+            text.push('"');
+        }
+        None => text.push_str("last page"),
+    }
+    // Attribute escaping prevents the action from closing the comment.
+    PreEscaped(format!("<!-- {text} -->"))
+}
+
 fn retry(next: HxAction, trigger: &str) -> HxAction {
     next.trigger(trigger).swap(SwapOption::OuterHtml)
 }
@@ -398,7 +420,10 @@ mod tests {
         assert_eq!(
             html,
             concat!(
-                r#"<div id="todos"><p>milk</p><p>mint</p>"#,
+                r#"<div id="todos">"#,
+                r#"<!-- 2 rows; next page: hx-action="/todos/search" "#,
+                r#"hx-vals="{&quot;after&quot;:2,&quot;q&quot;:&quot;m&quot;}" hx-method="post" -->"#,
+                r#"<p>milk</p><p>mint</p>"#,
                 r#"<div hx-action="/todos/search" "#,
                 r#"hx-vals="{&quot;after&quot;:2,&quot;q&quot;:&quot;m&quot;}" "#,
                 r#"hx-trigger="intersect once" hx-swap="outerHTML" hx-method="post">Loading…</div>"#,
@@ -412,13 +437,16 @@ mod tests {
         let html = TODOS
             .render(&search(Some(2)), page(&["plum"], None))
             .into_string();
-        assert_eq!(html, "<p>plum</p>");
+        assert_eq!(html, "<!-- 1 row; last page --><p>plum</p>");
     }
 
     #[test]
     fn an_empty_first_page_renders_the_empty_slot() {
         let html = TODOS.render(&search(None), page(&[], None)).into_string();
-        assert_eq!(html, r#"<div id="todos"><div>No results.</div></div>"#);
+        assert_eq!(
+            html,
+            r#"<div id="todos"><!-- 0 rows; last page --><div>No results.</div></div>"#
+        );
     }
 
     #[test]
@@ -428,7 +456,10 @@ mod tests {
         let html = todos
             .render(&search(None), page(&["milk"], None))
             .into_string();
-        assert_eq!(html, r#"<ul id="todos" data-q="m"><p>milk</p></ul>"#);
+        assert_eq!(
+            html,
+            r#"<ul id="todos" data-q="m"><!-- 1 row; last page --><p>milk</p></ul>"#
+        );
     }
 
     #[test]
@@ -440,7 +471,7 @@ mod tests {
         let html = todos
             .render(&search(Some(2)), page(&["plum"], None))
             .into_string();
-        assert_eq!(html, r#"<p data-q="m">plum</p>"#);
+        assert_eq!(html, r#"<!-- 1 row; last page --><p data-q="m">plum</p>"#);
     }
 
     #[test]

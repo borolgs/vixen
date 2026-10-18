@@ -18,8 +18,9 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   the macros sit at the root. It re-exports `vixen::maud`, all of `axum_htmx`
   as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and
   `vixen_bundler::{build, Config}`. Runtime support for the macros lives here
-  (`action`, `fragment`, `partial`, `assets`, `base_path`). Features:
-  `basecoatui` for `vixen::ui::basecoatui`, `testing` for `vixen::testing`.
+  (`action`, `fragment`, `partial`, `assets`, `base_path`); `agent` is the skill
+  an agent needs to drive the app with curl. Features: `basecoatui` for
+  `vixen::ui::basecoatui`, `testing` for `vixen::testing`.
 - `vixen-macros/` — proc macros: `#[action]`, `#[route]`, `#[id]`,
   `#[fragment]`, `#[derive(ReqCtx)]`, `assets!`, `asset!`, `assets_router!`.
 - `vixen-bundler/` — the `build.rs` helper behind `vixen::{build, Config}`.

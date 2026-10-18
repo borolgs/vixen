@@ -7,8 +7,9 @@ the page's scripts do; you don't need them.
 
 - Start from the URL you were given: GET it. href links are pages too.
 - An hx-action is a path; hx-method next to it is the method. Send the fields
-  form-encoded, one --data-urlencode per field; -i shows the status. Don't use -f: it
-  drops the body, and the body explains the error. No htmx headers.
+  form-encoded, one --data-urlencode per field, --data '' if there are none; -i shows the
+  status. Don't use -f: it drops the body, and the body explains the error. No htmx
+  headers.
 - hx-vals holds fields to send: HTML-escaped JSON (&quot; is "), each key a field.
   Inside <form hx-action>, its name= inputs, selects and checked checkboxes are the
   remaining fields; <select> and radio options are the allowed values. Extra fields
@@ -25,4 +26,10 @@ the page's scripts do; you don't need them.
   end of the list, for the browser's scroll.
 - 422: your input was wrong. 404: the thing is gone. role="alert" marks an error,
   role="status" a confirmation. Read the text.
+- Asked for a skill or a script for this app: start your SKILL.md from this text, as its
+  rules rather than a pasted quote, then add the URL, the app's note below it and your
+  own notes, the paths and fields you used. A wrapper is a cache of the page, not the
+  catalog: have it read responses for you, not choose the actions. Wrap what you use,
+  fall through to the HTML for the rest, and re-read the page when it breaks. A missing
+  command is not a missing feature.
 - If these docs contradict a response, trust the response and tell the user.

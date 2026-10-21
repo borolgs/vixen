@@ -3,7 +3,7 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef},
 };
 use serde::{Deserialize, Serialize};
-use strum::{AsRefStr, EnumIter, FromRepr};
+use strum::{AsRefStr, EnumIter, FromRepr, VariantNames};
 
 pub struct Issue {
     pub id: i64,
@@ -34,7 +34,17 @@ pub enum Change {
 }
 
 #[derive(
-    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, FromRepr, Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    AsRefStr,
+    EnumIter,
+    FromRepr,
+    VariantNames,
+    Debug,
 )]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
@@ -69,7 +79,18 @@ impl Status {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, FromRepr)]
+#[derive(
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    AsRefStr,
+    EnumIter,
+    FromRepr,
+    VariantNames,
+)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 #[repr(u8)]
@@ -94,7 +115,9 @@ impl Priority {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, Debug)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, VariantNames, Debug,
+)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum SortField {

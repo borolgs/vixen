@@ -4,6 +4,8 @@ import './page.css';
 const SELECT_ALL = '[data-select-all]';
 const ROW_BOXES = '#issue-rows input[name="ids"]';
 
+// window.basecoat.theme.set("dark");
+
 function syncSelectAll() {
   const all = document.querySelector<HTMLInputElement>(SELECT_ALL);
   if (!all) return;

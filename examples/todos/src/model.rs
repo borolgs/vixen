@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use strum::{AsRefStr, EnumIter};
+use strum::{AsRefStr, EnumIter, VariantNames};
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
@@ -12,7 +12,9 @@ pub struct Todo {
     pub priority: Priority,
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, VariantNames,
+)]
 pub enum Priority {
     Low,
     #[default]
@@ -22,7 +24,9 @@ pub enum Priority {
 
 pub type Todos = Arc<Mutex<Vec<Todo>>>;
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, VariantNames,
+)]
 pub enum TodoFilter {
     #[default]
     All,

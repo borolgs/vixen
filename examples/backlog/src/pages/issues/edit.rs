@@ -381,25 +381,34 @@ async fn issues_trash(IssuesTrash { ids }: IssuesTrash) -> HxPartialResponse {
         .call(move |conn| Ok((queries::trash_issues(conn, &ids)?, queries::stats(conn)?)))
         .await;
 
-    match trashed {
-        Ok((batch, stats)) => {
-            let undo = Toast {
-                duration: Duration::Millis(8000),
-                action: Some(Action::Custom(html! {
-                    button.btn type="button" data-toast-action
-                        hx-action=(IssuesRestore::action().batch(batch)) { "Undo" }
-                })),
-                ..Toast::new(
-                    Category::Info,
-                    "Deleted",
-                    format!("{} left the backlog.", count(rows.len())),
-                )
-            };
+    let ((batch, trashed), stats) = match trashed {
+        Ok(trashed) => trashed,
+        Err(err) => return failed("delete issues", err),
+    };
 
-            partial!(rows, issue_stats(&stats), TOASTER.toast(undo))
-        }
-        Err(err) => failed("delete issues", err),
+    if trashed == 0 {
+        return partial! {
+            StatusCode::NOT_FOUND,
+            rows,
+            issue_stats(&stats),
+            TOASTER.error("Already deleted", "Someone got here first."),
+        };
     }
+
+    let undo = Toast {
+        duration: Duration::Millis(8000),
+        action: Some(Action::Custom(html! {
+            button.btn type="button" data-toast-action
+                hx-action=(IssuesRestore::action().batch(batch)) { "Undo" }
+        })),
+        ..Toast::new(
+            Category::Info,
+            "Deleted",
+            format!("{} left the backlog.", count(trashed)),
+        )
+    };
+
+    partial!(rows, issue_stats(&stats), TOASTER.toast(undo))
 }
 
 #[action("/issues/restore")]

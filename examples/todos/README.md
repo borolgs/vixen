@@ -35,10 +35,9 @@ cargo run -p todos    # http://127.0.0.1:4001/
   empties itself after 3s via `hx-on="load delay:3s -> …"`. An empty title or a
   stale id gets a `Message::Error` with a 422 or 404, which htmx 4 still
   swaps, and it stays until the next message.
-- **`vixen::agent::skill(..)`** in `page()`: a `text/llms.txt` script with the
-  rules an agent needs to drive the app with curl, plus a line about this app.
-  The 422 / 404 and `role="alert"` / `role="status"` on `todo_message` are
-  for the same reader; the browser ignores the script.
+- **`vixen::agent::Skill`** combines curl instructions with an action index
+  from `vixen::skill!`. `.script()` embeds it as a non-executable
+  `text/llms.txt` script; `.router()` serves the same text at `/llms.txt`.
 - **The search lives in the URL.** `search_form` is one `hx-action` for the
   text and the All / Active / Done radios, sent on input. `replace_query`
   writes `?q=milk&filter=Active`. `home` reads it back with `Query`, `add` and

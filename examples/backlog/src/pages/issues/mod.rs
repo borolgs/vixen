@@ -16,3 +16,19 @@ pub fn routes() -> Router<AppState> {
         .action(list::issue_search)
         .merge(edit::routes())
 }
+
+/// The page's actions for the root skill in `main.rs`.
+pub fn actions() -> String {
+    vixen::skill![
+        list::IssueSearch,
+        edit::IssueAdd,
+        edit::IssueTitle,
+        edit::IssueStatus,
+        edit::IssuePriority,
+        edit::IssueEstimate,
+        edit::IssueDue,
+        edit::IssuesMove,
+        edit::IssuesTrash,
+        edit::IssuesRestore,
+    ]
+}

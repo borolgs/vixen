@@ -20,7 +20,7 @@ pub fn layout(title: &str, head: Markup, body: Markup) -> Markup {
                 title { (title) " · vixen" }
                 (HEAD)
                 (head)
-                (vixen::agent::skill("An issue tracker on one page. No login."))
+                (crate::skill().script())
             }
             body class="bg-background text-foreground min-h-svh antialiased" {
                 (ICONS)

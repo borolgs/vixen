@@ -28,3 +28,6 @@ cargo run -p backlog   # http://127.0.0.1:4006/
   copy when a later page returns the row.
 - Deleting rows assigns them a batch id. The toast's Undo action passes that id
   to `issues_restore`, which refreshes the list with `ISSUES.refresh()`.
+- `vixen::agent::Skill` provides curl instructions and an action index from
+  `vixen::skill!`. `.script()` embeds the text in the page's head;
+  `.router()` serves it at `/llms.txt`.

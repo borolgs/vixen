@@ -47,6 +47,7 @@ async fn home(_: HomePath, Query(search): Query<SearchTodos>) -> Markup {
     )
 }
 
+/// The todo list for the query and filter.
 #[action("/todos/search")]
 struct SearchTodos {
     #[serde(default, skip_serializing_if = "String::is_empty")]
@@ -72,6 +73,7 @@ async fn search(search: SearchTodos) -> impl IntoResponse {
     )
 }
 
+/// The new todo's item, the count and a message.
 #[action("/todos/add")]
 struct AddTodo {
     title: String,
@@ -115,6 +117,7 @@ async fn add(
     }
 }
 
+/// The item with `done` flipped, and the count.
 #[action("/todos/toggle")]
 struct ToggleTodo {
     id: usize,
@@ -148,6 +151,7 @@ async fn toggle(
     }
 }
 
+/// The item as an edit form posting `/todos/save`.
 #[action("/todos/edit")]
 struct EditTodo {
     id: usize,
@@ -165,6 +169,7 @@ async fn edit(EditTodo { id }: EditTodo) -> HxPartialResponse {
     partial!(todo_item_edit_form(todo))
 }
 
+/// The item and a message.
 #[action("/todos/save")]
 struct SaveTodo {
     id: usize,
@@ -214,6 +219,7 @@ async fn save(
     }
 }
 
+/// The item, unchanged.
 #[action("/todos/cancel")]
 struct CancelEdit {
     id: usize,

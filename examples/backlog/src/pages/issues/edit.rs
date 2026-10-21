@@ -31,6 +31,7 @@ pub fn routes() -> Router<AppState> {
         .action(issues_restore)
 }
 
+/// The new issue's row, in Todo, and the counts.
 #[action("/issues/add")]
 pub struct IssueAdd {
     pub title: String,
@@ -69,6 +70,7 @@ async fn issue_add(
     }
 }
 
+/// The issue's row and the counts.
 #[action("/issues/title")]
 pub struct IssueTitle {
     pub id: i64,
@@ -134,6 +136,7 @@ async fn issue_title(
     }
 }
 
+/// The issue's row and the counts.
 #[action("/issues/status")]
 pub struct IssueStatus {
     pub id: i64,
@@ -185,6 +188,7 @@ async fn issue_status(
     }
 }
 
+/// The issue's row and the counts.
 #[action("/issues/priority")]
 pub struct IssuePriority {
     pub id: i64,
@@ -222,6 +226,7 @@ async fn issue_priority(IssuePriority { id, priority }: IssuePriority) -> HxPart
     }
 }
 
+/// The issue's row and the counts.
 #[action("/issues/estimate")]
 pub struct IssueEstimate {
     pub id: i64,
@@ -278,6 +283,7 @@ async fn issue_estimate(IssueEstimate { id, estimate }: IssueEstimate) -> HxPart
     }
 }
 
+/// The issue's row and the counts.
 #[action("/issues/due")]
 pub struct IssueDue {
     pub id: i64,
@@ -315,6 +321,7 @@ async fn issue_due(IssueDue { id, due }: IssueDue) -> HxPartialResponse {
     }
 }
 
+/// The moved issues' rows, the counts and a confirmation.
 #[action("/issues/move")]
 pub struct IssuesMove {
     #[serde(default)]
@@ -366,6 +373,8 @@ async fn issues_move(
     )
 }
 
+/// Deletes the rows; the counts and a toast whose Undo posts `/issues/restore` with the batch.
+///
 /// Posted by the bulk bar with the checked rows, and by a row's own button.
 #[action("/issues/trash")]
 pub struct IssuesTrash {
@@ -411,6 +420,7 @@ async fn issues_trash(IssuesTrash { ids }: IssuesTrash) -> HxPartialResponse {
     partial!(rows, issue_stats(&stats), TOASTER.toast(undo))
 }
 
+/// The counts; the rows come back through a new search.
 #[action("/issues/restore")]
 pub struct IssuesRestore {
     pub batch: i64,

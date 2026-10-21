@@ -257,6 +257,33 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
+    // The first doc line says what the action returns; a `/** */` comment is one attribute.
+    #[cfg(feature = "agent")]
+    let returns = action_struct
+        .attrs
+        .iter()
+        .find_map(|attr| match &attr.meta {
+            Meta::NameValue(syn::MetaNameValue {
+                path,
+                value:
+                    syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(doc),
+                        ..
+                    }),
+                ..
+            }) if path.is_ident("doc") => doc
+                .value()
+                .lines()
+                .map(str::trim)
+                .find(|line| !line.is_empty())
+                .map(str::to_owned),
+            _ => None,
+        })
+        .map_or_else(
+            || quote! { ::std::option::Option::None },
+            |doc| quote! { ::std::option::Option::Some(#doc) },
+        );
+
     // `::vixen::agent` exists only with the feature.
     #[cfg(feature = "agent")]
     let skill = quote! {
@@ -266,6 +293,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
                 base: ::vixen::base_path!(),
                 path: <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH,
                 fields: ::std::vec![#(#action_skill_fields,)*],
+                returns: #returns,
             }
         }
     };

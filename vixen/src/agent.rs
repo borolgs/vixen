@@ -148,8 +148,12 @@ impl Skill {
 ///         Field { name: "theme", ty: "Theme", values: Some(&["light", "dark"]), optional: false, repeated: false },
 ///         Field { name: "remember", ty: "bool", values: None, optional: true, repeated: false },
 ///     ],
+///     returns: Some("The page in the new theme."),
 /// };
-/// assert_eq!(action.to_string(), "POST /config/theme {theme: light | dark, remember?: bool}");
+/// assert_eq!(
+///     action.to_string(),
+///     "POST /config/theme {theme: light | dark, remember?: bool}  The page in the new theme."
+/// );
 /// ```
 pub struct Action {
     /// The app's base path, `""` when there is none.
@@ -158,6 +162,8 @@ pub struct Action {
     pub path: &'static str,
     /// The form fields, in declaration order.
     pub fields: Vec<Field>,
+    /// What the action returns: the first line of the struct's doc comment.
+    pub returns: Option<&'static str>,
 }
 
 /// One form field of an [`Action`].
@@ -183,7 +189,11 @@ impl fmt::Display for Action {
             }
             fmt::Display::fmt(field, f)?;
         }
-        f.write_str("}")
+        f.write_str("}")?;
+        match self.returns {
+            Some(returns) => write!(f, "  {returns}"),
+            None => Ok(()),
+        }
     }
 }
 
@@ -205,8 +215,8 @@ impl fmt::Display for Field {
 /// ```
 /// use vixen::agent::{Action, index};
 ///
-/// let ping = Action { base: "", path: "/ping", fields: vec![] };
-/// let pong = Action { base: "", path: "/pong", fields: vec![] };
+/// let ping = Action { base: "", path: "/ping", fields: vec![], returns: None };
+/// let pong = Action { base: "", path: "/pong", fields: vec![], returns: None };
 /// assert_eq!(index(&[ping, pong]), "POST /ping {}\nPOST /pong {}");
 /// ```
 pub fn index(actions: &[Action]) -> String {
@@ -219,7 +229,8 @@ pub fn index(actions: &[Action]) -> String {
 
 /// Builds an action index from `#[action]` types for [`Skill::index`](crate::agent::Skill::index).
 ///
-/// Each line has the form `POST /path {field: Type, ..}`. Field notation:
+/// Each line has the form `POST /path {field: Type, ..}`, followed by the first line of
+/// the struct's doc comment: what the action returns. Field notation:
 ///
 /// - `field?`: optional (`Option<T>` or `#[serde(default)]`).
 /// - `Type[]`: repeated form key (`Vec<T>`).
@@ -241,6 +252,7 @@ pub fn index(actions: &[Action]) -> String {
 ///     Done,
 /// }
 ///
+/// /// The issue's row.
 /// #[action("/issues/status")]
 /// struct IssueStatus {
 ///     id: i64,
@@ -263,7 +275,7 @@ pub fn index(actions: &[Action]) -> String {
 /// assert_eq!(
 ///     vixen::skill![IssueStatus, IssuesMove, IssueList],
 ///     concat!(
-///         "POST /issues/status {id: i64, status: open | done}\n",
+///         "POST /issues/status {id: i64, status: open | done}  The issue's row.\n",
 ///         "POST /issues/move {ids?: i64[], status?: open | done}\n",
 ///         "POST /issues/list {after?: cursor}",
 ///     )
@@ -369,6 +381,20 @@ mod tests {
         assert_eq!(
             skill.script().into_string(),
             format!(r#"<script type="text/llms.txt">{text}</script>"#)
+        );
+    }
+
+    #[test]
+    fn returns_is_the_first_doc_line() {
+        /** The moved rows.
+
+        Posted by the bulk bar. */
+        #[vixen::action("/issues/move")]
+        struct IssuesMove {}
+
+        assert_eq!(
+            IssuesMove::skill().to_string(),
+            "POST /issues/move {}  The moved rows."
         );
     }
 

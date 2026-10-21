@@ -8,6 +8,7 @@ use super::{
 };
 use crate::{shared::TOASTER, sort::SortDir, state::ctx};
 
+/// The matching issues, 30 a page.
 #[derive(Clone, Default, Debug)]
 #[action("/issues/search")]
 pub struct IssueSearch {

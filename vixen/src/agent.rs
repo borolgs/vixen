@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use axum::{Router, http::header::CONTENT_TYPE, routing::get};
 use maud::{Markup, PreEscaped, html};
+use serde::de::DeserializeOwned;
 
 /// Shared HTTP instructions with Agent Skills frontmatter.
 ///
@@ -225,11 +226,15 @@ pub fn index(actions: &[Action]) -> String {
 /// - `a | b`: enum values from [`strum::VariantNames`], instead of the type name.
 /// - `cursor`: a `#[cursor]` field for pagination.
 ///
+/// Debug builds panic when serde rejects a listed value, so `#[strum(serialize_all)]`
+/// must match `#[serde(rename_all)]`.
+///
 /// ```
 /// use serde::{Deserialize, Serialize};
 /// use vixen::action;
 ///
 /// #[derive(Deserialize, Serialize, strum::VariantNames)]
+/// #[serde(rename_all = "lowercase")]
 /// #[strum(serialize_all = "lowercase")]
 /// enum Status {
 ///     Open,
@@ -288,8 +293,26 @@ pub trait Values {
     fn values(&self) -> Option<&'static [&'static str]>;
 }
 
-impl<T: strum::VariantNames> Values for Probe<T> {
+impl<T: strum::VariantNames + DeserializeOwned> Values for Probe<T> {
     fn values(&self) -> Option<&'static [&'static str]> {
+        // The index must list what the form accepts; strum and serde name variants separately.
+        #[cfg(debug_assertions)]
+        {
+            #[derive(serde::Deserialize)]
+            struct Form<T> {
+                v: T,
+            }
+            for variant in T::VARIANTS {
+                let query = serde_html_form::to_string([("v", *variant)]).expect("a form pair");
+                let form = serde_html_form::from_str::<Form<T>>(&query);
+                if let Err(err) = form.map(|form| form.v) {
+                    panic!(
+                        "`{}::VARIANTS` lists `{variant}` but the form rejects it: {err}",
+                        std::any::type_name::<T>()
+                    );
+                }
+            }
+        }
         Some(T::VARIANTS)
     }
 }
@@ -347,6 +370,45 @@ mod tests {
             skill.script().into_string(),
             format!(r#"<script type="text/llms.txt">{text}</script>"#)
         );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn values_check_through_the_form_parser() {
+        #[derive(serde::Deserialize, strum::VariantNames)]
+        #[serde(try_from = "u8")]
+        enum Priority {
+            #[strum(serialize = "1")]
+            Low,
+        }
+
+        impl TryFrom<u8> for Priority {
+            type Error = String;
+            fn try_from(n: u8) -> Result<Self, String> {
+                (n == 1)
+                    .then_some(Priority::Low)
+                    .ok_or(format!("no priority {n}"))
+            }
+        }
+
+        assert_eq!(Probe::<Priority>::new().values(), Some(&["1"][..]));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(
+        expected = "Status::VARIANTS` lists `in_progress` but the form rejects it: unknown variant `in_progress`"
+    )]
+    fn values_panic_when_the_form_rejects_a_listed_variant() {
+        #[derive(serde::Deserialize, strum::VariantNames)]
+        #[serde(rename_all = "kebab-case")]
+        #[strum(serialize_all = "snake_case")]
+        enum Status {
+            Backlog,
+            InProgress,
+        }
+
+        let _ = Probe::<Status>::new().values();
     }
 
     #[tokio::test]

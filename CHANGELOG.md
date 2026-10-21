@@ -8,7 +8,7 @@
 - `replace_query` to mirror any action's search in the page's query string.
 - `HxPartial::status` and `StatusCode` entries in `partial!`: an error partial with its status, which htmx 4 still swaps.
 - `agent::Skill` and `agent::SKILL` behind the `agent` feature: curl instructions for agents, embedded with `.script()` or served at `/llms.txt` with `.router()`; `.index()` adds a page's actions, `.name()`, `.description()` and `.rewrite()` adjust the text.
-- `skill!` and `Name::skill()` from `#[action]`: an action index, one `POST /path {field?: Type, ..}` line per action, with the values of a `strum::VariantNames` enum, `[]` for `Vec<T>` and `cursor` for the `#[cursor]` field.
+- `skill!` and `Name::skill()` from `#[action]`: an action index, one `POST /path {field?: Type, ..}` line per action, with the values of a `strum::VariantNames` enum, `[]` for `Vec<T>` and `cursor` for the `#[cursor]` field. Debug builds panic when serde rejects a listed value.
 
 ### Changed
 

@@ -312,7 +312,8 @@ head { (crate::skill().script()) (vixen::assets!()) }
 
 The index lists each action's route and form fields: `?` marks optional fields,
 `[]` marks repeated values, and `cursor` marks pagination fields. Enums with
-`strum::VariantNames` list their allowed values.
+`strum::VariantNames` list their allowed values; debug builds panic when serde
+rejects one, so `#[strum(serialize_all)]` must match `#[serde(rename_all)]`.
 
 Use `.name()` and `.description()` to set the frontmatter for a saved `SKILL.md`,
 or `.rewrite()` to edit the generated text.

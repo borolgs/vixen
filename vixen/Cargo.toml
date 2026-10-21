@@ -20,6 +20,7 @@ workspace = true
 all-features = true
 
 [features]
+agent = ["dep:strum", "axum-vixen-macros/agent"]
 basecoatui = []
 testing = ["dep:scraper"]
 
@@ -35,12 +36,14 @@ maud = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_html_form = "0.2.8"
+strum = { workspace = true, optional = true }
 
 tokio = { version = "1.49.0", default-features = false, features = ["rt"] }
 
 scraper = { version = "0.27.0", optional = true }
 
 [dev-dependencies]
+strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true }
 tower = { version = "0.5", features = ["util"] }
 trybuild = "1.0.121"

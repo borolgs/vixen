@@ -16,7 +16,7 @@
 //! | resolve a static file to its content-hashed URL | [`asset!`] |
 //! | serve the app under a base path | [`Config::base_path`], [`mount!`], [`href!`], [`base_path!`] |
 //! | access an extractor anywhere in a request | [`#[derive(ReqCtx)]`](derive@ReqCtx) |
-//! | embed HTTP instructions for agents | [`agent::skill`], [`agent::SKILL`] |
+//! | provide HTTP instructions for agents | `vixen::agent::Skill` and `vixen::skill!`, behind the `agent` feature |
 //! | render Basecoat toasts, drawers, dialogs and comboboxes | [`ui`], behind the `basecoatui` feature |
 //! | inspect response bodies in tests | `vixen::testing`, behind the `testing` feature |
 //!
@@ -48,6 +48,7 @@ extern crate self as vixen;
 pub mod assets;
 
 mod action;
+#[cfg(feature = "agent")]
 pub mod agent;
 mod base_path;
 mod fragment;

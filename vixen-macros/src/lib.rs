@@ -71,6 +71,8 @@ mod route;
 ///   add `trigger`, `target`, `swap`, or `sync` through [`HxAction`].
 /// - `Name::FIELD`, a set of `&'static str` field names for form controls.
 /// - `Name::PATH`, `name.path()`, and the generated `NamePath` unit struct.
+/// - `Name::skill()`, with the `agent` feature: the route and form fields for
+///   [`skill!`].
 /// - [`PagedAction`] for `Name` when `#[cursor]` marks an `Option<_>` field.
 ///
 /// # Requirements
@@ -88,6 +90,7 @@ mod route;
 ///
 /// [`RouterExt::action`]: ../vixen/trait.RouterExt.html#tymethod.action
 /// [`base_path!`]: ../vixen/macro.base_path.html
+/// [`skill!`]: ../vixen/macro.skill.html
 /// [`HxAction`]: ../vixen/struct.HxAction.html
 /// [`PagedAction`]: ../vixen/trait.PagedAction.html
 #[proc_macro_attribute]

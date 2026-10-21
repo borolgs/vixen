@@ -1,35 +1,56 @@
 ---
 name: vixen-app
-description: Drive a vixen app, server-rendered htmx, over HTTP with curl.
+description: Use when reading or changing a vixen app over HTTP with curl.
 ---
-The HTML is the API: pages are plain GETs, every hx-action is an endpoint. This is all
-the page's scripts do; you don't need them.
+Load pages with GET and call the `hx-action` endpoints in their HTML. No browser,
+JavaScript execution or htmx headers are needed.
 
-- Start from the URL you were given: GET it. href links are pages too.
-- An hx-action is a path; hx-method next to it is the method. Send the fields
-  form-encoded, one --data-urlencode per field, --data '' if there are none; -i shows the
-  status. Don't use -f: it drops the body, and the body explains the error. No htmx
-  headers.
-- hx-vals holds fields to send: HTML-escaped JSON (&quot; is "), each key a field.
-  Inside <form hx-action>, its name= inputs, selects and checked checkboxes are the
-  remaining fields; <select> and radio options are the allowed values. Extra fields
-  are ignored; a missing or malformed one is a plain-text 422 that names it.
-- hx-trigger, hx-on, hx-sync and hx-swap on the sender describe browser behaviour:
-  ignore them.
-- A response is a list of <hx-partial hx-target="#id">. Without hx-swap it is the new
-  contents of that element; outerHTML replaces the element; beforeend and afterbegin
-  add a child, afterend and beforebegin a sibling; delete removes it. Text outside
-  <hx-partial> is the new contents of the sender, or of its hx-target. New elements
-  carry their own hx-action, so a response tells you what you can do next.
-- A paged list starts with a comment: its row count and, if there is a next page, the
-  hx-action that loads it. POST that for more rows; the same action also sits at the
-  end of the list, for the browser's scroll.
-- 422: your input was wrong. 404: the thing is gone. role="alert" marks an error,
-  role="status" a confirmation. Read the text.
-- Asked for a skill or a script for this app: start your SKILL.md from this text, as its
-  rules rather than a pasted quote, then add the URL, the app's note below it and your
-  own notes, the paths and fields you used. A wrapper is a cache of the page, not the
-  catalog: have it read responses for you, not choose the actions. Wrap what you use,
-  fall through to the HTML for the rest, and re-read the page when it breaks. A missing
-  command is not a missing feature.
-- If these docs contradict a response, trust the response and tell the user.
+## Requests
+
+- GET the starting URL from the user's request or the app note below. Follow `href`
+  links to other pages.
+- `hx-action` is the endpoint path; `hx-method` is the HTTP method. Send form-encoded
+  fields with one `--data-urlencode` per field, or `--data ''` for no fields. Use
+  `curl -i` to include the status. Do not use `-f`, which hides error bodies.
+- `hx-vals` contains HTML-escaped JSON (`&quot;` is `"`). Send its keys along with the
+  named inputs and selects in `<form hx-action>`. For checkboxes and radios, send
+  only checked values. Read allowed values from select options and radio inputs.
+  Extra fields are ignored; missing or malformed fields produce a plain-text 422
+  that names the field.
+- Ignore `hx-trigger`, `hx-on`, `hx-sync` and `hx-swap` on the sender; these control
+  browser behaviour.
+
+## Responses
+
+- `<hx-partial hx-target="#id">` updates the named element. With no `hx-swap`, it
+  replaces the element's contents. `outerHTML` replaces the element; `beforeend`
+  and `afterbegin` add children; `afterend` and `beforebegin` add siblings;
+  `delete` removes the element.
+- HTML outside `<hx-partial>` replaces the contents of the sender or its
+  `hx-target`. Read new elements for the actions available next.
+- Paged lists begin with an HTML comment containing the row count and, when
+  available, the next page's `hx-action`. POST that path for more rows.
+- 422 means invalid input; 404 means a missing item. `role="alert"` marks an error
+  and `role="status"` a confirmation. Read the response body even on errors.
+
+## Action index
+
+The app note may be followed by one line per action: `POST /path {field: Type, ..}`.
+
+- `field?`: the field may be omitted.
+- `Type[]`: send multiple values by repeating the key.
+- `a | b`: allowed values.
+- `cursor`: a pagination field; get the next page's path from the list's comment.
+- `{}`: no fields.
+
+## App-specific skills and scripts
+
+When asked to write a `SKILL.md` for this app, use these rules as its body and add
+its URL, login requirements, app note, action index and any tested examples.
+
+Scripts should parse responses and expose the actions you use. If a command is
+missing or fails, inspect the HTML for available actions and current fields;
+a missing script command does not mean the app lacks that feature.
+
+If these instructions contradict a response, follow the response and report the
+discrepancy to the user.

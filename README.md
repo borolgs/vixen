@@ -22,6 +22,8 @@ parts will still be reworked.
       the markup that calls it.
     - [`partial!`][partial] combines a main swap, targeted parts, and
       client-side events in one response.
+    - Optional [agent instructions](#agents) under `vixen::agent`, with the
+      `agent` feature, hand the same endpoints to an agent with curl.
 
 3. **TS and CSS live next to the page they belong to.** The browser is a
    JavaScript platform, and vixen embraces that boundary. When custom
@@ -273,6 +275,62 @@ async fn add(Add { by }: Add) -> impl IntoResponse {
 
 See [`examples/components`][components] for the complete setup.
 
+### Agents
+
+With the `agent` feature, agents can use the app with curl. They call the same
+endpoints as htmx and read the HTML responses:
+
+```toml
+[dependencies]
+axum-vixen = { version = "0.3", features = ["agent"] }
+```
+
+[`Skill`][skill] contains instructions for reading responses and calling
+actions, plus notes about your app. Each page lists its actions with
+[`skill!`][skill-macro]; the root adds them with one `.index()` per page,
+embeds the text in every page head and serves it at `/llms.txt`:
+
+```rust,ignore
+// src/pages/todos/mod.rs — the page lists its actions
+pub fn actions() -> String {
+    vixen::skill![SearchTodos, AddTodo, ToggleTodo]
+}
+
+// src/main.rs — the app note and the index
+fn skill() -> Skill {
+    Skill::new("A todo list on one page at GET /. No login.")
+        .index(pages::todos::actions())
+}
+
+Router::new()
+    .merge(pages::todos::router())
+    .merge(skill().router()) // GET /llms.txt
+
+// src/shared.rs — the layout, so every page head carries the text
+head { (crate::skill().script()) (vixen::assets!()) }
+```
+
+The index lists each action's route and form fields: `?` marks optional fields,
+`[]` marks repeated values, and `cursor` marks pagination fields. Enums with
+`strum::VariantNames` list their allowed values.
+
+Use `.name()` and `.description()` to set the frontmatter for a saved `SKILL.md`,
+or `.rewrite()` to edit the generated text.
+
+#### Example prompt
+
+With [`examples/todos`][todos] running (`cargo run -p todos`), give an agent
+with shell access a task and the instructions URL:
+
+```text
+Read http://127.0.0.1:4001/llms.txt and use curl to work with the app.
+Add a high-priority todo called "Review the agent docs", then mark it done.
+Check that it appears in the completed list.
+```
+
+See [`examples/todos`][todos] and [`examples/backlog`][backlog] for complete apps
+with agent instructions.
+
 ## htmx 4 compatibility
 
 vixen targets htmx 4, but `vixen::hx` re-exports
@@ -314,8 +372,8 @@ with cursor-paginated [`Paged`][paged] lists, client-filtered and
 server-searched comboboxes, and request-local database access through `ReqCtx`.
 
 [`examples/backlog`][backlog] — a one-page issue tracker over in-memory SQLite,
-with inline cell editing, a sortable [`Paged`][paged] table, bulk actions, and
-undoable deletes.
+with inline cell editing, a sortable [`Paged`][paged] table, bulk actions,
+undoable deletes, and an agent skill at `/llms.txt`.
 
 ```bash
 bun install                      # once, for the frontend deps
@@ -341,6 +399,8 @@ cargo run -p backlog             # http://127.0.0.1:4006/
 [href]: https://docs.rs/axum-vixen/latest/vixen/macro.href.html
 [build]: https://docs.rs/axum-vixen/latest/vixen/fn.build.html
 [config]: https://docs.rs/axum-vixen/latest/vixen/struct.Config.html
+[skill]: https://docs.rs/axum-vixen/latest/vixen/agent/struct.Skill.html
+[skill-macro]: https://docs.rs/axum-vixen/latest/vixen/macro.skill.html
 [vixen]: https://docs.rs/axum-vixen/latest/vixen/
 [vixen-macros]: https://docs.rs/axum-vixen-macros/latest/vixen_macros/
 [vixen-bundler]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/

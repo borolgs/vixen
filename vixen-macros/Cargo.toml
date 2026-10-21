@@ -17,6 +17,9 @@ proc-macro = true
 [lints]
 workspace = true
 
+[features]
+agent = []
+
 [dependencies]
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
@@ -26,9 +29,10 @@ serde_json = { workspace = true }
 mime_guess = "2.0.5"
 heck = "0.5.0"
 
-# Doctests only; path-only, so `cargo publish` strips the cycle.
+# Doctests only. Publishing strips this path-only dependency to avoid a cycle.
+# Enable `agent` to match feature-unified workspace builds.
 [dev-dependencies]
-axum-vixen = { path = "../vixen" }
+axum-vixen = { path = "../vixen", features = ["agent"] }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 maud = { workspace = true }

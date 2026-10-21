@@ -297,17 +297,17 @@ pub fn actions() -> String {
 }
 
 // src/main.rs — the app note and the index
-fn skill() -> Skill {
+static SKILL: LazyLock<Skill> = LazyLock::new(|| {
     Skill::new("A todo list on one page at GET /. No login.")
         .index(pages::todos::actions())
-}
+});
 
 Router::new()
     .merge(pages::todos::router())
-    .merge(skill().router()) // GET /llms.txt
+    .merge(SKILL.router()) // GET /llms.txt
 
 // src/shared.rs — the layout, so every page head carries the text
-head { (crate::skill().script()) (vixen::assets!()) }
+head { (crate::SKILL.script()) (vixen::assets!()) }
 ```
 
 The index lists each action's route and form fields, then the first line of the

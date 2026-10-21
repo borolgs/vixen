@@ -11,8 +11,8 @@ No browser, JavaScript execution or htmx headers are needed.
   the one the app's note names, when you need what the page shows or an action that
   isn't listed. `href` links are pages too.
 - `hx-action` is the endpoint path; `hx-method` is the HTTP method. Send form-encoded
-  fields with one `--data-urlencode` per field, or `--data ''` for no fields. Use
-  `curl -i` to include the status. Do not use `-f`, which hides error bodies.
+  fields with one `--data-urlencode` per field. Use `curl -i` to include the status.
+  Do not use `-f`, which hides error bodies.
 - `hx-vals` contains HTML-escaped JSON (`&quot;` is `"`). Send its keys along with the
   named inputs and selects in `<form hx-action>`. For checkboxes and radios, send
   only checked values. Read allowed values from select options and radio inputs.

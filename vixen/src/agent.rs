@@ -115,9 +115,14 @@ impl Skill {
 
     /// Embeds the skill in a non-executable `text/llms.txt` script for the page head.
     ///
-    /// The text is not HTML-escaped and must not contain `</script`.
+    /// The text is not HTML-escaped and must not contain `</script`; debug builds check.
     pub fn script(&self) -> Markup {
-        html! { script type="text/llms.txt" { (PreEscaped(self.text())) } }
+        let text = self.text();
+        debug_assert!(
+            !text.to_ascii_lowercase().contains("</script"),
+            "the skill text contains `</script`"
+        );
+        html! { script type="text/llms.txt" { (PreEscaped(text)) } }
     }
 
     /// Returns a router serving the skill as plain text at `GET /llms.txt`.
@@ -382,6 +387,13 @@ mod tests {
             skill.script().into_string(),
             format!(r#"<script type="text/llms.txt">{text}</script>"#)
         );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "the skill text contains `</script`")]
+    fn the_script_rejects_a_closing_tag() {
+        Skill::new("No login. </script>").script();
     }
 
     #[test]

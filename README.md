@@ -310,7 +310,8 @@ Router::new()
 head { (crate::skill().script()) (vixen::assets!()) }
 ```
 
-The index lists each action's route and form fields: `?` marks optional fields,
+The index lists each action's route and form fields, then the first line of the
+struct's doc comment as what it returns: `?` marks optional fields,
 `[]` marks repeated values, and `cursor` marks pagination fields. Enums with
 `strum::VariantNames` list their allowed values; debug builds panic when serde
 rejects one, so `#[strum(serialize_all)]` must match `#[serde(rename_all)]`.

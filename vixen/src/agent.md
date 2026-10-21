@@ -2,13 +2,14 @@
 name: vixen-app
 description: Use when reading or changing a vixen app over HTTP with curl.
 ---
-Load pages with GET and call the `hx-action` endpoints in their HTML. No browser,
-JavaScript execution or htmx headers are needed.
+Call the actions indexed at the end of this text, and GET pages for what they show.
+No browser, JavaScript execution or htmx headers are needed.
 
 ## Requests
 
-- GET the starting URL from the user's request or the app note below. Follow `href`
-  links to other pages.
+- Listed below is what you can do: call it directly. GET the URL you were given, or
+  the one the app's note names, when you need what the page shows or an action that
+  isn't listed. `href` links are pages too.
 - `hx-action` is the endpoint path; `hx-method` is the HTTP method. Send form-encoded
   fields with one `--data-urlencode` per field, or `--data ''` for no fields. Use
   `curl -i` to include the status. Do not use `-f`, which hides error bodies.
@@ -35,7 +36,8 @@ JavaScript execution or htmx headers are needed.
 
 ## Action index
 
-The app note may be followed by one line per action: `POST /path {field: Type, ..}`.
+The app note may be followed by one line per action:
+`POST /path {field: Type, ..}  what it returns`.
 
 - `field?`: the field may be omitted.
 - `Type[]`: send multiple values by repeating the key.

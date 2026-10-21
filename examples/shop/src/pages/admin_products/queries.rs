@@ -212,8 +212,6 @@ pub fn replace_product_materials(
     Ok(())
 }
 
-pub fn delete_product(conn: &Connection, id: i64) -> anyhow::Result<()> {
-    conn.execute("delete from products where id = ?1", (id,))?;
-
-    Ok(())
+pub fn delete_product(conn: &Connection, id: i64) -> anyhow::Result<usize> {
+    Ok(conn.execute("delete from products where id = ?1", (id,))?)
 }

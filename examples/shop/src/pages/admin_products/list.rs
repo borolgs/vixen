@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use strum::IntoEnumIterator;
 use vixen::{
     After, Page, SyncStrategy,
@@ -59,12 +62,14 @@ pub async fn products_search(search: SearchProducts) -> Response {
     let toast = page
         .is_err()
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
+    let status = page.is_err().then_some(StatusCode::INTERNAL_SERVER_ERROR);
 
     (
         PRODUCTS.replace_url(&search),
         partial! {
             _ => PRODUCTS.view(&search, page),
-            toast
+            status,
+            toast,
         },
     )
         .into_response()

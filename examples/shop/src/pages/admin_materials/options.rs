@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use vixen::partial;
 
 use crate::{
@@ -22,10 +25,12 @@ pub async fn material_options(search: MaterialOptions) -> Response {
     let toast = page
         .is_err()
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
+    let status = page.is_err().then_some(StatusCode::INTERNAL_SERVER_ERROR);
 
     partial! {
         _ => MATERIAL_OPTIONS.view(&search, page),
-        toast
+        status,
+        toast,
     }
     .into_response()
 }

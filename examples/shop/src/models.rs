@@ -3,9 +3,11 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef},
 };
 use serde::{Deserialize, Serialize};
-use strum::{AsRefStr, EnumIter, EnumString};
+use strum::{AsRefStr, EnumIter, EnumString, VariantNames};
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, EnumString)]
+#[derive(
+    Clone, Copy, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, EnumString, VariantNames,
+)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum Category {
@@ -41,7 +43,9 @@ impl ToSql for Category {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, VariantNames,
+)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum ProductSort {
@@ -63,7 +67,9 @@ impl ProductSort {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, EnumIter, VariantNames,
+)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum MaterialSort {

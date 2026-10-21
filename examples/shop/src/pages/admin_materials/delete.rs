@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use vixen::{HxPartialResponse, hx::SwapOption, maud::html, partial, ui::basecoatui::Dialog};
 
 use crate::{
@@ -40,22 +43,27 @@ pub async fn confirm_delete_material(
                     hx-action=(DeleteMaterial::action().id(material.id)) { "Delete" }
             })
             .into_response(),
-        Ok(None) => CONFIRM
-            .header(html! {
-                h2 { "Not found" }
-                p { "Someone got here first." }
-            })
-            .footer(html! {
-                button.btn data-variant="outline" type="button"
-                    onclick=(Dialog::cancel()) { "Close" }
-            })
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            CONFIRM
+                .header(html! {
+                    h2 { "Not found" }
+                    p { "Someone got here first." }
+                })
+                .footer(html! {
+                    button.btn data-variant="outline" type="button"
+                        onclick=(Dialog::cancel()) { "Close" }
+                }),
+        )
             .into_response(),
         Err(err) => {
             tracing::error!("confirm delete material {id}: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
+            .into_response()
         }
     }
 }
@@ -67,6 +75,12 @@ pub async fn delete_material(DeleteMaterial { id }: DeleteMaterial) -> HxPartial
         .await;
 
     match deleted {
+        Ok(0) => partial! {
+            StatusCode::NOT_FOUND,
+            CONFIRM.close(),
+            (MaterialRowId(id), SwapOption::Delete) => html! {},
+            TOASTER.error("Already deleted", "Someone got here first."),
+        },
         Ok(_) => partial! {
             CONFIRM.close(),
             (MaterialRowId(id), SwapOption::Delete) => html! {},
@@ -75,9 +89,10 @@ pub async fn delete_material(DeleteMaterial { id }: DeleteMaterial) -> HxPartial
         Err(err) => {
             tracing::error!("delete material {id}: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
         }
     }
 }

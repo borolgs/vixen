@@ -166,8 +166,6 @@ pub fn update_material(conn: &Connection, id: i64, input: &MaterialInput) -> any
     Ok(())
 }
 
-pub fn delete_material(conn: &Connection, id: i64) -> anyhow::Result<()> {
-    conn.execute("delete from materials where id = ?1", (id,))?;
-
-    Ok(())
+pub fn delete_material(conn: &Connection, id: i64) -> anyhow::Result<usize> {
+    Ok(conn.execute("delete from materials where id = ?1", (id,))?)
 }

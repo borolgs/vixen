@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use axum::{Router, middleware};
 use vixen::agent::Skill;
 
@@ -17,12 +19,12 @@ mod state;
 const ADDR: &str = "127.0.0.1:4006";
 
 /// Every page's head carries it; the router serves it at `/llms.txt`.
-fn skill() -> Skill {
+static SKILL: LazyLock<Skill> = LazyLock::new(|| {
     Skill::new("An issue tracker on one page at GET /. No login.")
         .name("backlog")
         .description("Drive the backlog issue tracker over HTTP with curl.")
         .index(pages::issues::actions())
-}
+});
 
 #[tokio::main]
 async fn main() {
@@ -42,7 +44,7 @@ async fn main() {
 
     let router = Router::new()
         .merge(pages::issues::routes())
-        .merge(skill().router())
+        .merge(SKILL.router())
         .merge(vixen::assets_router!())
         .layer(middleware::from_fn_with_state(
             state.clone(),

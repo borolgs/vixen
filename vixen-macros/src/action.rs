@@ -317,7 +317,7 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
             ::axum::extract::FromRequest,
         )]
         #[serde(crate = "::vixen::__private::serde")]
-        #[from_request(via(::axum_extra::extract::Form))]
+        #[from_request(via(::vixen::__private::ActionForm))]
         #action_struct
 
         #[derive(::vixen::__private::serde::Deserialize, ::axum_extra::routing::TypedPath)]

@@ -14,6 +14,7 @@
 
 - `Paged::replace_url(&search)` drops the `href` argument and writes a relative `?query`.
 - `Paged` pages start with an HTML comment naming the row count and the next page's `hx-action`, for agents.
+- `#[action]` reads a POST without a content type as a form: `curl -X POST` with no data is an empty form, not a 415.
 
 ## 0.3.0 - 2026-10-10
 

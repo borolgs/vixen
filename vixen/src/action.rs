@@ -1,8 +1,13 @@
 use std::fmt::Write;
 
+use axum::{
+    extract::{FromRequest, Request},
+    http::{HeaderValue, header::CONTENT_TYPE},
+};
+use axum_extra::extract::{Form, FormRejection};
 use axum_htmx::SwapOption;
 use maud::{Escaper, Render};
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 
 use crate::Selector;
@@ -232,13 +237,65 @@ impl HxSync {
     }
 }
 
+/// The form behind `#[action]`: a request without a content type is read as a form,
+/// so a POST without a body is an empty form.
+#[doc(hidden)]
+pub struct ActionForm<T>(pub T);
+
+impl<T, S> FromRequest<S> for ActionForm<T>
+where
+    T: DeserializeOwned,
+    S: Send + Sync,
+{
+    type Rejection = FormRejection;
+
+    async fn from_request(mut req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        req.headers_mut()
+            .entry(CONTENT_TYPE)
+            .or_insert(HeaderValue::from_static(
+                "application/x-www-form-urlencoded",
+            ));
+        Form::from_request(req, state)
+            .await
+            .map(|Form(value)| Self(value))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use axum::{
+        Router,
+        body::{Body, to_bytes},
+        http::{Request, StatusCode},
+    };
     use axum_extra::routing::TypedPath;
     use maud::html;
+    use tower::ServiceExt;
 
     use super::*;
-    use crate::{PagedAction, action, id};
+    use crate::{PagedAction, RouterExt, action, id};
+
+    #[action("/find")]
+    struct Find {
+        #[serde(default)]
+        q: String,
+    }
+
+    #[tokio::test]
+    async fn a_post_without_a_content_type_is_a_form() {
+        async fn find(Find { q }: Find) -> String {
+            format!("q={q}")
+        }
+        let router: Router = Router::new().action(find);
+
+        for (body, expected) in [("", "q="), ("q=milk", "q=milk")] {
+            let req = Request::post("/find").body(Body::from(body)).unwrap();
+            let res = router.clone().oneshot(req).await.unwrap();
+            assert_eq!(res.status(), StatusCode::OK);
+            let bytes = to_bytes(res.into_body(), usize::MAX).await.unwrap();
+            assert_eq!(&bytes[..], expected.as_bytes());
+        }
+    }
 
     #[action("/save")]
     struct Save {

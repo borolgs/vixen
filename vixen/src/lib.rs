@@ -95,5 +95,6 @@ pub use action::{HxAction, HxSync, SyncStrategy};
 pub mod __private {
     pub use {serde, serde_json, tokio};
 
+    pub use crate::action::ActionForm;
     pub use crate::base_path::{base_path, mount};
 }

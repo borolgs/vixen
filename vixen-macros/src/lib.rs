@@ -82,7 +82,8 @@ mod route;
 /// use Rust field names.
 ///
 /// `Name` consumes the request body and must be the handler's last argument.
-/// Put extractors such as `State` before it.
+/// Put extractors such as `State` before it. A request without a content type
+/// is read as a form, so a POST without a body is an empty form.
 ///
 /// Generated code refers to `::axum` and `::axum_extra`, so both must be direct
 /// dependencies of the calling crate. vixen enables the required features:

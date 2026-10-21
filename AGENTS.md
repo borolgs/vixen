@@ -42,7 +42,8 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
 - `examples/components/` — the `basecoatui` toaster, drawer and dialog.
   `cargo run -p components` → <http://127.0.0.1:4003/>.
 - `examples/shop/` — a catalog plus product and material admin pages over
-  in-memory SQLite, demonstrating `Paged`, `Combobox` and `ReqCtx`.
+  in-memory SQLite, demonstrating `Paged`, `Combobox`, `ReqCtx` and a three-page
+  agent skill at `/llms.txt`.
   `cargo run -p shop` → <http://127.0.0.1:4005/>.
 - `examples/backlog/` — a one-page issue tracker over in-memory SQLite,
   demonstrating inline cell editing, a sortable `Paged` table,

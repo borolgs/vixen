@@ -19,16 +19,20 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and
   `vixen_bundler::{build, Config}`. Runtime support for the macros lives here
   (`action`, `fragment`, `partial`, `assets`, `base_path`); `agent` is the skill
-  an agent needs to drive the app with curl. Features: `basecoatui` for
+  an agent needs to drive the app with curl: `Skill`, `SKILL` and `skill!`.
+  Features: `agent` for `vixen::agent` and `Name::skill()`, `basecoatui` for
   `vixen::ui::basecoatui`, `testing` for `vixen::testing`.
 - `vixen-macros/` — proc macros: `#[action]`, `#[route]`, `#[id]`,
   `#[fragment]`, `#[derive(ReqCtx)]`, `assets!`, `asset!`, `assets_router!`.
+  Its `agent` feature is a passthrough from vixen's, since a proc macro cannot
+  see the facade's features; `#[action]` emits `Name::skill()` with it.
 - `vixen-bundler/` — the `build.rs` helper behind `vixen::{build, Config}`.
   Apps also list `vixen` under `[build-dependencies]`. It runs Bun over
   per-page entry points and passes `VIXEN_MANIFEST` to rustc, plus
   `VIXEN_BASE_PATH` when `Config::base_path` is set.
 - `examples/todos/` — a small app: a todo list in `pages/todos/mod.rs` with
-  its `index.ts` beside it. `cargo run -p todos` → <http://127.0.0.1:4001/>.
+  its `index.ts` beside it, and the agent skill at `/llms.txt`.
+  `cargo run -p todos` → <http://127.0.0.1:4001/>.
 - `examples/counter/` — the smallest app: a counter in one `main.rs` with
   `index.ts` and `index.css` beside it; `build.rs` points `entry_glob` at
   `src/index.ts`. `cargo run -p counter` → <http://127.0.0.1:4002/>.
@@ -41,6 +45,6 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
   in-memory SQLite, demonstrating `Paged`, `Combobox` and `ReqCtx`.
   `cargo run -p shop` → <http://127.0.0.1:4005/>.
 - `examples/backlog/` — a one-page issue tracker over in-memory SQLite,
-  demonstrating inline cell editing, a sortable `Paged` table and
-  `HxCurrentQuery`.
+  demonstrating inline cell editing, a sortable `Paged` table,
+  `HxCurrentQuery` and the agent skill at `/llms.txt`.
   `cargo run -p backlog` → <http://127.0.0.1:4006/>.

@@ -8,4 +8,6 @@ fn test_types() {
         t.compile_fail("tests/types/basecoatui/fail/*.rs");
         t.pass("tests/types/basecoatui/pass/*.rs");
     }
+    #[cfg(feature = "agent")]
+    t.pass("tests/types/agent/pass/*.rs");
 }

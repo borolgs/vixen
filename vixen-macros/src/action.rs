@@ -59,6 +59,10 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut action_field_idents = Vec::new();
     let mut action_field_keys = Vec::new();
 
+    // ::vixen::agent::Field { .. } for Name::skill()
+    #[cfg(feature = "agent")]
+    let mut action_skill_fields = Vec::new();
+
     // fn field_name(val: FieldType) {}
     let mut action_setters = Vec::new();
 
@@ -93,6 +97,50 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         action_field_idents.push(field_name.clone());
         action_field_keys.push(key.clone());
+
+        // Option<Vec<T>> -> T, optional, repeated
+        #[cfg(feature = "agent")]
+        {
+            let mut inner = field_type;
+            let mut optional = serde_meta(&field.attrs, "default").is_some();
+            let mut repeated = false;
+
+            while let Type::Path(type_path) = inner
+                && let Some(seg) = type_path.path.segments.last()
+                && (seg.ident == "Option" || seg.ident == "Vec")
+                && let PathArguments::AngleBracketed(ref args) = seg.arguments
+                && args.args.len() == 1
+                && let Some(GenericArgument::Type(arg_type)) = args.args.first()
+            {
+                if seg.ident == "Option" {
+                    optional = true;
+                } else {
+                    repeated = true;
+                }
+                inner = arg_type;
+            }
+
+            let ty = if is_cursor {
+                String::from("cursor")
+            } else {
+                inner.to_token_stream().to_string().replace(' ', "")
+            };
+            let ty = LitStr::new(&ty, field_name.span());
+
+            action_skill_fields.push(quote! {
+                ::vixen::agent::Field {
+                    name: #key,
+                    ty: #ty,
+                    values: {
+                        #[allow(unused_imports)]
+                        use ::vixen::agent::{NoValues as _, Values as _};
+                        (&::vixen::agent::Probe::<#inner>::new()).values()
+                    },
+                    optional: #optional,
+                    repeated: #repeated,
+                }
+            });
+        }
 
         // (val: #field_type, kv(key, #val_expr), Option<T> -> T)
         // TODO: Recognize only unqualified or canonical standard-library `String` /
@@ -209,6 +257,21 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
+    // `::vixen::agent` exists only with the feature.
+    #[cfg(feature = "agent")]
+    let skill = quote! {
+        /// Returns this action's route and form fields for `vixen::skill!`.
+        pub fn skill() -> ::vixen::agent::Action {
+            ::vixen::agent::Action {
+                base: ::vixen::base_path!(),
+                path: <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH,
+                fields: ::std::vec![#(#action_skill_fields,)*],
+            }
+        }
+    };
+    #[cfg(not(feature = "agent"))]
+    let skill = TokenStream::new();
+
     let doc = format!("Route: `POST {}`", path.value());
     let builder_doc = format!(
         "`hx-action` attribute for [`{0}`]. Setters fill `hx-vals`; `.hx()` continues with htmx options.",
@@ -292,6 +355,8 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
             pub fn path(&self) -> &'static str {
                 <#action_path_ident as ::axum_extra::routing::TypedPath>::PATH
             }
+
+            #skill
         }
 
         #paged_action
@@ -300,6 +365,15 @@ pub fn expand(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 // Serde renames would make the generated setters and `FIELD` keys inconsistent.
 fn serde_rename(attrs: &[Attribute], rename: &str) -> Option<Error> {
+    serde_meta(attrs, rename).map(|meta| {
+        Error::new_spanned(
+            meta.path(),
+            format!("`#[action]` does not support `#[serde({rename})]`"),
+        )
+    })
+}
+
+fn serde_meta(attrs: &[Attribute], name: &str) -> Option<Meta> {
     attrs
         .iter()
         .filter(|attr| attr.path().is_ident("serde"))
@@ -308,11 +382,5 @@ fn serde_rename(attrs: &[Attribute], rename: &str) -> Option<Error> {
                 .ok()
         })
         .flatten()
-        .find(|meta| meta.path().is_ident(rename))
-        .map(|meta| {
-            Error::new_spanned(
-                meta.path(),
-                format!("`#[action]` does not support `#[serde({rename})]`"),
-            )
-        })
+        .find(|meta| meta.path().is_ident(name))
 }

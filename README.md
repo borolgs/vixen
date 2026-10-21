@@ -113,13 +113,13 @@ crate:
 
 ```toml
 [dependencies]
-axum-vixen = "0.3"
+axum-vixen = "0.4"
 axum = "0.8"
 axum-extra = "0.12"
 maud = "0.27"
 
 [build-dependencies]
-axum-vixen = "0.3"  # only for build.rs below
+axum-vixen = "0.4"  # only for build.rs below
 ```
 
 The package is `axum-vixen`; the crate it provides is `vixen`, so code says
@@ -206,7 +206,7 @@ from Rust:
 
 ```toml
 [dependencies]
-axum-vixen = { version = "0.3", features = ["basecoatui"] }
+axum-vixen = { version = "0.4", features = ["basecoatui"] }
 ```
 
 The components use the `basecoat-css` npm package and Tailwind:
@@ -282,7 +282,7 @@ endpoints as htmx and read the HTML responses:
 
 ```toml
 [dependencies]
-axum-vixen = { version = "0.3", features = ["agent"] }
+axum-vixen = { version = "0.4", features = ["agent"] }
 ```
 
 [`Skill`][skill] contains instructions for reading responses and calling

@@ -1,14 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 - 2026-10-21
 
 ### Added
 
 - `Part::{before_begin, after_begin, before_end, after_end, delete}`: a part with that swap.
+- `name::sel()` beside `name::slot()` for a `#[fragment]` with a static id.
 - `replace_query` to mirror any action's search in the page's query string.
 - `HxPartial::status` and `StatusCode` or `Option<StatusCode>` entries in `partial!`: an error partial with its status, which htmx 4 still swaps.
 - `agent::Skill` and `agent::SKILL` behind the `agent` feature: curl instructions for agents, embedded with `.script()` or served at `/llms.txt` with `.router()`; `.index()` adds a page's actions, `.name()`, `.description()` and `.rewrite()` adjust the text.
 - `skill!` and `Name::skill()` from `#[action]`: an action index, one `POST /path {field?: Type, ..}` line per action, with the values of a `strum::VariantNames` enum, `[]` for `Vec<T>`, `cursor` for the `#[cursor]` field and the first line of the struct's doc comment as what the action returns. Debug builds panic when serde rejects a listed value.
+- The agent skill at `/llms.txt` in `examples/todos`, `examples/backlog` and `examples/shop`.
 
 ### Changed
 

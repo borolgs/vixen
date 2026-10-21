@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use strum::IntoEnumIterator;
 use vixen::{
     After, Page, fragment,
@@ -38,11 +41,13 @@ pub async fn catalog_search(search: SearchCatalog) -> Response {
     let toast = page
         .is_err()
         .then(|| TOASTER.error("That didn't go through", "Try again in a moment."));
+    let status = page.is_err().then_some(StatusCode::INTERNAL_SERVER_ERROR);
 
     (
         CATALOG.replace_url(&search),
         partial! {
             _ => CATALOG.view(&search, page),
+            status,
             toast,
         },
     )

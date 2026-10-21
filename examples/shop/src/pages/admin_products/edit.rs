@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use strum::IntoEnumIterator;
 use vixen::{
     After, HxPartialResponse, Page, fragment,
@@ -35,9 +38,11 @@ pub async fn new_product(_: NewProductPath) -> Response {
         Err(err) => {
             tracing::error!("new product: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
+            .into_response()
         }
     }
 }
@@ -67,24 +72,29 @@ pub async fn edit_product(EditProductPath { id }: EditProductPath) -> Response {
                 options,
             ))
             .into_response(),
-        Ok(None) => DRAWER
-            .header(html! {
-                h2 { "Not found" }
-                p { "Someone got here first." }
-            })
-            .content(html! {
-                div.alert data-variant="destructive" {
-                    h3 { "No such product" }
-                    section { p { "It may have been deleted. Close this and refresh." } }
-                }
-            })
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            DRAWER
+                .header(html! {
+                    h2 { "Not found" }
+                    p { "Someone got here first." }
+                })
+                .content(html! {
+                    div.alert data-variant="destructive" {
+                        h3 { "No such product" }
+                        section { p { "It may have been deleted. Close this and refresh." } }
+                    }
+                }),
+        )
             .into_response(),
         Err(err) => {
             tracing::error!("edit product {id}: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
+            .into_response()
         }
     }
 }
@@ -92,7 +102,12 @@ pub async fn edit_product(EditProductPath { id }: EditProductPath) -> Response {
 pub async fn create_product(form: CreateProduct) -> HxPartialResponse {
     let input = match form.validate() {
         Ok(input) => input,
-        Err(message) => return partial!(product_form_error(message)),
+        Err(message) => {
+            return partial! {
+                StatusCode::UNPROCESSABLE_ENTITY,
+                product_form_error(message),
+            };
+        }
     };
 
     let created = ctx()
@@ -110,22 +125,26 @@ pub async fn create_product(form: CreateProduct) -> HxPartialResponse {
 
             Ok(Ok(()))
         })
-        .await
-        .unwrap_or_else(|err| {
-            tracing::error!("create product: {err:#}");
-
-            Err("Internal Server Error")
-        });
+        .await;
 
     match created {
-        Ok(()) => partial! {
+        Ok(Ok(())) => partial! {
             DRAWER.close(),
             PRODUCTS.refresh(),
             TOASTER.success("Added", "It is on the shelf now."),
         },
-        Err(message) => partial! {
-            product_form_error(message)
+        Ok(Err(message)) => partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            product_form_error(message),
         },
+        Err(err) => {
+            tracing::error!("create product: {err:#}");
+
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                product_form_error("Internal Server Error"),
+            }
+        }
     }
 }
 
@@ -134,7 +153,8 @@ pub async fn update_product(form: UpdateProduct) -> HxPartialResponse {
         Ok(valid) => valid,
         Err(message) => {
             return partial! {
-                product_form_error(message)
+                StatusCode::UNPROCESSABLE_ENTITY,
+                product_form_error(message),
             };
         }
     };
@@ -145,35 +165,42 @@ pub async fn update_product(form: UpdateProduct) -> HxPartialResponse {
             let tx = conn.transaction()?;
 
             if queries::slug_taken(&tx, &input.slug, Some(id))? {
-                return Ok(Err("That slug is taken."));
+                return Ok(Err((
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "That slug is taken.",
+                )));
             }
             queries::update_product(&tx, id, &input)?;
             queries::replace_product_materials(&tx, id, &input.materials)?;
 
             let Some(product) = queries::product_by_id(&tx, id)? else {
-                return Ok(Err("That product is gone."));
+                return Ok(Err((StatusCode::NOT_FOUND, "That product is gone.")));
             };
 
             tx.commit()?;
 
             Ok(Ok(product))
         })
-        .await
-        .unwrap_or_else(|err| {
-            tracing::error!("update product {id}: {err:#}");
-
-            Err("Internal Server Error")
-        });
+        .await;
 
     match updated {
-        Ok(product) => partial! {
+        Ok(Ok(product)) => partial! {
             DRAWER.close(),
             product_row(&product),
             TOASTER.success("Saved", "Changes are live in the shop."),
         },
-        Err(message) => partial! {
-            product_form_error(message)
+        Ok(Err((status, message))) => partial! {
+            status,
+            product_form_error(message),
         },
+        Err(err) => {
+            tracing::error!("update product {id}: {err:#}");
+
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                product_form_error("Internal Server Error"),
+            }
+        }
     }
 }
 
@@ -396,7 +423,7 @@ fn edit_product_form(form: &UpdateProduct, options: Page<Material, After<i64>>) 
 #[fragment]
 fn product_form_error(message: &str) -> Markup {
     html! {
-        div.alert id=(Self) data-variant="destructive" {
+        div.alert id=(Self) role="alert" data-variant="destructive" {
             h3 { "That didn't go through" }
             section { p { (message) } }
         }

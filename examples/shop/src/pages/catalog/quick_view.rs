@@ -1,6 +1,10 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use vixen::{
     maud::{Markup, html},
+    partial,
     ui::basecoatui::Drawer,
 };
 
@@ -48,25 +52,30 @@ pub async fn quick_view(QuickViewPath { slug }: QuickViewPath) -> Response {
                 (close_button())
             })
             .into_response(),
-        Ok(None) => DETAIL
-            .header(html! {
-                h2 { "Not found" }
-                p { "It is not on the shelf any more." }
-            })
-            .content(html! {
-                div.alert data-variant="destructive" {
-                    h3 { "No such product" }
-                    section { p { "It may have been taken down. Close this and refresh." } }
-                }
-            })
-            .footer(close_button())
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            DETAIL
+                .header(html! {
+                    h2 { "Not found" }
+                    p { "It is not on the shelf any more." }
+                })
+                .content(html! {
+                    div.alert data-variant="destructive" {
+                        h3 { "No such product" }
+                        section { p { "It may have been taken down. Close this and refresh." } }
+                    }
+                })
+                .footer(close_button()),
+        )
             .into_response(),
         Err(err) => {
             tracing::error!("quick view {slug}: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
+            .into_response()
         }
     }
 }

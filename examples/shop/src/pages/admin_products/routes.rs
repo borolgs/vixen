@@ -19,9 +19,21 @@ pub fn router() -> Router<AppState> {
         .action(delete::delete_product)
 }
 
+/// The page's actions for the root skill in `main.rs`.
+pub fn actions() -> String {
+    vixen::skill![
+        SearchProducts,
+        CreateProduct,
+        UpdateProduct,
+        ConfirmDeleteProduct,
+        DeleteProduct,
+    ]
+}
+
 #[route("/admin/products")]
 pub struct ProductsPath;
 
+/// The matching product rows; a row's Edit is GET /admin/products/{id}/edit.
 #[derive(Default)]
 #[action("/admin/products/search")]
 pub struct SearchProducts {
@@ -42,6 +54,7 @@ pub struct EditProductPath {
     pub id: i64,
 }
 
+/// A toast; the rows reload.
 #[action("/admin/products/create")]
 pub struct CreateProduct {
     pub slug: String,
@@ -55,6 +68,7 @@ pub struct CreateProduct {
     pub in_stock: bool,
 }
 
+/// The product's row and a toast.
 #[action("/admin/products/update")]
 pub struct UpdateProduct {
     pub id: i64,
@@ -69,11 +83,13 @@ pub struct UpdateProduct {
     pub in_stock: bool,
 }
 
+/// A dialog whose Delete button posts /admin/products/delete.
 #[action("/admin/products/delete/confirm")]
 pub struct ConfirmDeleteProduct {
     pub id: i64,
 }
 
+/// Removes the row; a toast confirms.
 #[action("/admin/products/delete")]
 pub struct DeleteProduct {
     pub id: i64,

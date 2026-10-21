@@ -14,9 +14,15 @@ pub fn router() -> Router<AppState> {
         .view(quick_view::quick_view)
 }
 
+/// The page's actions for the root skill in `main.rs`.
+pub fn actions() -> String {
+    vixen::skill![SearchCatalog]
+}
+
 #[route("/")]
 pub struct CatalogPath;
 
+/// The matching product cards; a card's Quick view is GET /catalog/{slug}.
 #[derive(Default)]
 #[action("/catalog/search")]
 pub struct SearchCatalog {

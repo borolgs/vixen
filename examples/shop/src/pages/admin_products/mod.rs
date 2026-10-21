@@ -6,4 +6,4 @@ mod queries;
 mod routes;
 mod ui;
 
-pub use routes::{ProductsPath, router};
+pub use routes::{ProductsPath, actions, router};

@@ -19,6 +19,7 @@ pub fn layout(title: &str, head: Markup, body: Markup) -> Markup {
                 title { (title) " · brolly" }
                 (HEAD)
                 (head)
+                (crate::SKILL.script())
             }
             body class="bg-background text-foreground min-h-svh antialiased" {
                 header class="bg-background border-border sticky top-0 z-10 flex items-center gap-2 border-b px-6 py-3" {

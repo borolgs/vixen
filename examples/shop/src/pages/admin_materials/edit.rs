@@ -1,4 +1,7 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use vixen::{
     HxPartialResponse, fragment,
     maud::{Markup, html},
@@ -41,24 +44,29 @@ pub async fn edit_material(EditMaterialPath { id }: EditMaterialPath) -> Respons
             })
             .content(edit_material_form(&UpdateMaterial::of(&material)))
             .into_response(),
-        Ok(None) => DRAWER
-            .header(html! {
-                h2 { "Not found" }
-                p { "Someone got here first." }
-            })
-            .content(html! {
-                div.alert data-variant="destructive" {
-                    h3 { "No such material" }
-                    section { p { "It may have been deleted. Close this and refresh." } }
-                }
-            })
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            DRAWER
+                .header(html! {
+                    h2 { "Not found" }
+                    p { "Someone got here first." }
+                })
+                .content(html! {
+                    div.alert data-variant="destructive" {
+                        h3 { "No such material" }
+                        section { p { "It may have been deleted. Close this and refresh." } }
+                    }
+                }),
+        )
             .into_response(),
         Err(err) => {
             tracing::error!("edit material {id}: {err:#}");
 
-            TOASTER
-                .error("That didn't go through", "Try again in a moment.")
-                .into_response()
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                TOASTER.error("That didn't go through", "Try again in a moment."),
+            }
+            .into_response()
         }
     }
 }
@@ -66,7 +74,12 @@ pub async fn edit_material(EditMaterialPath { id }: EditMaterialPath) -> Respons
 pub async fn create_material(form: CreateMaterial) -> HxPartialResponse {
     let input = match form.validate() {
         Ok(input) => input,
-        Err(message) => return partial!(material_form_error(message)),
+        Err(message) => {
+            return partial! {
+                StatusCode::UNPROCESSABLE_ENTITY,
+                material_form_error(message),
+            };
+        }
     };
 
     let created = ctx()
@@ -83,29 +96,38 @@ pub async fn create_material(form: CreateMaterial) -> HxPartialResponse {
 
             Ok(Ok(()))
         })
-        .await
-        .unwrap_or_else(|err| {
-            tracing::error!("create material: {err:#}");
-
-            Err("Internal Server Error")
-        });
+        .await;
 
     match created {
-        Ok(()) => partial! {
+        Ok(Ok(())) => partial! {
             DRAWER.close(),
             MATERIALS.refresh(),
             TOASTER.success("Added", "Products can pick it now."),
         },
-        Err(message) => partial! {
-            material_form_error(message)
+        Ok(Err(message)) => partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            material_form_error(message),
         },
+        Err(err) => {
+            tracing::error!("create material: {err:#}");
+
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                material_form_error("Internal Server Error"),
+            }
+        }
     }
 }
 
 pub async fn update_material(form: UpdateMaterial) -> HxPartialResponse {
     let (id, input) = match form.validate() {
         Ok(valid) => valid,
-        Err(message) => return partial!(material_form_error(message)),
+        Err(message) => {
+            return partial! {
+                StatusCode::UNPROCESSABLE_ENTITY,
+                material_form_error(message),
+            };
+        }
     };
 
     let updated = ctx()
@@ -114,34 +136,41 @@ pub async fn update_material(form: UpdateMaterial) -> HxPartialResponse {
             let tx = conn.transaction()?;
 
             if queries::name_taken(&tx, &input.name, Some(id))? {
-                return Ok(Err("That name is taken."));
+                return Ok(Err((
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    "That name is taken.",
+                )));
             }
             queries::update_material(&tx, id, &input)?;
 
             let Some(material) = queries::material_by_id(&tx, id)? else {
-                return Ok(Err("That material is gone."));
+                return Ok(Err((StatusCode::NOT_FOUND, "That material is gone.")));
             };
 
             tx.commit()?;
 
             Ok(Ok(material))
         })
-        .await
-        .unwrap_or_else(|err| {
-            tracing::error!("update material {id}: {err:#}");
-
-            Err("Internal Server Error")
-        });
+        .await;
 
     match updated {
-        Ok(material) => partial! {
+        Ok(Ok(material)) => partial! {
             DRAWER.close(),
             material_row(&material),
             TOASTER.success("Saved", "Every product made of it follows."),
         },
-        Err(message) => partial! {
-            material_form_error(message)
+        Ok(Err((status, message))) => partial! {
+            status,
+            material_form_error(message),
         },
+        Err(err) => {
+            tracing::error!("update material {id}: {err:#}");
+
+            partial! {
+                StatusCode::INTERNAL_SERVER_ERROR,
+                material_form_error("Internal Server Error"),
+            }
+        }
     }
 }
 
@@ -246,7 +275,7 @@ fn edit_material_form(form: &UpdateMaterial) -> Markup {
 #[fragment]
 fn material_form_error(message: &str) -> Markup {
     html! {
-        div.alert id=(Self) data-variant="destructive" {
+        div.alert id=(Self) role="alert" data-variant="destructive" {
             h3 { "That didn't go through" }
             section { p { (message) } }
         }

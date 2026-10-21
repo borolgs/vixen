@@ -1,4 +1,7 @@
+use std::sync::LazyLock;
+
 use axum::{Router, middleware};
+use vixen::agent::Skill;
 
 use crate::{
     db::Db,
@@ -13,6 +16,21 @@ mod schema;
 mod state;
 
 const ADDR: &str = "127.0.0.1:4005";
+
+/// Every page's head carries it; the router serves it at `/llms.txt`.
+static SKILL: LazyLock<Skill> = LazyLock::new(|| {
+    Skill::new(
+        "A shop: the catalog at GET /, product admin at GET /admin/products, \
+         material admin at GET /admin/materials. No login. A product's materials is \
+         one field holding a JSON array, [{\"value\": \"<id>\", \"label\": \"<name>\"}], \
+         ids and names from POST /admin/materials/options.",
+    )
+    .name("shop")
+    .description("Drive the shop's catalog and admin pages over HTTP with curl.")
+    .index(pages::catalog::actions())
+    .index(pages::admin_products::actions())
+    .index(pages::admin_materials::actions())
+});
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +52,7 @@ async fn main() {
         .merge(pages::catalog::router())
         .merge(pages::admin_products::router())
         .merge(pages::admin_materials::router())
+        .merge(SKILL.router())
         .merge(vixen::assets_router!())
         .layer(middleware::from_fn_with_state(
             state.clone(),

@@ -21,3 +21,8 @@ cargo run -p shop   # http://127.0.0.1:4005/
   a `State` parameter.
 - The catalog test uses `Ctx::scope` and `vixen::testing` to exercise a handler
   without starting a server.
+- The agent skill spans three pages: each page's `routes.rs` exports `actions()`
+  beside `router()`, and `main.rs` adds one `.index()` per page. Served at
+  `/llms.txt`.
+- A rejected form answers 422, a gone id 404 and a failed load 500 through
+  `StatusCode` and `Option<StatusCode>` entries in `partial!`.

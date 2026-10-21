@@ -5,4 +5,4 @@ mod quick_view;
 mod routes;
 mod ui;
 
-pub use routes::{CatalogPath, router};
+pub use routes::{CatalogPath, actions, router};

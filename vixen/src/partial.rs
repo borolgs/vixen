@@ -406,6 +406,17 @@ impl PartialEntry for Option<Part> {
     }
 }
 
+impl PartialEntry for Option<StatusCode> {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, mut partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        if let Some(status) = self {
+            partial.state.status = status;
+        }
+        partial
+    }
+}
+
 impl PartialEntry for HxEvent {
     type State<S> = S;
 
@@ -441,7 +452,8 @@ pub(crate) fn swap_attr(swap: SwapOption) -> String {
 /// - a [`Part`], an optional `Part`, or a collection such as [`Parts`] or
 ///   `Vec<Part>`;
 /// - an [`HxEvent`](crate::hx::HxEvent) for the `HX-Trigger` header;
-/// - a [`StatusCode`](axum::http::StatusCode) for the response status;
+/// - a [`StatusCode`](axum::http::StatusCode), or an optional one, for the
+///   response status;
 /// - any other type that implements [`PartialEntry`].
 ///
 /// The main body, when present, must come first. At least one entry must add
@@ -624,6 +636,16 @@ mod tests {
     fn a_status_entry_sets_the_response_status() {
         let response = partial!(StatusCode::UNPROCESSABLE_ENTITY, toast()).into_response();
         assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    }
+
+    #[test]
+    fn an_optional_status_applies_only_when_present() {
+        let none: Option<StatusCode> = None;
+        let response = partial!(none, toast()).into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = partial!(Some(StatusCode::NOT_FOUND), toast()).into_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[test]

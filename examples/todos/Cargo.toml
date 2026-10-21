@@ -15,10 +15,10 @@ axum = { workspace = true }
 axum-extra = { workspace = true, features = ["query"] }
 maud = { workspace = true }
 serde = { workspace = true }
-strum = { version = "0.28.0", features = ["derive"] }
+strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true }
 
-axum-vixen = { path = "../../vixen" }
+axum-vixen = { path = "../../vixen", features = ["agent"] }
 
 [build-dependencies]
 axum-vixen = { path = "../../vixen" }

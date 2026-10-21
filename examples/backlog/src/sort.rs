@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
-use strum::AsRefStr;
+use strum::{AsRefStr, VariantNames};
 use vixen::{
     HxAction, Id, SyncStrategy,
     hx::SwapOption,
     maud::{Markup, Render, html},
 };
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, Debug)]
+#[derive(
+    Clone, Copy, Default, PartialEq, Serialize, Deserialize, AsRefStr, VariantNames, Debug,
+)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum SortDir {

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{Router, middleware};
 use tokio::sync::Mutex;
+use vixen::agent::Skill;
 
 use crate::{
     model::{Priority, Todo},
@@ -15,6 +16,11 @@ mod pages {
 }
 
 const ADDR: &str = "127.0.0.1:4001";
+
+/// Every page's head carries it; the router serves it at `/llms.txt`.
+fn skill() -> Skill {
+    Skill::new("A todo list on one page at GET /. No login.").index(pages::todos::actions())
+}
 
 #[tokio::main]
 async fn main() {
@@ -44,6 +50,7 @@ async fn main() {
     };
     let router = Router::new()
         .merge(pages::todos::router())
+        .merge(skill().router())
         .merge(vixen::assets_router!())
         .layer(middleware::from_fn_with_state(
             state.clone(),

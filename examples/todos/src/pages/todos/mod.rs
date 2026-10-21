@@ -360,9 +360,21 @@ pub fn page(head: Markup, content: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 (head)
-                (vixen::agent::skill("A todo list on one page. No login."))
+                (crate::skill().script())
             }
             body { (content) }
         }
     }
+}
+
+/// The page's actions for the root skill in `main.rs`.
+pub fn actions() -> String {
+    vixen::skill![
+        SearchTodos,
+        AddTodo,
+        ToggleTodo,
+        EditTodo,
+        SaveTodo,
+        CancelEdit
+    ]
 }

@@ -157,21 +157,21 @@ pub fn move_issues(conn: &Connection, ids: &[i64], status: Status) -> anyhow::Re
     Ok(())
 }
 
-/// Returns the batch to pass to [`restore_issues`].
-pub fn trash_issues(conn: &Connection, ids: &[i64]) -> anyhow::Result<i64> {
+/// Returns the batch id for [`restore_issues`] and the number of trashed issues.
+pub fn trash_issues(conn: &Connection, ids: &[i64]) -> anyhow::Result<(i64, usize)> {
     let batch = conn.query_row(
         "select coalesce(max(trashed), 0) + 1 from issues",
         (),
         |row| row.get(0),
     )?;
 
-    conn.execute(
+    let trashed = conn.execute(
         "update issues set trashed = ?2
              where trashed is null and id in (select value from json_each(?1))",
         (json(ids), batch),
     )?;
 
-    Ok(batch)
+    Ok((batch, trashed))
 }
 
 pub fn restore_issues(conn: &Connection, batch: i64) -> anyhow::Result<usize> {

@@ -51,7 +51,6 @@ mod action;
 #[cfg(feature = "agent")]
 pub mod agent;
 mod base_path;
-mod fragment;
 mod href;
 mod id;
 mod paged;
@@ -65,7 +64,6 @@ pub mod ui;
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
 pub use axum_htmx as hx;
-pub use fragment::Fragment;
 pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;
@@ -73,7 +71,7 @@ pub use paged::{After, Page, Paged, PagedAction};
 pub use query::{HxCurrentQuery, replace_query};
 pub use vixen_bundler::{Config, build};
 
-pub use partial::{HxPartial, HxPartialResponse, Part, PartialEntry, Parts, Selector};
+pub use partial::{Fragment, HxPartial, HxPartialResponse, Part, PartialEntry, Parts, Selector};
 pub use router::{LastElementIs, RouterExt};
 
 // Docs live on the definitions, where IDE hover finds them.

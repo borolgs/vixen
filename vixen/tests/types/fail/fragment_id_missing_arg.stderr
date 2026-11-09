@@ -28,7 +28,7 @@ error[E0308]: mismatched types
   = note: expected reference `&TodoId`
              found reference `&fn(u64) -> TodoId {TodoId}`
 note: associated function defined here
- --> src/fragment.rs
+ --> src/partial.rs
   |
   |     pub fn new(id: &T, markup: Markup) -> Self {
   |            ^^^

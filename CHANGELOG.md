@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `partial!` accepts optional fragments (`Option<Fragment<T>>`), skipping `None`.
+
 ## 0.4.0 - 2026-10-21
 
 ### Added

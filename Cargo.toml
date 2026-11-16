@@ -9,7 +9,8 @@ members = [
     "examples/components",
     "examples/config",
     "examples/shop",
-    "examples/backlog"
+    "examples/backlog",
+    "examples/vixen-preview"
 ]
 
 [workspace.package]

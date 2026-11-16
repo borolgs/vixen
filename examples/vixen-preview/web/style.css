@@ -1,0 +1,44 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 42rem;
+  margin: 8vh auto;
+  padding: 1.5rem;
+}
+
+button {
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: light-dark(#264c39, #a8dbc0);
+  color: light-dark(#ffffff, #152b21);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+button:focus-visible {
+  outline: 3px solid light-dark(#264c39, #a8dbc0);
+  outline-offset: 4px;
+}
+
+pre {
+  min-height: 5rem;
+  padding: 1rem;
+  border: 1px solid light-dark(#ccd4ce, #4d5951);
+  border-radius: 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

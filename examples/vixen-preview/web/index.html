@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vixen-preview</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <main>
+      <p>Requests go to an <code>axum::Router</code> compiled to WASM.</p>
+      <button id="send" type="button" disabled>GET /hello</button>
+      <pre id="response" role="status" aria-label="Response">Loading WASM…</pre>
+      <noscript>JavaScript required.</noscript>
+    </main>
+  </body>
+</html>

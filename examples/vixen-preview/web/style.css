@@ -1,44 +1,181 @@
-:root {
-  color-scheme: light dark;
+.vixen-preview {
+  --preview-border: #d3dcd6;
+  --preview-surface: #ffffff;
+  --preview-muted: #5a6c60;
+  --preview-accent: #264c39;
+  --preview-highlight: #ffedb2;
+  color-scheme: only light;
+  color: #203329;
+  background: var(--preview-surface);
   font-family: system-ui, sans-serif;
   line-height: 1.6;
+  margin-block: 1.5rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--preview-border);
+  border-radius: 0.75rem;
 }
 
-body {
-  margin: 0;
+.vixen-preview * {
+  box-sizing: border-box;
 }
 
-main {
-  max-width: 42rem;
-  margin: 8vh auto;
-  padding: 1.5rem;
+.vixen-preview form {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem;
 }
 
-button {
+.vixen-preview input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--preview-border);
+  border-radius: 0.5rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.vixen-preview button {
   padding: 0.75rem 1.25rem;
   border: 0;
   border-radius: 0.5rem;
-  background: light-dark(#264c39, #a8dbc0);
-  color: light-dark(#ffffff, #152b21);
+  background: var(--preview-accent);
+  color: #ffffff;
   font: inherit;
   cursor: pointer;
 }
 
-button:disabled {
+.vixen-preview button:disabled {
   opacity: 0.5;
   cursor: wait;
 }
 
-button:focus-visible {
-  outline: 3px solid light-dark(#264c39, #a8dbc0);
-  outline-offset: 4px;
+.vixen-preview :is(button, input):focus-visible {
+  outline: 3px solid var(--preview-accent);
+  outline-offset: 3px;
 }
 
-pre {
-  min-height: 5rem;
-  padding: 1rem;
-  border: 1px solid light-dark(#ccd4ce, #4d5951);
+.vixen-preview .preview-snippets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.vixen-preview :is(.preview-code-panel, .preview-result-panel) {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--preview-border);
   border-radius: 0.5rem;
-  white-space: pre-wrap;
+}
+
+.vixen-preview h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--preview-border);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.vixen-preview h2 small {
+  color: var(--preview-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.vixen-preview .preview-code-toggle {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--preview-border);
+  background: transparent;
+  color: var(--preview-muted);
+  font-size: 0.75rem;
+}
+
+.vixen-preview .preview-code-toggle[aria-pressed="true"] {
+  border-color: var(--preview-accent);
+  background: var(--preview-highlight);
+  color: inherit;
+}
+
+.vixen-preview pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  tab-size: 4;
+}
+
+.vixen-preview code {
+  color: inherit;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.vixen-preview mark {
+  font-weight: 600;
+  border-radius: 0.2rem;
+  color: inherit;
+  background: transparent;
+  box-decoration-break: clone;
+  transition: background-color 160ms ease;
+}
+
+.vixen-preview[data-phase="maud"] [data-preview-code="maud"] mark,
+.vixen-preview[data-phase="rust"] [data-preview-code="rust"] mark {
+  background: var(--preview-highlight);
+}
+
+.vixen-preview .preview-result {
+  min-height: 5.5rem;
+  padding: 1.25rem 1rem;
   overflow-wrap: anywhere;
+}
+
+.vixen-preview .preview-result p {
+  margin: 0;
+}
+
+.vixen-preview[data-phase="result"] :is(form, .preview-result) {
+  animation: preview-swap-flash 650ms ease-out;
+}
+
+.vixen-preview .preview-error {
+  margin-bottom: 0;
+  color: #a52222;
+  overflow-wrap: anywhere;
+}
+
+@keyframes preview-swap-flash {
+  from {
+    background-color: var(--preview-highlight);
+    box-shadow: 0 0 0 4px var(--preview-highlight);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+@media (max-width: 48rem) {
+  .vixen-preview .preview-snippets {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vixen-preview mark {
+    transition: none;
+  }
+
+  .vixen-preview[data-phase="result"] :is(form, .preview-result) {
+    animation: none;
+  }
 }

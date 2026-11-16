@@ -1510,7 +1510,10 @@ name = "vixen-preview"
 version = "0.4.0"
 dependencies = [
  "axum",
+ "axum-extra",
+ "axum-vixen",
  "js-sys",
+ "maud",
  "tower",
  "tracing",
  "tracing-subscriber",

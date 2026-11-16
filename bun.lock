@@ -62,6 +62,9 @@
     },
     "examples/vixen-preview": {
       "name": "vixen-preview",
+      "dependencies": {
+        "htmx.org": "4.0.0",
+      },
     },
   },
   "packages": {

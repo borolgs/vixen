@@ -40,6 +40,7 @@ jobs:
       - run: rustup target add wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
       - run: cargo install wasm-pack --version 0.15.1 --locked
       - run: cargo clippy -p vixen-preview --target wasm32-unknown-unknown --locked -- -D warnings
       - run: bun run --cwd examples/vixen-preview build

@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked && cp web/* dist/ && touch dist/.nojekyll",
+    "build": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked && cp web/* dist/ && bun build web/main.js --target browser --external ./pkg/vixen_preview.js --outfile dist/main.js && touch dist/.nojekyll",
     "serve": "python3 -m http.server 4007 --bind 127.0.0.1 --directory dist",
     "test": "bun test ./tests"
+  },
+  "dependencies": {
+    "htmx.org": "4.0.0"
   }
 }

@@ -1,0 +1,244 @@
+.vixen-preview {
+  --preview-border: var(--vixen-border);
+  --preview-surface: var(--vixen-surface);
+  --preview-code-surface: var(--vixen-surface-code);
+  --preview-muted: var(--vixen-text-muted);
+  --preview-accent: var(--vixen-action-bg);
+  --preview-highlight: var(--vixen-highlight);
+  container: preview / inline-size;
+  color-scheme: only light;
+  color: var(--vixen-text);
+  background: var(--preview-surface);
+  font-family: var(--vixen-font-ui);
+  font-size: var(--vixen-text-base);
+  line-height: var(--vixen-leading-body);
+  margin-block: var(--vixen-space-6);
+}
+
+.vixen-preview ::selection {
+  color: var(--vixen-text);
+  background: var(--vixen-selection);
+}
+
+.vixen-preview * {
+  box-sizing: border-box;
+}
+
+.vixen-preview form {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--vixen-space-4);
+  border: var(--vixen-line) solid var(--preview-border);
+}
+
+.vixen-preview input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--vixen-space-3) var(--vixen-space-4);
+  border: 0;
+  border-radius: var(--vixen-radius);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.vixen-preview input::placeholder {
+  color: var(--preview-muted);
+  opacity: 1;
+}
+
+.vixen-preview button {
+  padding: var(--vixen-space-3) var(--vixen-space-6);
+  border: 0;
+  border-radius: var(--vixen-radius);
+  background: var(--preview-accent);
+  color: var(--vixen-action-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.vixen-preview button:enabled:hover {
+  background: var(--vixen-action-hover);
+}
+
+.vixen-preview button:enabled:active {
+  color: var(--vixen-action-active-text);
+  background: var(--vixen-action-active);
+}
+
+.vixen-preview button:disabled {
+  color: var(--vixen-disabled-text);
+  background: var(--vixen-disabled-bg);
+  cursor: not-allowed;
+}
+
+.vixen-preview form:focus-within,
+.vixen-preview button:focus-visible {
+  outline: var(--vixen-focus-width) solid var(--vixen-focus);
+  outline-offset: var(--vixen-focus-offset);
+}
+
+.vixen-preview input:focus {
+  outline: none;
+}
+
+.vixen-preview form button:focus-visible {
+  outline: var(--vixen-focus-width) solid currentColor;
+  outline-offset: -4px;
+}
+
+.vixen-preview .preview-snippets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--vixen-space-4);
+  margin-bottom: var(--vixen-space-4);
+}
+
+.vixen-preview :is(.preview-code-panel, .preview-result-panel) {
+  min-width: 0;
+}
+
+.vixen-preview .preview-code-panel {
+  position: relative;
+  container-type: inline-size;
+  background: var(--preview-code-surface);
+}
+
+.vixen-preview .preview-result-panel {
+  border: var(--vixen-line) solid var(--preview-border);
+}
+
+.vixen-preview .preview-code-toggle {
+  position: absolute;
+  top: var(--vixen-space-4);
+  right: var(--vixen-space-4);
+  min-height: var(--vixen-space-6);
+  padding: 0 0.375rem;
+  background: var(--preview-code-surface);
+  color: var(--preview-muted);
+  font-size: var(--vixen-text-xs);
+  line-height: var(--vixen-leading-code);
+}
+
+.vixen-preview .preview-code-toggle:enabled:hover {
+  color: var(--vixen-text);
+  background: var(--vixen-selection);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.vixen-preview .preview-code-toggle[aria-pressed="true"] {
+  background: var(--preview-highlight);
+  color: inherit;
+}
+
+.vixen-preview pre {
+  margin: 0;
+  padding: var(--vixen-space-4);
+  overflow-x: auto;
+  font-size: min(calc((100cqi - 2 * var(--vixen-space-4)) / 40), var(--vixen-text-xs));
+  line-height: var(--vixen-leading-code);
+  white-space: pre;
+  overflow-wrap: normal;
+  tab-size: 4;
+}
+
+.vixen-preview code {
+  --sh-identifier: var(--vixen-text);
+  --sh-keyword: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-peach));
+  --sh-string: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-sea));
+  --sh-class: var(--vixen-link);
+  --sh-property: var(--vixen-link);
+  --sh-sign: var(--vixen-text-muted);
+  --sh-comment: var(--vixen-text-muted);
+  --sh-space: inherit;
+  color: inherit;
+  background: none;
+  font-family: var(--vixen-font-code);
+}
+
+.vixen-preview [data-preview-step] {
+  color: inherit;
+  background: transparent;
+  box-decoration-break: clone;
+  transition: background-color var(--vixen-duration-fade) linear;
+}
+
+.vixen-preview[data-phase="maud"] [data-preview-code="maud"] [data-preview-step],
+.vixen-preview[data-phase="rust"] [data-preview-code="rust"] [data-preview-step] {
+  background: var(--preview-highlight);
+  transition-duration: var(--vixen-duration-fast);
+  transition-timing-function: ease;
+}
+
+.vixen-preview .preview-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(50%);
+  align-content: center;
+  align-items: center;
+  gap: var(--vixen-space-4);
+  min-height: calc(1em * var(--vixen-leading-body) + 2 * var(--vixen-space-3));
+  padding: var(--vixen-space-3) var(--vixen-space-4);
+  overflow-wrap: anywhere;
+}
+
+.vixen-preview [data-preview-status] {
+  grid-area: 1 / 2;
+  justify-self: end;
+  color: var(--preview-muted);
+  font-size: var(--vixen-text-xs);
+}
+
+.vixen-preview .preview-result p {
+  margin: 0;
+}
+
+.vixen-preview[data-phase="result"] :is(form, .preview-result) {
+  animation:
+    preview-highlight var(--vixen-duration-feedback) ease,
+    preview-highlight-out var(--vixen-duration-fade) linear var(--vixen-duration-feedback);
+}
+
+.vixen-preview .preview-error {
+  margin-bottom: 0;
+  padding: var(--vixen-space-3) var(--vixen-space-4);
+  border-inline-start: var(--vixen-line) solid var(--vixen-text);
+  color: var(--vixen-text);
+  background: var(--vixen-notice);
+  overflow-wrap: anywhere;
+}
+
+@keyframes preview-highlight {
+  from {
+    background-color: transparent;
+  }
+  20%,
+  to {
+    background-color: var(--preview-highlight);
+  }
+}
+
+@keyframes preview-highlight-out {
+  from {
+    background-color: var(--preview-highlight);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@container preview (max-width: 40rem) {
+  .vixen-preview .preview-snippets {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vixen-preview [data-preview-step] {
+    transition: none;
+  }
+
+  .vixen-preview[data-phase="result"] :is(form, .preview-result) {
+    animation: none;
+  }
+}

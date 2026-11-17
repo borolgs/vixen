@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ section.title }}</title>
+    <link rel="icon" href="data:," />
+    <link rel="canonical" href="{{ section.permalink }}" />
+    {% for translation in section.translations %}
+    <link rel="alternate" hreflang="{{ translation.lang }}" href="{{ translation.permalink }}" />
+    {% endfor %}
+    <link rel="stylesheet" href="{{ get_url(path='style.css') }}" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="{{ section.permalink }}">vixen</a>
+      <nav aria-label="{{ trans(key='navigation', lang=lang) }}">
+        <a href="https://docs.rs/axum-vixen/latest/vixen/">{{ trans(key='api_reference', lang=lang) }}</a>
+        <a href="https://github.com/borolgs/vixen">GitHub</a>
+      </nav>
+    </header>
+    <main>
+      <article>
+        <h1>{{ section.title }}</h1>
+        {{ section.content | safe }}
+      </article>
+    </main>
+  </body>
+</html>

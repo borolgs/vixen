@@ -1,0 +1,14 @@
+base_url = "https://borolgs.github.io/vixen/"
+title = "vixen"
+default_language = "en"
+output_dir = "dist"
+
+[translations]
+navigation = "Site navigation"
+api_reference = "API reference"
+
+[languages.ru]
+
+[languages.ru.translations]
+navigation = "Site navigation"
+api_reference = "API reference"

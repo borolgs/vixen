@@ -1,5 +1,6 @@
 target
 node_modules
 dist
+/site/static/demo/
 wip
 .DS_Store

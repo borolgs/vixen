@@ -1,0 +1,57 @@
+:root {
+  --vixen-ink: #303636;
+  --vixen-sea: #84bbbe;
+  --vixen-peach: #f5c6a5;
+  /* --vixen-paper: #fffefa; */
+  --vixen-paper: #ffffff;
+
+  --vixen-surface: var(--vixen-paper);
+  --vixen-surface-code: color-mix(in srgb, var(--vixen-sea) 8%, var(--vixen-paper));
+  --vixen-text: var(--vixen-ink);
+  --vixen-text-muted: color-mix(in srgb, var(--vixen-ink) 72%, var(--vixen-paper));
+  --vixen-link: color-mix(in srgb, var(--vixen-ink) 55%, var(--vixen-sea));
+  --vixen-border: color-mix(in srgb, var(--vixen-ink) 50%, var(--vixen-paper));
+  --vixen-rule: color-mix(in srgb, var(--vixen-ink) 22%, var(--vixen-paper));
+
+  /* Dark labels keep the cover's pale sea readable without darkening it. */
+  --vixen-action-bg: var(--vixen-sea);
+  --vixen-action-text: var(--vixen-ink);
+  --vixen-action-hover: color-mix(in srgb, var(--vixen-action-bg) 85%, var(--vixen-ink));
+  --vixen-action-active: var(--vixen-ink);
+  --vixen-action-active-text: var(--vixen-paper);
+  --vixen-highlight: var(--vixen-peach);
+  --vixen-selection: color-mix(in srgb, var(--vixen-sea) 20%, var(--vixen-paper));
+  --vixen-notice: color-mix(in srgb, var(--vixen-peach) 40%, var(--vixen-paper));
+  --vixen-disabled-bg: color-mix(in srgb, var(--vixen-ink) 8%, var(--vixen-paper));
+  --vixen-disabled-text: var(--vixen-text-muted);
+  --vixen-focus: var(--vixen-ink);
+
+  --vixen-font-reading: Georgia, "Times New Roman", serif;
+  --vixen-font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --vixen-font-code: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --vixen-text-xs: 0.75rem;
+  --vixen-text-sm: 0.875rem;
+  --vixen-text-base: 1rem;
+  --vixen-text-reading: 1.1875rem;
+  --vixen-text-title: clamp(2.75rem, 6vw, 5rem);
+  --vixen-leading-body: 1.6;
+  --vixen-leading-code: 1.8;
+  --vixen-leading-title: 1.02;
+
+  --vixen-space-1: 0.25rem;
+  --vixen-space-2: 0.5rem;
+  --vixen-space-3: 0.75rem;
+  --vixen-space-4: 1rem;
+  --vixen-space-6: 1.5rem;
+  --vixen-space-8: 2rem;
+  --vixen-space-12: 3rem;
+  --vixen-space-16: 4rem;
+  --vixen-line: 1px;
+  --vixen-line-strong: 2px;
+  --vixen-radius: 0;
+  --vixen-focus-width: 2px;
+  --vixen-focus-offset: 3px;
+  --vixen-duration-fast: 140ms;
+  --vixen-duration-fade: 500ms;
+  --vixen-duration-feedback: 700ms;
+}

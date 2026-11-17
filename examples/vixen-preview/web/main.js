@@ -62,7 +62,7 @@ function connect(preview, fetch) {
       (event) => {
         if (event.detail.ctx !== ctx) return;
         preview.dataset.phase = 'result';
-        status.textContent = `${ctx.response.status} OK · HTML swapped`;
+        status.textContent = `${ctx.response.status} · swapped`;
       },
       options,
     );
@@ -95,7 +95,7 @@ function connect(preview, fetch) {
       await pause();
 
       preview.dataset.phase = 'rust';
-      status.textContent = 'Running greet() in WASM';
+      status.textContent = 'Running handler';
       const response = await fetch(`/__axum__${url.pathname}${url.search}`, request);
       if (!response.ok) {
         throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);

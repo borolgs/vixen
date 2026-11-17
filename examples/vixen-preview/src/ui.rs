@@ -3,7 +3,7 @@ use vixen::{
     maud::{Markup, html},
 };
 
-use super::greet::Greet;
+use super::app::Greet;
 
 #[fragment]
 pub fn form() -> Markup {
@@ -13,5 +13,12 @@ pub fn form() -> Markup {
                 aria-label="Your name" required maxlength="80";
             button type="submit" { "Greet" }
         }
+    }
+}
+
+#[fragment]
+pub fn greeting(name: &str) -> Markup {
+    html! {
+        p id=(Self) { "Hello, " strong { (name) } "!" }
     }
 }

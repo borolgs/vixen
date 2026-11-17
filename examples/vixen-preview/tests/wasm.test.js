@@ -11,7 +11,7 @@ const fetch = createFetch(handle_request, 'https://example.test/vixen/', () => {
 });
 
 test('fetch dispatches to the WASM router', async () => {
-  const response = await fetch('/__axum__/hello');
+  const response = await fetch('/__axum__/');
   expect(response.status).toBe(200);
-  expect(await response.text()).toBe('Hello from axum, running in your browser!');
+  expect(await response.text()).toContain('class="preview-snippets"');
 });

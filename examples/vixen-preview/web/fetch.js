@@ -10,7 +10,12 @@ export function createFetch(handleRequest, baseUrl, networkFetch = globalThis.fe
 
     const request = new Request(input instanceof Request ? input : url, init);
     request.signal.throwIfAborted();
+
     const path = `/${url.pathname.slice(scope.pathname.length)}${url.search}`;
+
+    console.log(`>>> ${path} action fired`);
+    // TODO: whait if animation enabled?
+
     const response = await handleRequest(path, request);
     request.signal.throwIfAborted();
     return response;

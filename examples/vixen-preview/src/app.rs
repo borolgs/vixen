@@ -3,6 +3,7 @@ use vixen::{RouterExt, action, partial};
 
 use super::{
     preview::preview,
+    todos,
     ui::{form, greeting},
 };
 
@@ -20,5 +21,9 @@ pub async fn greet(Greet { name }: Greet) -> impl IntoResponse {
 }
 
 pub fn router() -> Router {
-    Router::new().view(preview).action(greet)
+    Router::new()
+        .view(preview)
+        .action(greet)
+        .merge(todos::router())
+        .with_state(todos::Todos::default())
 }

@@ -1514,6 +1514,8 @@ dependencies = [
  "axum-vixen",
  "js-sys",
  "maud",
+ "serde",
+ "strum",
  "tower",
  "tracing",
  "tracing-subscriber",

@@ -136,28 +136,36 @@
   margin: 0;
   padding: var(--vixen-space-4);
   overflow-x: auto;
-  font-size: clamp(0.625rem, 2.5cqi, var(--vixen-text-xs));
+  font-size: min(calc((100cqi - 2 * var(--vixen-space-4)) / 40), var(--vixen-text-xs));
   line-height: var(--vixen-leading-code);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: pre;
+  overflow-wrap: normal;
   tab-size: 4;
 }
 
 .vixen-preview code {
+  --sh-identifier: var(--vixen-text);
+  --sh-keyword: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-peach));
+  --sh-string: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-sea));
+  --sh-class: var(--vixen-link);
+  --sh-property: var(--vixen-link);
+  --sh-sign: var(--vixen-text-muted);
+  --sh-comment: var(--vixen-text-muted);
+  --sh-space: inherit;
   color: inherit;
   background: none;
   font-family: var(--vixen-font-code);
 }
 
-.vixen-preview mark {
+.vixen-preview [data-preview-step] {
   color: inherit;
   background: transparent;
   box-decoration-break: clone;
   transition: background-color var(--vixen-duration-fade) linear;
 }
 
-.vixen-preview[data-phase="maud"] [data-preview-code="maud"] mark,
-.vixen-preview[data-phase="rust"] [data-preview-code="rust"] mark {
+.vixen-preview[data-phase="maud"] [data-preview-code="maud"] [data-preview-step],
+.vixen-preview[data-phase="rust"] [data-preview-code="rust"] [data-preview-step] {
   background: var(--preview-highlight);
   transition-duration: var(--vixen-duration-fast);
   transition-timing-function: ease;
@@ -226,7 +234,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vixen-preview mark {
+  .vixen-preview [data-preview-step] {
     transition: none;
   }
 

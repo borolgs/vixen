@@ -1,25 +1,13 @@
 import htmx from 'htmx.org';
 import { createFetch } from './fetch.js';
+import { highlightSource } from './highlight.js';
 
 const previews = document.querySelectorAll('[data-vixen-preview]');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const stepDuration = 650;
 
 function highlight(code, pattern) {
-  const source = code.textContent;
-  const matches = [...source.matchAll(pattern)];
-  if (!matches.length) throw new Error('Preview source is missing its highlighted step.');
-
-  const fragment = document.createDocumentFragment();
-  let offset = 0;
-  for (const match of matches) {
-    const mark = document.createElement('mark');
-    mark.textContent = match[0];
-    fragment.append(source.slice(offset, match.index), mark);
-    offset = match.index + match[0].length;
-  }
-  fragment.append(source.slice(offset));
-  code.replaceChildren(fragment);
+  code.innerHTML = highlightSource(code.textContent, pattern);
 }
 
 async function pause() {
@@ -42,6 +30,7 @@ function connect(preview, fetch) {
   for (const panel of preview.querySelectorAll('.preview-code-panel')) {
     const toggle = panel.querySelector('[data-preview-full]');
     const imports = panel.querySelector('[data-preview-imports]');
+    highlight(imports);
     toggle.addEventListener('click', () => {
       const full = toggle.getAttribute('aria-pressed') !== 'true';
       imports.hidden = !full;

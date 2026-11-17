@@ -3,6 +3,8 @@
 An axum-based library for rapid web development, currently focused on the view
 layer.
 
+[![Try the interactive vixen demo](site/static/demo.gif)](https://borolgs.github.io/vixen/demo/)
+
 Conceived as a thin glue layer over [maud](https://github.com/lambda-fairy/maud)
 and the `axum-*` crates. Under active development: the API is unstable and large
 parts will still be reworked.
@@ -276,6 +278,10 @@ async fn add(Add { by }: Add) -> impl IntoResponse {
 See [`examples/components`][components] for the complete setup.
 
 ### Agents
+
+> [!WARNING]
+> Agent support is a very early proof of concept, still taking shape.
+> Expect the API and approach to change.
 
 With the `agent` feature, agents can use the app with curl. They call the same
 endpoints as htmx and read the HTML responses:

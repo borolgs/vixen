@@ -13,10 +13,10 @@
   --vixen-border: color-mix(in srgb, var(--vixen-ink) 50%, var(--vixen-paper));
   --vixen-rule: color-mix(in srgb, var(--vixen-ink) 22%, var(--vixen-paper));
 
-  /* Sea is a fill, not a small-text colour. Keep ink on coloured surfaces. */
-  --vixen-action-bg: var(--vixen-sea);
-  --vixen-action-text: var(--vixen-ink);
-  --vixen-action-hover: color-mix(in srgb, var(--vixen-sea) 85%, var(--vixen-ink));
+  /* Darken sea for readable light button labels. */
+  --vixen-action-bg: color-mix(in srgb, var(--vixen-sea) 60%, var(--vixen-ink));
+  --vixen-action-text: var(--vixen-paper);
+  --vixen-action-hover: color-mix(in srgb, var(--vixen-action-bg) 85%, var(--vixen-ink));
   --vixen-action-active: var(--vixen-ink);
   --vixen-action-active-text: var(--vixen-paper);
   --vixen-highlight: var(--vixen-peach);

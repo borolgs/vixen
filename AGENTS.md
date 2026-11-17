@@ -14,6 +14,8 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
 
 ## Layout
 
+- `site/` — the RU/EN Zola site with an embedded WASM preview.
+  Build and preview commands: `site/AGENTS.md`.
 - `vixen/` — the facade crate. Its own types (`HxPartial`, `HxAction`, …) and
   the macros sit at the root. It re-exports `vixen::maud`, all of `axum_htmx`
   as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and

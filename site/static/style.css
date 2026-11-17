@@ -1,0 +1,82 @@
+@import url("./theme.css");
+
+:root {
+  color-scheme: only light;
+  font-family: var(--vixen-font-ui);
+  font-size: var(--vixen-text-base);
+  line-height: var(--vixen-leading-body);
+  color: var(--vixen-text);
+  background: var(--vixen-surface);
+}
+
+::selection {
+  color: var(--vixen-text);
+  background: var(--vixen-selection);
+}
+
+body {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding-inline: var(--vixen-space-4);
+}
+
+header,
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vixen-space-4);
+}
+
+header {
+  justify-content: space-between;
+  padding-block: var(--vixen-space-6);
+}
+
+a {
+  color: var(--vixen-link);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--vixen-text);
+  background: var(--vixen-selection);
+}
+
+a:focus-visible {
+  outline: var(--vixen-focus-width) solid var(--vixen-focus);
+  outline-offset: var(--vixen-focus-offset);
+}
+
+.brand {
+  color: var(--vixen-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+main {
+  padding-block: var(--vixen-space-6);
+}
+
+article {
+  max-width: 48rem;
+  font-family: var(--vixen-font-reading);
+  font-size: var(--vixen-text-reading);
+}
+
+h1,
+h2 {
+  line-height: var(--vixen-leading-title);
+}
+
+h1 {
+  margin: 0 0 var(--vixen-space-6);
+  padding-bottom: var(--vixen-space-4);
+  border-bottom: var(--vixen-line-strong) solid var(--vixen-border);
+  font-size: var(--vixen-text-title);
+  font-weight: 400;
+}
+
+h2 {
+  margin-top: var(--vixen-space-12);
+}

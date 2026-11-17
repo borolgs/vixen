@@ -1,5 +1,3 @@
-@import url("./theme.css");
-
 .vixen-preview {
   --preview-border: var(--vixen-border);
   --preview-surface: var(--vixen-surface);
@@ -7,10 +5,12 @@
   --preview-muted: var(--vixen-text-muted);
   --preview-accent: var(--vixen-action-bg);
   --preview-highlight: var(--vixen-highlight);
+  container: preview / inline-size;
   color-scheme: only light;
   color: var(--vixen-text);
   background: var(--preview-surface);
   font-family: var(--vixen-font-ui);
+  font-size: var(--vixen-text-base);
   line-height: var(--vixen-leading-body);
   margin-block: var(--vixen-space-6);
 }
@@ -100,6 +100,7 @@
 
 .vixen-preview .preview-code-panel {
   position: relative;
+  container-type: inline-size;
   background: var(--preview-code-surface);
 }
 
@@ -135,8 +136,10 @@
   margin: 0;
   padding: var(--vixen-space-4);
   overflow-x: auto;
-  font-size: var(--vixen-text-xs);
+  font-size: clamp(0.625rem, 2.5cqi, var(--vixen-text-xs));
   line-height: var(--vixen-leading-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   tab-size: 4;
 }
 
@@ -166,8 +169,8 @@
   align-content: center;
   align-items: center;
   gap: var(--vixen-space-4);
-  min-height: 5.5rem;
-  padding: var(--vixen-space-6) var(--vixen-space-4);
+  min-height: calc(1em * var(--vixen-leading-body) + 2 * var(--vixen-space-3));
+  padding: var(--vixen-space-3) var(--vixen-space-4);
   overflow-wrap: anywhere;
 }
 
@@ -216,7 +219,7 @@
   }
 }
 
-@media (max-width: 48rem) {
+@container preview (max-width: 40rem) {
   .vixen-preview .preview-snippets {
     grid-template-columns: 1fr;
   }

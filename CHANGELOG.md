@@ -9,6 +9,11 @@
   `Option<HxPartial<Filled>>` entries in `partial!`, preserving the outer
   response's main body and status.
 
+### Changed
+
+- Updated the WASM preview's fetch adapter to await an optional `beforeResponse`
+  callback without discarding the response if that callback fails.
+
 ## 0.4.0 - 2026-10-21
 
 ### Added

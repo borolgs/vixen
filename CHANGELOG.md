@@ -5,6 +5,9 @@
 ### Added
 
 - `partial!` accepts optional fragments (`Option<Fragment<T>>`), skipping `None`.
+- Added `HxPartial::extend` and nested `HxPartial<Filled>` or
+  `Option<HxPartial<Filled>>` entries in `partial!`, preserving the outer
+  response's main body and status.
 
 ## 0.4.0 - 2026-10-21
 

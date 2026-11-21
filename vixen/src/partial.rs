@@ -410,6 +410,21 @@ impl<S, M> HxPartial<S, M> {
         self.state.status = status;
         self
     }
+
+    /// Appends another response's targeted parts and events in order.
+    ///
+    /// Keeps this response's main body and status; `other`'s status is ignored.
+    pub fn extend(mut self, other: HxPartial<Filled, NoMain>) -> Self {
+        for event in other.state.events {
+            self.state.events.push(event);
+        }
+
+        for part in other.state.parts {
+            self.state.parts.push(part);
+        }
+
+        self
+    }
 }
 
 impl<M> HxPartial<Filled, M> {
@@ -525,6 +540,26 @@ impl PartialEntry for Option<StatusCode> {
         if let Some(status) = self {
             partial.state.status = status;
         }
+        partial
+    }
+}
+
+impl PartialEntry for HxPartial<Filled> {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        partial.extend(self)
+    }
+}
+
+impl PartialEntry for Option<HxPartial<Filled>> {
+    type State<S> = S;
+
+    fn add_to<S, M>(self, partial: HxPartial<S, M>) -> HxPartial<S, M> {
+        if let Some(other) = self {
+            return partial.extend(other);
+        }
+
         partial
     }
 }

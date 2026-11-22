@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test';
-import { bindSteps, compileSteps, followDelta, glideDuration, parseRange } from '../web/preview-trace-plan.js';
-import { createFetch } from '../web/fetch.js';
+import { bindSteps, compileSteps, followDelta, glideDuration, parseRange } from '../web/preview-trace-plan.ts';
+import { createFetch } from '../web/fetch.ts';
 
 const defaults = {
   first: { to: 'top', highlight: false, duration: 140, scroll: 'auto' },
@@ -164,7 +164,7 @@ test('tasks are claimed once, and range-only steps retain a batch fallback', () 
 });
 
 test('all configured source and function ranges match current Rust', async () => {
-  const flow = await Bun.file(new URL('../web/preview-flow.js', import.meta.url)).text();
+  const flow = await Bun.file(new URL('../web/preview-flow.ts', import.meta.url)).text();
   const rust = await Bun.file(new URL('../src/todos.rs', import.meta.url)).text();
   const specs = [...flow.matchAll(/(?:range|focus):\s*('([^']+)'|\[([^\]]+)\])/g)].flatMap(match =>
     match[2] ? [match[2]] : [...match[3].matchAll(/'([^']+)'/g)].map(range => range[1]));

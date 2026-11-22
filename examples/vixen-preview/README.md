@@ -7,6 +7,7 @@
 From the repository root (Rust, Bun, and Python 3 required):
 
 ```bash
+bun install --frozen-lockfile
 rustup target add wasm32-unknown-unknown
 cargo install wasm-pack --version 0.15.1 --locked
 bun run --cwd examples/vixen-preview build
@@ -14,6 +15,23 @@ bun run --cwd examples/vixen-preview serve
 ```
 
 Open <http://127.0.0.1:4007/>. Deploy `examples/vixen-preview/dist/` to a static host.
+
+## Frontend
+
+Browser code lives in `web/*.ts`. It uses permissive `any` annotations for now;
+the TypeScript migration doesn't refactor runtime logic.
+
+From the repository root:
+
+```bash
+bun run --cwd examples/vixen-preview typecheck
+bun run --cwd examples/vixen-preview build:web
+```
+
+`build:web` checks TypeScript and bundles `web/main.ts` into `dist/main.js`.
+It copies HTML/CSS assets, not TypeScript sources. WASM stays an external import
+from `dist/pkg/vixen_preview.js`; build it once with `build:wasm` before serving.
+`build` runs both build steps. Type checking doesn't need generated WASM files.
 
 ## Examples and state
 
@@ -69,7 +87,7 @@ remaining swap. Missing or invalid scenarios fall back to ordinary htmx swaps.
 
 ### Customize a scenario
 
-Scenarios in `web/preview-flow.js` are keyed by pathname and HTTP status.
+Scenarios in `web/preview-flow.ts` are keyed by pathname and HTTP status.
 Defaults apply by position; every field can be overridden:
 
 | Step | `to` | `highlight` | `duration` (ms) | `scroll` |
@@ -95,7 +113,7 @@ remaining time afterward. `duration: 0` skips those waits. `scroll: 'auto'` uses
 it, and `0` jumps instantly. `highlight: false` leaves that step unmarked without
 erasing earlier marks. `note` remains reserved for captions.
 
-```js
+```ts
 [
   { range: '342:4-342:16', focus: '342-351', button: 'add_todo_form()' },
   { range: ['344:41-344:69', '345:19-345:45'], target: false, duration: 1500 }, // hx-action + name
@@ -110,7 +128,7 @@ timing.
 
 ## Test
 
-`bun test ./examples/vixen-preview/tests/preview-trace.test.js` checks range
+`bun run --cwd examples/vixen-preview test:trace` checks range
 coordinates, step defaults, branch/task binding, scroll timing, and response
 preservation without a WASM build.
 

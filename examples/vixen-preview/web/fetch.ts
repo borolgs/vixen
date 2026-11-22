@@ -1,8 +1,8 @@
 // Limit interception to this page's private API prefix; assets still use the network.
-export function createFetch(handleRequest, baseUrl, networkFetch = globalThis.fetch.bind(globalThis)) {
+export function createFetch(handleRequest: any, baseUrl: any, networkFetch: any = globalThis.fetch.bind(globalThis)) {
   const scope = new URL('/__axum__/', baseUrl);
 
-  return async (input, init, beforeResponse) => {
+  return async (input: any, init?: any, beforeResponse?: any) => {
     const url = new URL(input instanceof Request ? input.url : input, baseUrl);
     if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) {
       return networkFetch(input, init);

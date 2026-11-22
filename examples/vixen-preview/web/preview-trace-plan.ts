@@ -1,5 +1,5 @@
 // Inclusive Unicode columns in Rust source; DOM ranges use UTF-16 offsets.
-export function parseRange(spec, lines) {
+export function parseRange(spec: any, lines: any) {
   if (typeof spec !== 'string') throw new Error(`Invalid preview range "${spec}".`);
   const match = /^(\d+)(?::(\d+))?(?:-(\d+)(?::(\d+))?)?$/.exec(spec);
   const start = Number(match?.[1]);
@@ -20,9 +20,9 @@ export function parseRange(spec, lines) {
   };
 }
 
-export function compileSteps(steps, lines, defaults) {
-  let currentFocus = null;
-  return steps.map((step, index) => {
+export function compileSteps(steps: any, lines: any, defaults: any) {
+  let currentFocus: any = null;
+  return steps.map((step: any, index: any) => {
     const fallback = index === 0 ? defaults.first : defaults.next;
     const {
       range, focus, target, swap, button,
@@ -47,16 +47,16 @@ export function compileSteps(steps, lines, defaults) {
     return {
       to, highlight, duration, scroll, target, swap, button,
       label: specs.join(', L'),
-      ranges: specs.map(spec => parseRange(spec, lines)),
+      ranges: specs.map((spec: any) => parseRange(spec, lines)),
       focus: currentFocus,
     };
   });
 }
 
-export function followDelta(to, range, viewport, focus) {
+export function followDelta(to: any, range: any, viewport: any, focus?: any) {
   const { top, bottom } = viewport;
   if (to === 'top') return range.top - top - 28;
-  const visible = bounds => bounds.top >= top && bounds.bottom <= bottom;
+  const visible = (bounds: any) => bounds.top >= top && bounds.bottom <= bottom;
   // Keep a fully visible function still, even when a mark is outside the follow zone.
   if (focus && visible(focus) && visible(range)) return null;
   const height = bottom - top;
@@ -65,22 +65,22 @@ export function followDelta(to, range, viewport, focus) {
   return range.top - top - inset;
 }
 
-export function glideDuration(distance, duration) {
+export function glideDuration(distance: any, duration: any) {
   return duration === 'auto' ? Math.min(900, Math.max(380, Math.abs(distance) * 1.1)) : duration;
 }
 
 // Bind before any fragments are consumed by htmx. A task belongs to at most one step.
-export function bindSteps(frames, tasks) {
-  const claimed = new Set();
-  return frames.flatMap((frame, index) => {
-    const selected = frame.target === false ? [] : frame.target ? tasks.filter(task => {
+export function bindSteps(frames: any, tasks: any) {
+  const claimed = new Set<any>();
+  return frames.flatMap((frame: any, index: any) => {
+    const selected = frame.target === false ? [] : frame.target ? tasks.filter((task: any) => {
       if (claimed.has(task) || (frame.swap && frame.swap !== task.swapSpec.style)) return false;
       return task.swapSpec.style === 'delete'
         ? task.target.matches(frame.target)
         : !!task.fragment.querySelector(frame.target);
-    }) : frame.highlight ? tasks.filter(task => !claimed.has(task)) : [];
+    }) : frame.highlight ? tasks.filter((task: any) => !claimed.has(task)) : [];
     if (frame.target && !selected.length) return [];
-    selected.forEach(task => claimed.add(task));
+    selected.forEach((task: any) => claimed.add(task));
     return [{ ...frame, tasks: selected, pair: String(index) }];
   });
 }

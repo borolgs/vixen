@@ -1,6 +1,6 @@
 import htmx from 'htmx.org';
-import { highlightSource } from './highlight.js';
-import { bindSteps, compileSteps, followDelta, glideDuration } from './preview-trace-plan.js';
+import { highlightSource } from './highlight.ts';
+import { bindSteps, compileSteps, followDelta, glideDuration } from './preview-trace-plan.ts';
 
 const timing = {
   codeToUI: 180,
@@ -37,7 +37,7 @@ const addRequest = [
   { ...stepDefaults.first, range: '69:10-69:12', focus: '69-91', button: 'add()' },
 ];
 
-const scenarios = {
+const scenarios: any = {
   '/todos/search': {
     200: [
       { range: '52:10-52:15', focus: '52-60' },
@@ -109,7 +109,7 @@ const scenarios = {
   },
 };
 
-export function connectPreviewFlow(example, { reducedMotion }) {
+export function connectPreviewFlow(example: any, { reducedMotion }: any) {
   example.style.setProperty('--preview-trace-mark-duration', `${timing.mark}ms`);
   example.style.setProperty('--preview-trace-soften-duration', `${timing.soften}ms`);
   const source = example.querySelector('.preview-source');
@@ -121,8 +121,8 @@ export function connectPreviewFlow(example, { reducedMotion }) {
   code.innerHTML = highlightSource(sourceText);
   source.querySelector('[data-preview-full]')?.remove();
   const lines = [...code.querySelectorAll('.sh__line')];
-  lines.forEach((line, index) => { line.dataset.previewLine = index + 1; });
-  const pristineLines = new Map(lines.map(line => [line, line.innerHTML]));
+  lines.forEach((line: any, index: any) => { line.dataset.previewLine = index + 1; });
+  const pristineLines = new Map<any, any>(lines.map((line: any) => [line, line.innerHTML]));
 
   const wrap = document.createElement('div');
   wrap.className = 'preview-source-wrap';
@@ -141,19 +141,19 @@ export function connectPreviewFlow(example, { reducedMotion }) {
   review.hidden = true;
   wrap.append(review);
 
-  let active = null;
-  let plan = null;
-  let focused = null;
+  let active: any = null;
+  let plan: any = null;
+  let focused: any = null;
   let motion = new AbortController();
   let manualScroll = false;
-  let codeMarks = [];
-  const uiMarks = new Set();
-  const animations = new Set();
-  const batches = new WeakMap();
-  const taskFrames = new WeakMap();
-  const ticks = new Map();
+  let codeMarks: any[] = [];
+  const uiMarks = new Set<any>();
+  const animations = new Set<any>();
+  const batches = new WeakMap<any, any>();
+  const taskFrames = new WeakMap<any, any>();
+  const ticks = new Map<any, any>();
   let resting = false;
-  let retireTimer;
+  let retireTimer: any;
   let retireCleanup = () => {};
 
   function canPlay() {
@@ -167,7 +167,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     retireCleanup = () => {};
   }
 
-  function resetTrace(fade = false) {
+  function resetTrace(fade: any = false) {
     finishRetiring();
     const previousCode = codeMarks;
     const previousUI = [...uiMarks];
@@ -181,7 +181,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     }
     retireCleanup = () => {
       // Range extraction splits syntax tokens; restore them instead of nesting more on each replay.
-      const markedLines = new Set(previousCode.map(mark => mark.closest('.sh__line')));
+      const markedLines = new Set<any>(previousCode.map((mark: any) => mark.closest('.sh__line')));
       for (const line of markedLines) if (line) line.innerHTML = pristineLines.get(line);
       for (const mark of previousUI) {
         if (!uiMarks.has(mark)) mark.classList.remove('preview-trace-mark', 'is-retiring');
@@ -206,9 +206,9 @@ export function connectPreviewFlow(example, { reducedMotion }) {
   new MutationObserver(() => { if (example.hidden) stopMotion(); })
     .observe(example, { attributes: true, attributeFilter: ['hidden'] });
 
-  function wait(duration) {
+  function wait(duration: any) {
     if (!duration || !canPlay()) return Promise.resolve();
-    return new Promise(resolve => {
+    return new Promise((resolve: any) => {
       const timer = setTimeout(finish, duration);
       function finish() {
         clearTimeout(timer);
@@ -219,7 +219,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     });
   }
 
-  function animate(element, keyframes) {
+  function animate(element: any, keyframes: any) {
     if (!canPlay()) return Promise.resolve();
     try {
       const animation = element.animate(keyframes, { duration: timing.value, easing, fill: 'forwards' });
@@ -235,7 +235,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     }
   }
 
-  function draw(mark, pair) {
+  function draw(mark: any, pair: any) {
     mark.classList.add('preview-trace-mark');
     mark.classList.remove('is-soft', 'is-retiring');
     mark.dataset.previewPair = pair;
@@ -244,12 +244,12 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     mark.classList.add('is-on');
   }
 
-  function markText(line, from, to, pair) {
+  function markText(line: any, from: any, to: any, pair: any) {
     const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
     const selection = document.createRange();
     let offset = 0;
     let started = false;
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    for (let node: any = walker.nextNode(); node; node = walker.nextNode()) {
       const end = offset + node.length;
       if (!started && end > from) {
         selection.setStart(node, Math.max(0, from - offset));
@@ -269,7 +269,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     draw(mark, pair);
   }
 
-  function markCode(frame) {
+  function markCode(frame: any) {
     finishRetiring();
     for (const { start, end, from, to } of frame.ranges) {
       for (let number = start; number <= end; number++) {
@@ -280,12 +280,12 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     ticks.get(frame.pair)?.classList.add('is-on');
   }
 
-  function tint(pair = null) {
+  function tint(pair: any = null) {
     for (const mark of [...codeMarks, ...uiMarks]) {
       mark.classList.toggle('is-soft', pair === null ? resting : mark.dataset.previewPair !== pair);
     }
   }
-  example.addEventListener('pointerover', event => {
+  example.addEventListener('pointerover', (event: any) => {
     const mark = event.target.closest('.preview-trace-mark.is-on');
     tint(mark?.dataset.previewPair ?? null);
   });
@@ -301,17 +301,17 @@ export function connectPreviewFlow(example, { reducedMotion }) {
   resize.observe(source);
   resize.observe(code);
 
-  function prepareTrace(frames) {
-    const ranges = frames.flatMap(frame => frame.ranges);
+  function prepareTrace(frames: any) {
+    const ranges = frames.flatMap((frame: any) => frame.ranges);
     const focus = frames[0]?.focus ?? {
-      start: Math.min(...ranges.map(range => range.start)),
-      end: Math.max(...ranges.map(range => range.end)),
+      start: Math.min(...ranges.map((range: any) => range.start)),
+      end: Math.max(...ranges.map((range: any) => range.end)),
     };
     const span = document.createElement('div');
     span.className = 'preview-trace-segment';
     rail.append(span);
-    for (const frame of frames.filter(frame => frame.highlight || frame.button)) {
-      const start = Math.min(...frame.ranges.map(range => range.start));
+    for (const frame of frames.filter((frame: any) => frame.highlight || frame.button)) {
+      const start = Math.min(...frame.ranges.map((range: any) => range.start));
       const tick = document.createElement('div');
       tick.className = 'preview-trace-tick';
       tick.style.top = `${(start - 1) / lines.length * 100}%`;
@@ -347,7 +347,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     source.addEventListener(type, () => { if (active) manualScroll = true; }, { passive: true });
   }
 
-  async function scrollSource(top, duration) {
+  async function scrollSource(top: any, duration: any) {
     const from = source.scrollTop;
     const to = Math.max(0, Math.min(top, source.scrollHeight - source.clientHeight));
     if (Math.abs(to - from) < 1 || !canPlay() || manualScroll) return false;
@@ -356,11 +356,11 @@ export function connectPreviewFlow(example, { reducedMotion }) {
       source.scrollTo({ top: to, behavior: 'instant' });
       return true;
     }
-    await new Promise(resolve => {
+    await new Promise((resolve: any) => {
       const listeners = new AbortController();
       const options = { passive: true, signal: listeners.signal };
       const started = performance.now();
-      let frame;
+      let frame: any;
       function finish() {
         cancelAnimationFrame(frame);
         listeners.abort();
@@ -368,7 +368,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
       }
       for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) source.addEventListener(type, finish, options);
       motion.signal.addEventListener('abort', finish, options);
-      function advance(now) {
+      function advance(now: any) {
         if (!canPlay() || manualScroll) return finish();
         const t = Math.min((now - started) / duration, 1);
         const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -389,12 +389,12 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     };
   }
 
-  async function follow(frame, focus) {
-    const span = rail.querySelector('.preview-trace-segment');
+  async function follow(frame: any, focus: any) {
+    const span: any = rail.querySelector('.preview-trace-segment');
     span.style.top = `${(focus.start - 1) / lines.length * 100}%`;
     span.style.height = `${(focus.end - focus.start + 1) / lines.length * 100}%`;
-    const first = lines[Math.min(...frame.ranges.map(range => range.start)) - 1].getBoundingClientRect();
-    const last = lines[Math.max(...frame.ranges.map(range => range.end)) - 1].getBoundingClientRect();
+    const first = lines[Math.min(...frame.ranges.map((range: any) => range.start)) - 1].getBoundingClientRect();
+    const last = lines[Math.max(...frame.ranges.map((range: any) => range.end)) - 1].getBoundingClientRect();
     const delta = followDelta(frame.to, { top: first.top, bottom: last.bottom }, sourceViewport(), {
       top: lines[focus.start - 1].getBoundingClientRect().top,
       bottom: lines[focus.end - 1].getBoundingClientRect().bottom,
@@ -405,7 +405,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     return moved;
   }
 
-  function markUI(element, frame) {
+  function markUI(element: any, frame: any) {
     if (!frame.highlight) return;
     const mark = element.matches('li') ? element.querySelector('label span') ?? element
       : element.matches('form') ? element.querySelector('input:not([type="hidden"])') ?? element
@@ -414,7 +414,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     draw(mark, frame.pair);
   }
 
-  function reveal(element, frame, previous) {
+  function reveal(element: any, frame: any, previous: any) {
     if (element.matches('p') && element.childElementCount === 0 && previous !== null && previous !== element.textContent) {
       const value = document.createElement('span');
       value.className = 'preview-trace-value';
@@ -433,10 +433,10 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     }
   }
 
-  async function swapBatch(tasks, frame = null) {
+  async function swapBatch(tasks: any, frame: any = null) {
     if (!tasks.length) return;
     if (frame && canPlay()) {
-      await Promise.all(tasks.filter(task => task.swapSpec.style === 'delete').map(task => {
+      await Promise.all(tasks.filter((task: any) => task.swapSpec.style === 'delete').map((task: any) => {
         markUI(task.target, frame);
         return animate(task.target, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }]);
       }));
@@ -449,16 +449,16 @@ export function connectPreviewFlow(example, { reducedMotion }) {
       // The trace owns timing; htmx still owns insertion, cleanup, and processing.
       Object.assign(task.swapSpec, { transition: false, swap: 0, settle: 0 });
     }
-    const ctx = { sourceElement: example, target: demo, text: '', swap: 'none' };
+    const ctx: any = { sourceElement: example, target: demo, text: '', swap: 'none' };
     batches.set(ctx, tasks);
     try { await htmx.swap(ctx); }
     finally { batches.delete(ctx); }
   }
 
-  async function runTrace(tasks, frames) {
-    const remaining = new Set(tasks);
-    const apply = async (selected, frame) => {
-      selected.forEach(task => remaining.delete(task));
+  async function runTrace(tasks: any, frames: any) {
+    const remaining = new Set<any>(tasks);
+    const apply = async (selected: any, frame: any) => {
+      selected.forEach((task: any) => remaining.delete(task));
       await swapBatch(selected, frame);
     };
     try {
@@ -492,8 +492,8 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     }
   }
 
-  example.addEventListener('htmx:config:request', event => { if (active) event.preventDefault(); });
-  example.addEventListener('htmx:before:request', event => {
+  example.addEventListener('htmx:config:request', (event: any) => { if (active) event.preventDefault(); });
+  example.addEventListener('htmx:before:request', (event: any) => {
     if (active) { event.preventDefault(); return; }
     active = event.detail.ctx;
     plan = null;
@@ -505,7 +505,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     demo.inert = true;
   });
 
-  document.addEventListener('htmx:before:swap', event => {
+  document.addEventListener('htmx:before:swap', (event: any) => {
     const { ctx, tasks } = event.detail;
     if (batches.has(ctx)) {
       tasks.splice(0, tasks.length, ...batches.get(ctx));
@@ -517,7 +517,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     ctx.extensionPromise = Promise.all([ctx.extensionPromise, runTrace([...tasks], plan)]);
   });
 
-  document.addEventListener('htmx:after:settle', event => {
+  document.addEventListener('htmx:after:settle', (event: any) => {
     const { task, newContent } = event.detail;
     const entry = taskFrames.get(task);
     if (!entry?.frame || !canPlay()) return;
@@ -526,9 +526,9 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     }
   });
 
-  document.addEventListener('htmx:finally:request', async event => {
+  document.addEventListener('htmx:finally:request', async (event: any) => {
     if (event.detail.ctx !== active) return;
-    await Promise.allSettled([...animations].map(animation => animation.finished));
+    await Promise.allSettled([...animations].map((animation: any) => animation.finished));
     if (!canPlay()) resetTrace();
     else if (resting && review.childElementCount) review.hidden = false;
     motion.abort();
@@ -544,7 +544,7 @@ export function connectPreviewFlow(example, { reducedMotion }) {
     focused = null;
   });
 
-  return (path, response) => {
+  return (path: any, response: any) => {
     plan = null;
     const pathname = new URL(path, document.baseURI).pathname;
     const steps = scenarios[pathname]?.[response.status];

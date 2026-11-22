@@ -1,19 +1,19 @@
 import htmx from 'htmx.org';
-import { createFetch } from './fetch.js';
-import { highlightSource } from './highlight.js';
-import { connectPreviewFlow } from './preview-flow.js';
+import { createFetch } from './fetch.ts';
+import { highlightSource } from './highlight.ts';
+import { connectPreviewFlow } from './preview-flow.ts';
 
 const previews = document.querySelectorAll('[data-vixen-preview]');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const stepDuration = 650;
 
-async function pause(duration = stepDuration) {
+async function pause(duration: any = stepDuration) {
   if (!reducedMotion.matches) {
-    await new Promise((resolve) => setTimeout(resolve, duration));
+    await new Promise((resolve: any) => setTimeout(resolve, duration));
   }
 }
 
-function connect(preview, fetch, index) {
+function connect(preview: any, fetch: any, index: any) {
   const tabs = [...preview.querySelectorAll('[data-preview-tab]')];
   const panels = [...preview.querySelectorAll('[data-preview-example]')];
 
@@ -25,7 +25,7 @@ function connect(preview, fetch, index) {
     panel.setAttribute('aria-labelledby', tab.id);
   }
 
-  function selectTab(selected) {
+  function selectTab(selected: any) {
     // Show first: focus updates can flush layout while both panels would be hidden.
     panels[tabs.indexOf(selected)].hidden = false;
     for (const [i, tab] of tabs.entries()) {
@@ -38,7 +38,7 @@ function connect(preview, fetch, index) {
 
   for (const [i, tab] of tabs.entries()) {
     tab.addEventListener('click', () => selectTab(tab));
-    tab.addEventListener('keydown', (event) => {
+    tab.addEventListener('keydown', (event: any) => {
       let next;
       switch (event.key) {
         case 'ArrowRight':
@@ -88,7 +88,7 @@ function connect(preview, fetch, index) {
   const prepareTodos = connectPreviewFlow(todos, { reducedMotion });
 
   // Fragment selectors are document-wide; keep swaps inside the requesting preview.
-  preview.addEventListener('htmx:before:swap', (event) => {
+  preview.addEventListener('htmx:before:swap', (event: any) => {
     console.log("htmx:before:swap", event.detail);
     const { tasks } = event.detail;
     for (let i = tasks.length - 1; i >= 0; i--) {
@@ -96,7 +96,7 @@ function connect(preview, fetch, index) {
     }
   });
 
-  preview.addEventListener('htmx:before:request', (event) => {
+  preview.addEventListener('htmx:before:request', (event: any) => {
     if (event.defaultPrevented) return;
     const { ctx } = event.detail;
     const example = ctx.sourceElement.closest('[data-preview-example]');
@@ -112,7 +112,7 @@ function connect(preview, fetch, index) {
     const options = { signal: requestEvents.signal };
     document.addEventListener(
       'htmx:after:swap',
-      (event) => {
+      (event: any) => {
         if (event.detail.ctx !== ctx) return;
         if (animated) example.dataset.phase = 'result';
         status.textContent = `${ctx.response.status} · swapped`;
@@ -121,7 +121,7 @@ function connect(preview, fetch, index) {
     );
     document.addEventListener(
       'htmx:error',
-      (event) => {
+      (event: any) => {
         if (event.detail.ctx !== ctx) return;
         if (animated) example.dataset.phase = 'error';
         status.textContent = 'Request failed';
@@ -132,7 +132,7 @@ function connect(preview, fetch, index) {
     );
     document.addEventListener(
       'htmx:finally:request',
-      (event) => {
+      (event: any) => {
         if (event.detail.ctx !== ctx) return;
         if (example !== todos) output.setAttribute('aria-busy', 'false');
         requestEvents.abort();
@@ -141,7 +141,7 @@ function connect(preview, fetch, index) {
     );
 
     // Keep htmx serialization and swaps; only the transport runs in WASM.
-    ctx.fetch = async (action, request) => {
+    ctx.fetch = async (action: any, request: any) => {
       const url = new URL(action, document.baseURI);
       status.textContent = `${request.method} ${url.pathname}`;
       if (animated) {
@@ -172,7 +172,7 @@ function connect(preview, fetch, index) {
 }
 
 const originalInfo = console.info.bind(console);
-console.info = (...args) => {
+console.info = (...args: any[]) => {
   // ...
   originalInfo(...args);
 };

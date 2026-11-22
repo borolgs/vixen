@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import init, { handle_request } from '../dist/pkg/vixen_preview.js';
-import { createFetch } from '../web/fetch.js';
+import { createFetch } from '../web/fetch.ts';
 
 await init({
   module_or_path: await Bun.file(new URL('../dist/pkg/vixen_preview_bg.wasm', import.meta.url)).arrayBuffer(),

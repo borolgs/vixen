@@ -6,17 +6,17 @@
   with `include_str!`. Tab switches preserve DOM and unfinished edits.
 - Each mounted preview owns a WASM `PreviewApp` (`src/browser.rs`). Requests
   clone its router, sharing todo/search/filter state; reload resets everything.
-- `web/main.js` keeps htmx serialization and swaps, replacing only `ctx.fetch`.
-  `web/fetch.js` dispatches same-origin `/__axum__/…` requests to WASM; other
+- `web/main.ts` keeps htmx serialization and swaps, replacing only `ctx.fetch`.
+  `web/fetch.ts` dispatches same-origin `/__axum__/…` requests to WASM; other
   requests use network fetch. Swap targets stay inside the requesting preview.
 - `src/todos.rs` returns targeted `partial!` responses, including validation
   errors. Toggle/save emit either the item or its deletion, never both.
 
-## Todos trace (`web/preview-flow.js`)
+## Todos trace (`web/preview-flow.ts`)
 
 WASM runs first. The fetch hook only compiles the scenario; playback starts once
 htmx has prepared swap tasks. It illustrates returned fragments, not Rust
-execution. Hello keeps its separate animation in `web/main.js`.
+execution. Hello keeps its separate animation in `web/main.ts`.
 
 - Scenarios use pathname/status keys. Steps accept `range`, optional `focus`
   (function bounds, inherited until changed), `target` (incoming-content selector;
@@ -42,17 +42,22 @@ execution. Hello keeps its separate animation in `web/main.js`.
 - Reduced motion or hidden panels/documents skip animation, not state updates.
   Invalid scenarios must preserve the response. Todo 4xx responses still swap;
   they aren't transport failures. Animation failures must not block deletions.
-- `web/preview-trace-plan.js` contains range validation and task binding without
+- `web/preview-trace-plan.ts` contains range validation and task binding without
   browser globals; `tests/preview-trace.test.js` runs without WASM. Use browser
   checks for sequencing, input/focus behavior, interruption, and mobile layout.
 
 ## Build and checks
 
 From this directory: `bun run build`, then `bun run serve` (port 4007).
-Edit `src/` and `web/`, not generated `dist/`. Rust source changes need a WASM
-rebuild even when only the displayed code changed.
+`build` runs `build:wasm` and `build:web`; the latter includes `typecheck` and
+can rebuild the frontend alone. Edit `src/` and `web/`, not generated `dist/`.
+Rust source changes need a WASM rebuild even when only the displayed code changed.
+
+`web/*.ts` uses permissive `any` annotations for now. `bun run typecheck` checks
+browser code without generated WASM; `web/wasm.d.ts` declares the external import.
+`build:web` copies HTML/CSS assets and the JS bundle into `dist/`, not TS sources.
 
 `cargo test -p vixen-preview` checks native helpers; `bun test ./tests` uses
-built WASM. `bun test ./tests/preview-trace.test.js` runs the trace tests alone,
-without WASM. Also check JS syntax and the browser choreography after animation
-changes. Build prerequisites and layout: `README.md`.
+built WASM. `bun run test:trace` runs the trace tests alone, without WASM.
+Also check browser choreography after animation changes.
+Build prerequisites and layout: `README.md`.

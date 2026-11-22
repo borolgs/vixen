@@ -8,11 +8,9 @@
 - Added `HxPartial::extend` and nested `HxPartial<Filled>` or
   `Option<HxPartial<Filled>>` entries in `partial!`, preserving the outer
   response's main body and status.
-
-### Changed
-
-- Updated the WASM preview's fetch adapter to await an optional `beforeResponse`
-  callback without discarding the response if that callback fails.
+- `examples/vixen-preview`: interactive examples running in the browser through
+  a WASM-compiled axum router, with Rust source beside the UI and an optional
+  animated walkthrough of the code and response swaps.
 
 ## 0.4.0 - 2026-10-21
 

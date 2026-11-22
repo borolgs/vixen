@@ -9,55 +9,76 @@
 - `web/main.ts` keeps htmx serialization and swaps, replacing only `ctx.fetch`.
   `web/fetch.ts` dispatches same-origin `/__axum__/…` requests to WASM; other
   requests use network fetch. Swap targets stay inside the requesting preview.
+- `src/hello.rs` contains the greeting action and its UI; `src/lib.rs` assembles
+  the preview router. Both examples use the same `UI | Code` layout.
 - `src/todos.rs` returns targeted `partial!` responses, including validation
   errors. Toggle/save emit either the item or its deletion, never both.
 
-## Todos trace (`web/preview-flow.ts`)
+## Flow
 
-WASM runs first. The fetch hook only compiles the scenario; playback starts once
-htmx has prepared swap tasks. It illustrates returned fragments, not Rust
-execution. Hello keeps its separate animation in `web/main.ts`.
+- `web/flow/flow.ts` is the player. Pass scenarios to `connectFlow`; keep
+  example-specific ranges and selectors in `web/flow/scenarios/hello.ts` and
+  `web/flow/scenarios/todos.ts`. Both examples use this player.
+- The player takes over `htmx:before:swap` after validating the scenario.
+  Each step waits for its code animation, delivers matching prepared tasks
+  through the injected `swap: ctx => htmx.swap(ctx)`, then marks the UI.
+  Keep htmx's insertion, cleanup, and processing; don't implement DOM swaps.
+  `ctx.extensionPromise` keeps the request open until delivery finishes.
+- Deliver each task once, even if several steps explain it. Flush all remaining
+  tasks on interruption or playback errors, including tasks with no matching
+  step. Clone swap specifications to disable htmx's own animation delays.
+- The demo is `inert` from request start through the final softening animation.
+  Reject additional requests while locked; unlock at `htmx:finally:request`,
+  including transport and playback errors. Keep the source and tabs interactive.
+- `Animate` sits at the right of `.preview-tabs`, outside the tablist's ARIA
+  group. Each tab retains its own setting, checked by default (`animated: true`).
+  It changes the next run's mode without replaying marks or requests and is
+  disabled while a request is active. With it off, deliver the whole response,
+  mark selected ranges/UI in their pale state, then scroll instantly to the
+  last selected step with a `button` (no bookmark means no scrolling). Skip
+  intermediate scrolling, pauses, and CSS animations.
+  Keep response branch selection and `highlight: false`; bookmarks still work.
+- Ranges are inclusive, 1-based Unicode line/columns in the example's Rust file,
+  including imports. Arrays mark separate expressions together. Use the typed
+  `parseRange` / `SourceRange` in `web/flow/ranges.ts`; update coordinates when
+  Rust moves.
+  `target` matches incoming fragments (the old target for delete); `swap`
+  only filters the response branch. Missing targets mean source-only steps.
+- `to: 'top'` aligns below the sticky header; otherwise visible ranges don't
+  scroll. Manual source input stops following for that run. Marks draw left
+  to right and stay until the next run fades their backgrounds, not their text.
+  Cleanup restores a single saved syntax-highlighted HTML snapshot.
+- `button` adds a plain header bookmark after completion. It only scrolls,
+  never sends requests or repeats swaps. A new request removes the old buttons.
+  `highlight: false` skips marking; `duration` overrides the step pause,
+  including zero. `connectFlow` defaults to a 450 ms step and 250 ms fade.
+- An abort, hidden tab/document, or reduced motion stops animated playback.
+  The `finally` block delivers remaining swaps, including after rendering errors.
+  Validate before taking over; bad scenarios mustn't discard a response or turn
+  validation responses into transport errors. Don't restore queued-request or
+  overlapping-playback handling while the demo is locked.
 
-- Scenarios use pathname/status keys. Steps accept `range`, optional `focus`
-  (function bounds, inherited until changed), `target` (incoming-content selector;
-  old target for delete), `swap` (style filter), `to`, `highlight`, `duration`,
-  `scroll`, and `button` (post-flow source bookmark label). `target: false` marks source without claiming any response tasks,
-  as in Add Todo's form prelude.
-  `note` is reserved. Coordinates are inclusive, 1-based Unicode line/columns in
-  `src/todos.rs`, including imports. Update coordinates when Rust moves.
-- `stepDefaults`: first step → top, no mark, 140 ms; later → bottom, mark,
-  300 ms. Scroll defaults to `0` on the first step and `auto` (distance-based
-  380–900 ms) afterward; numeric overrides and zero remain valid. `duration` includes the code→UI lead (up to 180 ms).
-  Range arrays mark spans together; unmatched target branches are skipped.
-- htmx owns the DOM. Intercept the original before-swap, retain its task objects,
-  and run batches through public `htmx.swap()`. The original request awaits
-  `ctx.extensionPromise`; batch contexts are identified by a WeakMap. Never
-  recursively intercept a batch or replay a consumed task. Unclaimed tasks and
-  interrupted runs must still apply their remaining swaps.
-- Marks accumulate and soften after the final reading beat; hover links code/UI.
-  The rail tracks the function and marks. Manual input stops auto-follow for
-  that request. Bookmark buttons stay hidden until completion and only scroll;
-  they must never send requests or replay swaps. Reset removes the old buttons.
-  Keep controls inert until completion and restore focus afterward.
-- Reduced motion or hidden panels/documents skip animation, not state updates.
-  Invalid scenarios must preserve the response. Todo 4xx responses still swap;
-  they aren't transport failures. Animation failures must not block deletions.
-- `web/preview-trace-plan.ts` contains range validation and task binding without
-  browser globals; `tests/preview-trace.test.js` runs without WASM. Use browser
-  checks for sequencing, input/focus behavior, interruption, and mobile layout.
+The old player, planner, and trace CSS are removed. Keep playback out of the
+fetch adapter: it only dispatches requests and preserves abort/response behavior.
+The CSS entry, `web/flow/flow.css`, imports the common base styles.
 
 ## Build and checks
 
 From this directory: `bun run build`, then `bun run serve` (port 4007).
 `build` runs `build:wasm` and `build:web`; the latter includes `typecheck` and
-can rebuild the frontend alone. Edit `src/` and `web/`, not generated `dist/`.
-Rust source changes need a WASM rebuild even when only the displayed code changed.
+bundles JS and CSS without rebuilding WASM. Edit `src/` and `web/`, not `dist/`.
+Rust source changes need a WASM rebuild even when only displayed code changed.
 
-`web/*.ts` uses permissive `any` annotations for now. `bun run typecheck` checks
-browser code without generated WASM; `web/wasm.d.ts` declares the external import.
-`build:web` copies HTML/CSS assets and the JS bundle into `dist/`, not TS sources.
+Permissive `any` annotations belong to the mechanically migrated legacy code,
+not new code. The new flow uses explicit contracts, inferred DOM/event types,
+and `satisfies` for scenarios. `typecheck` also checks `tests/*.types.ts`.
+`web/wasm.d.ts` declares the external WASM import, so type checking doesn't
+need generated WASM files.
 
-`cargo test -p vixen-preview` checks native helpers; `bun test ./tests` uses
-built WASM. `bun run test:trace` runs the trace tests alone, without WASM.
-Also check browser choreography after animation changes.
+`bun run test:flow` runs flow selection, Unicode range parsing, and fetch-adapter
+checks without WASM. `tests/flow.browser.js` checks both animation modes against real WASM,
+including the UI lock, response delivery, errors, and bookmarks.
+`tests/hello.browser.js` covers Hello through the same player. Also check
+scrolling and narrow screens. `bun test ./tests` additionally uses built WASM;
+`cargo test -p vixen-preview` checks native helpers.
 Build prerequisites and layout: `README.md`.

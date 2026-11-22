@@ -1,18 +1,11 @@
 import htmx from 'htmx.org';
 import { createFetch } from './fetch.ts';
-import { highlightSource } from './highlight.ts';
-import { connectPreviewFlow } from './preview-flow.ts';
+import { connectFlow, type FlowOptions } from './flow/flow.ts';
+import * as hello from './flow/scenarios/hello.ts';
+import * as todos from './flow/scenarios/todos.ts';
 
 const previews = document.querySelectorAll('[data-vixen-preview]');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const stepDuration = 650;
-
-async function pause(duration: any = stepDuration) {
-  if (!reducedMotion.matches) {
-    await new Promise((resolve: any) => setTimeout(resolve, duration));
-  }
-}
-
 function connect(preview: any, fetch: any, index: any) {
   const tabs = [...preview.querySelectorAll('[data-preview-tab]')];
   const panels = [...preview.querySelectorAll('[data-preview-example]')];
@@ -62,30 +55,13 @@ function connect(preview: any, fetch: any, index: any) {
     });
   }
 
-  for (const panel of preview.querySelectorAll('[data-preview-example="hello"] .preview-code-panel')) {
-    for (const source of panel.querySelectorAll('[data-preview-imports], [data-preview-body]')) {
-      source.innerHTML = highlightSource(source.textContent);
-    }
-    const toggle = panel.querySelector('[data-preview-full]');
-    const imports = panel.querySelector('[data-preview-imports]');
-    toggle.addEventListener('click', () => {
-      const full = toggle.getAttribute('aria-pressed') !== 'true';
-      imports.hidden = !full;
-      toggle.setAttribute('aria-pressed', String(full));
-    });
-  }
-
-  const hello = preview.querySelector('[data-preview-example="hello"]');
-  for (const [language, pattern] of [
-    ['maud', /hx-action=[^\n]+|name=\(Greet::FIELD\.name\)/g],
-    ['rust', /partial! \{[\s\S]*?\n {4}\}/g],
-  ]) {
-    const source = hello.querySelector(`[data-preview-code="${language}"] [data-preview-body]`);
-    source.innerHTML = highlightSource(source.textContent, pattern);
-  }
-
-  const todos = preview.querySelector('[data-preview-example="todos"]');
-  const prepareTodos = connectPreviewFlow(todos, { reducedMotion });
+  const options = {
+    reducedMotion,
+    controls: preview.querySelector('.preview-tabs'),
+    swap: ctx => htmx.swap(ctx),
+  } satisfies FlowOptions;
+  connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, { ...options, startLine: hello.startLine });
+  connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, { ...options, startLine: todos.startLine });
 
   // Fragment selectors are document-wide; keep swaps inside the requesting preview.
   preview.addEventListener('htmx:before:swap', (event: any) => {
@@ -100,10 +76,9 @@ function connect(preview: any, fetch: any, index: any) {
     if (event.defaultPrevented) return;
     const { ctx } = event.detail;
     const example = ctx.sourceElement.closest('[data-preview-example]');
-    const animated = example === hello;
     const status = example.querySelector('[data-preview-status]');
     const errorOutput = example.querySelector('[data-preview-error]');
-    const output = example.querySelector('.preview-result, .preview-demo');
+    const output = example.querySelector('.preview-demo');
     errorOutput.hidden = true;
     output.setAttribute('aria-busy', 'true');
 
@@ -114,7 +89,6 @@ function connect(preview: any, fetch: any, index: any) {
       'htmx:after:swap',
       (event: any) => {
         if (event.detail.ctx !== ctx) return;
-        if (animated) example.dataset.phase = 'result';
         status.textContent = `${ctx.response.status} · swapped`;
       },
       options,
@@ -123,7 +97,6 @@ function connect(preview: any, fetch: any, index: any) {
       'htmx:error',
       (event: any) => {
         if (event.detail.ctx !== ctx) return;
-        if (animated) example.dataset.phase = 'error';
         status.textContent = 'Request failed';
         errorOutput.textContent = String(event.detail.error);
         errorOutput.hidden = false;
@@ -134,7 +107,7 @@ function connect(preview: any, fetch: any, index: any) {
       'htmx:finally:request',
       (event: any) => {
         if (event.detail.ctx !== ctx) return;
-        if (example !== todos) output.setAttribute('aria-busy', 'false');
+        output.setAttribute('aria-busy', 'false');
         requestEvents.abort();
       },
       options,
@@ -144,27 +117,8 @@ function connect(preview: any, fetch: any, index: any) {
     ctx.fetch = async (action: any, request: any) => {
       const url = new URL(action, document.baseURI);
       status.textContent = `${request.method} ${url.pathname}`;
-      if (animated) {
-        example.dataset.phase = 'maud';
-        status.textContent = `hx-action → ${request.method} ${url.pathname}`;
-        await pause();
-        example.dataset.phase = 'rust';
-        status.textContent = 'Running handler';
-      }
-
-      const response = await fetch(
-        `/__axum__${url.pathname}${url.search}`,
-        request,
-        example === todos ? prepareTodos : undefined,
-      );
-      if (animated) {
-        if (!response.ok) {
-          throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
-        }
-        await pause();
-      }
-      // htmx 4 also swaps todo validation errors; don't turn them into transport failures.
-      return response;
+      // Validation responses follow the same htmx swap path as successful ones.
+      return fetch(`/__axum__${url.pathname}${url.search}`, request);
     };
   });
 

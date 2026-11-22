@@ -2,6 +2,8 @@
 
 `fetch` → WASM-compiled `axum::Router` → `Response`.
 
+Still a rough draft: the player, scenarios, and UI are work in progress.
+
 ## Run
 
 From the repository root (Rust, Bun, and Python 3 required):
@@ -18,8 +20,8 @@ Open <http://127.0.0.1:4007/>. Deploy `examples/vixen-preview/dist/` to a static
 
 ## Frontend
 
-Browser code lives in `web/*.ts`. It uses permissive `any` annotations for now;
-the TypeScript migration doesn't refactor runtime logic.
+Browser code lives under `web/` and uses TypeScript. The new flow and its
+scenarios are typed; permissive `any` annotations remain in migrated legacy code.
 
 From the repository root:
 
@@ -28,16 +30,17 @@ bun run --cwd examples/vixen-preview typecheck
 bun run --cwd examples/vixen-preview build:web
 ```
 
-`build:web` checks TypeScript and bundles `web/main.ts` into `dist/main.js`.
-It copies HTML/CSS assets, not TypeScript sources. WASM stays an external import
-from `dist/pkg/vixen_preview.js`; build it once with `build:wasm` before serving.
+`build:web` checks TypeScript, bundles `web/main.ts` into `dist/main.js`, and
+bundles `web/flow/flow.css` into `dist/style.css`. It copies HTML and theme CSS,
+not TypeScript sources. WASM stays an external import from
+`dist/pkg/vixen_preview.js`; build it once with `build:wasm` before serving.
 `build` runs both build steps. Type checking doesn't need generated WASM files.
 
 ## Examples and state
 
-The `hello` tab keeps its form, two source snippets, and result below them.
-The `todos` tab puts the UI beside its Rust source, or above it on narrow
-screens. Source text scales to fit the code panel. Switching tabs keeps the
+Both tabs put the UI beside one Rust file, or above it on narrow screens.
+Hello's form, explanatory text, and greeting response live in `src/hello.rs`.
+Todos lives in `src/todos.rs`; `src/lib.rs` assembles the shared preview router. Source text scales to fit the code panel. Switching tabs keeps the
 existing DOM, including unfinished edits.
 
 Each mounted preview owns a WASM `PreviewApp` with one `axum::Router`.
@@ -49,88 +52,120 @@ page restores those samples. Nothing uses localStorage.
 
 The todo actions follow [the standalone example](../todos/src/pages/todos/mod.rs).
 Search and filter live in the preview state rather than the host page's URL.
-Todos shows the full Rust source, including imports. Hello keeps its original
-animation.
+Both examples show their full Rust source, including imports, and use the
+same flow player.
 
-## Render trace
+## Flow
 
-WASM produces a response first. The trace then pairs its htmx fragments with
-source ranges: scroll to the handler, draw a code mark, and reveal the matching UI
-180 ms later. The next mark follows after another 120 ms by default. Earlier
-marks stay visible. After a 1400 ms reading beat, all marks soften over 400 ms;
-hover a mark on either side to brighten its counterpart.
+The player holds the prepared WASM response and delivers it step by step:
+finish the code highlight, apply matching swaps through htmx, then highlight
+the UI. The demo stays `inert` from request start through the final softening
+animation, so users can't edit fields or start another action mid-flow. The
+source and tabs stay interactive. Completion and error paths unlock the demo.
 
-Add Todo first visits `add_todo_form()` and marks `hx-action` and the title's
-`name` binding together, then moves to `add()`. These source-only steps don't
-apply any response fragments. Other actions still start at their handler.
+Marks draw from left to right and accumulate. After the walkthrough, they wait
+400 ms, then fade to 35% of their original background opacity over 400 ms.
+Text stays unchanged. On the next run, the backgrounds fade out over 250 ms,
+then the player restores the original syntax markup. The default step pause
+is 450 ms.
 
-A side rail shows the function, marked expressions, and viewport. Scroll glides use cubic
-easing. `top` places the range 28 px below the sticky header; `bottom` follows
-ranges outside the viewport's 10–80% zone, placing them near 42% height.
-If the whole function and highlighted range are already visible, `bottom` leaves
-scrolling alone. Explicit `top` alignment still applies.
-Manual input stops automatic scrolling for the rest of that request.
-Steps with a `button` label get a bookmark to the left of their rail marker,
-visible only after the flow finishes. The small diamond expands into a label
-with a flat left edge and pointed right end on hover or keyboard focus,
-without changing color.
-Clicking it jumps to the step's range
-without sending a request or replaying swaps. A new flow removes the old buttons.
+Each action first visits the UI function containing its `hx-action`, then
+highlights the action builder and field bindings together. Toggle, Edit, and
+Cancel bind their ID through `.id(todo.id)` rather than `FIELD`. The walkthrough
+then visits the handler and response expressions, including error branches.
+Rust has already produced the response; the walkthrough controls when its
+fragments reach the UI, not when the server executes.
 
-htmx still performs every insertion, replacement, and deletion. The trace groups
-the prepared tasks through `htmx.swap()`, and the original request waits on
-`ctx.extensionPromise`. Text values cross-slide in a shared grid cell; other
-fragments swap in place. Deletions get a 320 ms exit before removal.
-Controls stay inert until the trace finishes, but the source remains scrollable.
-Changing tabs or enabling reduced motion stops animation and applies every
-remaining swap. Missing or invalid scenarios fall back to ordinary htmx swaps.
+The right side of the tabs row has an **Animate** checkbox for the active
+example, enabled by default. Each tab keeps its own setting. Uncheck it
+to deliver the whole response and immediately mark all selected code ranges and
+UI in the final pale color, then scroll instantly to the last selected step
+with a `button`. Without a bookmarked step, the scroll position stays unchanged.
+There are no intermediate scrolls, pauses, or draw/fade animations. Branch
+selection and `highlight: false` still apply; bookmarks navigate instantly.
+
+The checkbox changes the next run, without replaying requests or marks. It's
+disabled while a request is active. `connectFlow`'s `animated` option sets its
+initial state; the default is `true`.
+
+Source scrolling is instant by default. Visible ranges stay still;
+`to: 'top'` explicitly aligns 28 px below the sticky header. Manual input stops
+automatic following for the rest of the run. Steps with a `button` label get
+plain header bookmarks after completion. These only scroll, without repeating
+requests or swaps.
+
+Hidden tabs/documents, request aborts, and reduced motion stop playback and
+flush pending swaps. Playback errors also flush the response. Invalid scenarios
+fall back to htmx's normal swap before the player takes ownership.
+There is no minimap, paired hover, counter animation, or deletion animation.
+The old player, planner, and trace styles are removed. Typed range parsing
+lives in `web/flow/ranges.ts`. The fetch adapter has no playback hooks.
 
 ### Customize a scenario
 
-Scenarios in `web/preview-flow.ts` are keyed by pathname and HTTP status.
-Defaults apply by position; every field can be overridden:
+Scenarios in `web/flow/scenarios/hello.ts` and `web/flow/scenarios/todos.ts`
+are keyed by pathname and HTTP status.
+The player in `web/flow/flow.ts` receives them as an argument.
 
-| Step | `to` | `highlight` | `duration` (ms) | `scroll` |
-| --- | --- | --- | --- | --- |
-| First | `top` | `false` | 140 | `0` |
-| All later steps | `bottom` | `true` | 300 | `auto` |
+Each module also exports `startLine`, a 1-based line number passed to
+`connectFlow` as an option. On the tab's first display, the source scrolls there
+instantly to skip imports, without highlighting or sending a request. Switching
+back preserves your position. Omit `startLine` to leave the initial scroll unchanged.
 
-Only `range` is required. Ranges use inclusive, 1-based Unicode line/column
-coordinates in `src/todos.rs`; imports count toward line numbers. Whole-line
+Only `range` is required. It uses inclusive, 1-based Unicode line/column
+coordinates in the corresponding Rust file; imports count toward line numbers. Whole-line
 ranges and arrays of separate spans also work. Update them when Rust lines move.
 
-`focus` sets the function bounds for this and following steps, until another
-step changes them. Use `to: 'top'` and `highlight: false` to enter a new function.
-`target` is a CSS selector matched against incoming fragment content, or the
-old target for a deletion. Set `target: false` for a source-only highlight.
-Unmatched steps are skipped, so a filtered-out insertion doesn't light up its
-code. Use `swap` to distinguish `outerHTML` from `delete`. Without `target`, a
-highlighted step applies all remaining tasks together; `target: false` claims none.
+`to: 'top'` forces alignment; otherwise only clipped ranges scroll.
+`scroll: 'instant'` is the default; `'smooth'` animates the scroll.
+The step's bookmark uses the same mode.
+`highlight: false` skips marking, not swaps, without clearing earlier marks.
+`duration` overrides the pause after that step; zero removes the pause.
+`button` supplies the bookmark label. There are no positional defaults,
+inherited function bounds, or implicit UI targets.
 
-`duration` is the post-scroll beat: up to 180 ms before the UI swap, then the
-remaining time afterward. `duration: 0` skips those waits. `scroll: 'auto'` uses
-`clamp(380, distance × 1.1, 900)` milliseconds; a non-negative number overrides
-it, and `0` jumps instantly. `highlight: false` leaves that step unmarked without
-erasing earlier marks. `note` remains reserved for captions.
+`target` selects an element in the returned fragment, not an arbitrary existing
+element in the demo. Unmatched steps are omitted. `swap` distinguishes response
+branches such as replacement and deletion; it filters tasks without changing
+their swap style. Each task is delivered once; unmatched tasks are flushed at
+the end. For deletion, selection uses the outgoing target; the item is removed
+after its code highlight. Without `target`, a step only visits the source.
 
 ```ts
 [
-  { range: '342:4-342:16', focus: '342-351', button: 'add_todo_form()' },
-  { range: ['344:41-344:69', '345:19-345:45'], target: false, duration: 1500 }, // hx-action + name
-  { range: '69:10-69:12', focus: '69-91', button: 'add()', to: 'top', highlight: false, duration: 140, scroll: 0 },
-  { range: '81:9-81:23', target: '#add-todo-form' }, // add_todo_form() in the response
+  { range: '342:4-342:16', to: 'top', highlight: false, button: 'add_todo_form()' },
+  { range: ['344:25-344:41', '345:25-345:44'], duration: 1000 }, // action + field
+  { range: '69:10-69:12', to: 'top', highlight: false, button: 'add()' },
+  { range: '81:9-81:23', target: '#add-todo-form input[name="title"]' },
 ]
 ```
 
-`timing` controls the code/UI delay, follow pause, value animation, and resting
-tint. The trace illustrates returned fragments, not Rust execution or database
-timing.
+Pass `swap: ctx => htmx.swap(ctx)` to `connectFlow` so htmx owns DOM updates.
+`connectFlow` also accepts `duration`, `fade`, `rest`, and `soften` in milliseconds,
+all allowing zero. `rest` is the delay before marks soften; `soften` controls
+that transition. The demo unlocks once softening finishes. Static mode ignores
+these timings.
+The CSS entry is `web/flow/flow.css`, which imports the existing base stylesheet.
 
 ## Test
 
-`bun run --cwd examples/vixen-preview test:trace` checks range
-coordinates, step defaults, branch/task binding, scroll timing, and response
-preservation without a WASM build.
+`bun run --cwd examples/vixen-preview test:flow` checks scenario coordinates,
+response selection, delivery deduplication, Unicode range parsing, and the
+fetch adapter without a WASM build. Browser checks cover code-before-swap ordering,
+scrolling, cancellation, the UI lock, and both animation modes.
+
+With the preview server running and `playwright-cli` installed, run the browser
+regression from this directory:
+
+```bash
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow open http://127.0.0.1:4007/
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/flow.browser.js)"
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/hello.browser.js)"
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/start-line.browser.js)"
+playwright-cli -s=flow close
+```
+
+These checks use the UI checkbox to exercise both modes with real WASM responses.
 
 `bun run --cwd examples/vixen-preview test` also runs the WASM tests (after
 building WASM). `cargo test -p vixen-preview` checks the source-panel helpers.

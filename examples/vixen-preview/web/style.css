@@ -171,6 +171,57 @@
   transition-timing-function: ease;
 }
 
+@property --preview-mark {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+.vixen-preview .preview-trace-mark,
+.vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark {
+  --preview-mark: var(--preview-highlight);
+  background-image: linear-gradient(var(--preview-mark), var(--preview-mark));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 64%;
+  box-decoration-break: clone;
+  border-radius: 2px;
+  transition:
+    background-size var(--preview-trace-mark-duration, 450ms) cubic-bezier(.4, 0, .2, 1),
+    --preview-mark var(--preview-trace-soften-duration, 400ms) ease;
+}
+
+.vixen-preview .preview-trace-mark.is-on,
+.vixen-preview .preview-trace-mark.is-retiring,
+.vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark.is-on,
+.vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark.is-retiring {
+  background-size: 100% 64%;
+}
+
+.vixen-preview .preview-trace-mark.is-soft,
+.vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark.is-soft {
+  --preview-mark: color-mix(in srgb, var(--preview-highlight) 35%, transparent);
+}
+
+/* Keep the stroke's width while its color fades; never draw it backwards. */
+.vixen-preview .preview-trace-mark.is-retiring,
+.vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark.is-retiring {
+  --preview-mark: transparent;
+}
+
+.vixen-preview .preview-trace-value {
+  display: inline-grid;
+  vertical-align: bottom;
+}
+
+.vixen-preview .preview-trace-value > span {
+  grid-area: 1 / 1;
+}
+
+.vixen-preview .preview-demo[inert] {
+  cursor: progress;
+}
+
 .vixen-preview .preview-result {
   display: grid;
   grid-template-columns: minmax(0, 1fr) fit-content(50%);
@@ -240,6 +291,13 @@
 
   .vixen-preview [data-preview-example="hello"][data-phase="result"] :is(form, .preview-result) {
     animation: none;
+  }
+
+  .vixen-preview .preview-source .sh__line,
+  .vixen-preview .preview-trace-tick,
+  .vixen-preview .preview-trace-mark,
+  .vixen-preview [data-preview-example="todos"] .preview-demo .preview-trace-mark {
+    transition: none;
   }
 }
 
@@ -311,11 +369,28 @@
 }
 
 .vixen-preview select {
+  appearance: none;
   max-width: 100%;
-  padding: var(--vixen-space-2);
+  padding: var(--vixen-space-2) var(--vixen-space-8) var(--vixen-space-2) var(--vixen-space-3);
   border: var(--vixen-line) solid var(--preview-border);
   color: inherit;
-  background: var(--preview-surface);
+  background-color: var(--preview-surface);
+  background-image:
+    linear-gradient(45deg, transparent 40%, currentColor 40% 60%, transparent 60%),
+    linear-gradient(135deg, transparent 40%, currentColor 40% 60%, transparent 60%);
+  background-position:
+    right calc(var(--vixen-space-3) + 0.375rem) center,
+    right var(--vixen-space-3) center;
+  background-size: 0.375rem 0.375rem;
+  background-repeat: no-repeat;
+}
+
+@media (forced-colors: active) {
+  .vixen-preview select {
+    appearance: auto;
+    padding-inline: var(--vixen-space-3);
+    background-image: none;
+  }
 }
 
 .vixen-preview :is([type="checkbox"], [type="radio"]) {
@@ -324,6 +399,140 @@
   height: 1rem;
   margin: 0;
   accent-color: var(--vixen-ink);
+}
+
+.vixen-preview .preview-source-wrap {
+  /* The rail stays still while the source scrolls inside the grid row. */
+  position: relative;
+  contain: size;
+  min-width: 0;
+  min-height: 38rem;
+}
+
+.vixen-preview .preview-source-wrap .preview-source {
+  height: 100%;
+  min-height: 0;
+  scrollbar-width: none;
+}
+
+.vixen-preview .preview-source-wrap .preview-source::-webkit-scrollbar {
+  display: none;
+}
+
+.vixen-preview .preview-trace-rail {
+  position: absolute;
+  right: 5px;
+  bottom: 16px;
+  width: 4px;
+  pointer-events: none;
+}
+
+.vixen-preview .preview-trace-buttons {
+  position: absolute;
+  left: 12px;
+  right: 17px;
+  bottom: 16px;
+  pointer-events: none;
+}
+
+.vixen-preview .preview-trace-button {
+  position: absolute;
+  isolation: isolate;
+  right: 0;
+  display: flex;
+  align-items: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  max-width: 100%;
+  transform: translateY(-50%);
+  padding: 0 .875rem;
+  border: 0;
+  background: transparent;
+  color: var(--vixen-text);
+  font-family: var(--vixen-font-code);
+  font-size: var(--vixen-text-xs);
+  line-height: var(--vixen-leading-code);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+.vixen-preview .preview-trace-button::before {
+  content: '';
+  position: absolute;
+  inset: 6px 2px 6px 10px;
+  z-index: -1;
+  background: var(--preview-highlight);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%);
+}
+
+.vixen-preview .preview-trace-button-label {
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
+}
+
+.vixen-preview .preview-trace-button-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vixen-preview .preview-trace-button:is(:hover, :focus-visible) .preview-trace-button-label {
+  grid-template-columns: 1fr;
+}
+
+.vixen-preview .preview-trace-button:is(:hover, :focus-visible)::before {
+  inset: 2px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 0 50%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vixen-preview .preview-trace-button-label {
+    transition: grid-template-columns 180ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .vixen-preview .preview-trace-button::before {
+    transition:
+      inset 180ms cubic-bezier(.22, 1, .36, 1),
+      clip-path 180ms cubic-bezier(.22, 1, .36, 1);
+  }
+}
+
+.vixen-preview .preview-trace-button:enabled:hover,
+.vixen-preview .preview-trace-button:enabled:active,
+.vixen-preview .preview-trace-button:focus-visible {
+  color: var(--vixen-text);
+  background: transparent;
+}
+
+.vixen-preview .preview-trace-rail > div {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+}
+
+.vixen-preview .preview-trace-thumb {
+  background: var(--preview-muted);
+  opacity: .28;
+}
+
+.vixen-preview .preview-trace-rail .preview-trace-segment {
+  left: 1px;
+  right: 1px;
+  background: var(--vixen-text);
+  opacity: .22;
+}
+
+.vixen-preview .preview-trace-tick {
+  height: 3px;
+  background: var(--preview-highlight);
+  opacity: .4;
+  transition: opacity 300ms ease;
+}
+
+.vixen-preview .preview-trace-tick.is-on {
+  opacity: 1;
 }
 
 .vixen-preview .preview-source {
@@ -343,6 +552,7 @@
 .vixen-preview .preview-source .preview-code-header {
   position: sticky;
   top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -486,6 +696,10 @@
 @container preview (max-width: 44rem) {
   .vixen-preview .preview-layout {
     grid-template-columns: 1fr;
+  }
+
+  .vixen-preview .preview-source-wrap {
+    min-height: 28rem;
   }
 
   .vixen-preview .preview-source {

@@ -7,14 +7,234 @@ use vixen::{
     HxPartialResponse, Part, RouterExt, SyncStrategy, action, fragment, id,
     maud::{Markup, html},
     partial,
-    routing::TypedPath,
 };
+
+pub fn router() -> Router<Todos> {
+    Router::new()
+        .action(search)
+        .action(add)
+        .action(toggle)
+        .action(edit)
+        .action(save)
+        .action(cancel)
+}
+
+pub fn view(state: &TodoState) -> Markup {
+    html! {
+        h2 { "Todos" }
+        div class="todo-status" {
+            (todo_count(&state.todos))
+            (MessageId::slot())
+        }
+        (add_todo_form())
+        (search_form(&state.search))
+        (todo_list(&state.todos, &state.search))
+    }
+}
+
+/// The todo list for the query and filter.
+#[derive(Default)]
+#[action("/todos/search")]
+struct SearchTodos {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    q: String,
+    #[serde(default)]
+    filter: TodoFilter,
+}
+
+impl SearchTodos {
+    fn matches(&self, todo: &Todo) -> bool {
+        self.filter.matches(todo)
+            && todo.title.to_lowercase().contains(&self.q.to_lowercase())
+    }
+}
+
+async fn search(
+    State(state): State<Todos>,
+    search: SearchTodos,
+) -> HxPartialResponse {
+    let mut state = state.lock().expect("todo state poisoned");
+    state.search = search;
+
+    partial!(todo_list(&state.todos, &state.search))
+}
+
+/// The new todo's item, the count and a message.
+#[action("/todos/add")]
+struct AddTodo {
+    title: String,
+    priority: Priority,
+}
+
+async fn add(State(state): State<Todos>, todo: AddTodo) -> HxPartialResponse {
+    if todo.title.trim().is_empty() {
+        return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            warning("A todo needs a title."),
+        };
+    }
+
+    let state = &mut *state.lock().expect("todo state poisoned");
+    let created = state.create(todo);
+
+    partial! {
+        add_todo_form(), todo_count(&state.todos),
+        if state.is_visible(&created) {
+            partial! {
+                Part::before_end(todo_list::sel(), todo_item(&created)),
+                success("Todo created.")
+            }
+        } else {
+            partial! { warning("Todo created (hidden by filters).") }
+        }
+    }
+}
+
+/// The item with `done` flipped, and the count.
+#[action("/todos/toggle")]
+struct ToggleTodo {
+    id: usize,
+}
+
+async fn toggle(
+    State(state): State<Todos>,
+    toggle: ToggleTodo,
+) -> HxPartialResponse {
+    let mut state = state.lock().expect("todo state poisoned");
+
+    let Some(todo) = state.toggle(toggle) else {
+        return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
+    };
+
+    partial! {
+        if state.is_visible(&todo) {
+            todo_item(&todo).into()
+        } else {
+            Part::delete(TodoItemId(todo.id))
+        },
+        todo_count(&state.todos),
+    }
+}
+
+/// The item as an edit form posting `/todos/save`.
+#[action("/todos/edit")]
+struct EditTodo {
+    id: usize,
+}
+
+async fn edit(
+    State(state): State<Todos>,
+    EditTodo { id }: EditTodo,
+) -> HxPartialResponse {
+    let state = state.lock().expect("todo state poisoned");
+    let todos = &state.todos;
+    let Some(todo) = todos.get(id) else {
+        return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
+    };
+
+    partial!(todo_item_edit_form(todo))
+}
+
+/// The item and a message.
+#[action("/todos/save")]
+struct SaveTodo {
+    id: usize,
+    title: String,
+    #[serde(default)]
+    done: bool,
+    priority: Priority,
+}
+
+async fn save(State(state): State<Todos>, save: SaveTodo) -> HxPartialResponse {
+    if save.title.trim().is_empty() {
+        return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            warning("A todo needs a title."),
+        };
+    }
+
+    let mut state = state.lock().expect("todo state poisoned");
+    let Some(todo) = state.update(save) else {
+        return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
+    };
+
+    partial! {
+        if state.is_visible(&todo) {
+            todo_item(&todo).into()
+        } else {
+            Part::delete(TodoItemId(todo.id))
+        },
+        todo_count(&state.todos),
+        success("Todo updated."),
+    }
+}
+
+/// The item, unchanged.
+#[action("/todos/cancel")]
+struct CancelEdit {
+    id: usize,
+}
+
+async fn cancel(
+    State(state): State<Todos>,
+    CancelEdit { id }: CancelEdit,
+) -> HxPartialResponse {
+    let state = state.lock().expect("todo state poisoned");
+    let todos = &state.todos;
+    let Some(todo) = todos.get(id) else {
+        return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
+    };
+
+    partial!(todo_item(todo))
+}
+
+// model
 
 pub type Todos = Arc<Mutex<TodoState>>;
 
 pub struct TodoState {
     todos: Vec<Todo>,
     search: SearchTodos,
+}
+
+impl TodoState {
+    fn create(&mut self, todo: AddTodo) -> Todo {
+        let todo = Todo {
+            id: self.todos.len(),
+            title: todo.title,
+            done: false,
+            priority: todo.priority,
+        };
+        self.todos.push(todo.clone());
+
+        todo
+    }
+
+    fn update(&mut self, edit: SaveTodo) -> Option<Todo> {
+        let Some(todo) = self.todos.get_mut(edit.id) else {
+            return None;
+        };
+
+        todo.done = edit.done;
+        todo.title = edit.title;
+        todo.priority = edit.priority;
+
+        Some(todo.to_owned())
+    }
+
+    fn toggle(&mut self, edit: ToggleTodo) -> Option<Todo> {
+        let Some(todo) = self.todos.get_mut(edit.id) else {
+            return None;
+        };
+
+        todo.done = !todo.done;
+
+        Some(todo.to_owned())
+    }
+
+    fn is_visible(&self, todo: &Todo) -> bool {
+        self.search.matches(todo)
+    }
 }
 
 impl Default for TodoState {
@@ -79,232 +299,7 @@ impl TodoFilter {
     }
 }
 
-pub fn router() -> Router<Todos> {
-    Router::new()
-        .action(search)
-        .action(add)
-        .action(toggle)
-        .action(edit)
-        .action(save)
-        .action(cancel)
-}
-
-pub fn view(state: &TodoState) -> Markup {
-    html! {
-        h2 { "Todos" }
-        div class="todo-status" {
-            (todo_count(&state.todos))
-            (todo_message::slot())
-        }
-        (add_todo_form())
-        (search_form(&state.search))
-        (todo_list(&state.todos, &state.search))
-    }
-}
-
-/// The todo list for the query and filter.
-#[derive(Default)]
-#[action("/todos/search")]
-struct SearchTodos {
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    q: String,
-    #[serde(default)]
-    filter: TodoFilter,
-}
-
-impl SearchTodos {
-    fn matches(&self, todo: &Todo) -> bool {
-        self.filter.matches(todo)
-            && todo.title.to_lowercase().contains(&self.q.to_lowercase())
-    }
-}
-
-async fn search(
-    State(state): State<Todos>,
-    search: SearchTodos,
-) -> HxPartialResponse {
-    let mut state = state.lock().expect("todo state poisoned");
-    state.search = search;
-
-    partial!(todo_list(&state.todos, &state.search))
-}
-
-/// The new todo's item, the count and a message.
-#[action("/todos/add")]
-struct AddTodo {
-    title: String,
-    priority: Priority,
-}
-
-async fn add(
-    State(state): State<Todos>,
-    AddTodo { title, priority }: AddTodo,
-) -> HxPartialResponse {
-    if title.trim().is_empty() {
-        return partial! {
-            StatusCode::UNPROCESSABLE_ENTITY,
-            todo_message(Message::Error("A todo needs a title.")),
-        };
-    }
-
-    let mut state = state.lock().expect("todo state poisoned");
-    let TodoState { todos, search } = &mut *state;
-
-    let todo = Todo {
-        id: todos.len(),
-        title,
-        done: false,
-        priority,
-    };
-    todos.push(todo.clone());
-
-    if !search.matches(&todo) {
-        return partial! {
-            add_todo_form(),
-            todo_count(todos),
-            todo_message(Message::Info("Todo created.")),
-        };
-    }
-
-    partial! {
-        add_todo_form(),
-        Part::before_end(todo_list::sel(), todo_item(&todo)),
-        todo_count(todos),
-        todo_message(Message::Info("Todo created.")),
-    }
-}
-
-/// The item with `done` flipped, and the count.
-#[action("/todos/toggle")]
-struct ToggleTodo {
-    id: usize,
-}
-
-async fn toggle(
-    State(state): State<Todos>,
-    ToggleTodo { id }: ToggleTodo,
-) -> HxPartialResponse {
-    let mut state = state.lock().expect("todo state poisoned");
-    let TodoState { todos, search } = &mut *state;
-
-    let Some(todo) = todos.get_mut(id) else {
-        return partial!(
-            StatusCode::NOT_FOUND,
-            todo_message(Message::Error("That todo is gone.")),
-        );
-    };
-
-    todo.done = !todo.done;
-
-    if !search.matches(todo) {
-        return partial! {
-            Part::delete(TodoItemId(id)),
-            todo_count(todos),
-        };
-    }
-
-    partial! {
-        todo_item(todo),
-        todo_count(todos),
-    }
-}
-
-/// The item as an edit form posting `/todos/save`.
-#[action("/todos/edit")]
-struct EditTodo {
-    id: usize,
-}
-
-async fn edit(
-    State(state): State<Todos>,
-    EditTodo { id }: EditTodo,
-) -> HxPartialResponse {
-    let state = state.lock().expect("todo state poisoned");
-    let todos = &state.todos;
-    let Some(todo) = todos.get(id) else {
-        return partial!(
-            StatusCode::NOT_FOUND,
-            todo_message(Message::Error("That todo is gone.")),
-        );
-    };
-
-    partial!(todo_item_edit_form(todo))
-}
-
-/// The item and a message.
-#[action("/todos/save")]
-struct SaveTodo {
-    id: usize,
-    title: String,
-    #[serde(default)]
-    done: bool,
-    priority: Priority,
-}
-
-async fn save(
-    State(state): State<Todos>,
-    SaveTodo {
-        id,
-        title,
-        done,
-        priority,
-    }: SaveTodo,
-) -> HxPartialResponse {
-    if title.trim().is_empty() {
-        return partial! {
-            StatusCode::UNPROCESSABLE_ENTITY,
-            todo_message(Message::Error("A todo needs a title.")),
-        };
-    }
-
-    let mut state = state.lock().expect("todo state poisoned");
-    let TodoState { todos, search } = &mut *state;
-    let Some(todo) = todos.get_mut(id) else {
-        return partial!(
-            StatusCode::NOT_FOUND,
-            todo_message(Message::Error("That todo is gone.")),
-        );
-    };
-    todo.title = title;
-    todo.done = done;
-    todo.priority = priority;
-
-    if !search.matches(todo) {
-        return partial! {
-            Part::delete(TodoItemId(id)),
-            todo_count(todos),
-            todo_message(Message::Info("Todo updated.")),
-        };
-    }
-
-    partial! {
-        todo_item(todo),
-        todo_count(todos),
-        todo_message(Message::Info("Todo updated.")),
-    }
-}
-
-/// The item, unchanged.
-#[action("/todos/cancel")]
-struct CancelEdit {
-    id: usize,
-}
-
-async fn cancel(
-    State(state): State<Todos>,
-    CancelEdit { id }: CancelEdit,
-) -> HxPartialResponse {
-    let state = state.lock().expect("todo state poisoned");
-    let todos = &state.todos;
-    let Some(todo) = todos.get(id) else {
-        return partial!(
-            StatusCode::NOT_FOUND,
-            todo_message(Message::Error("That todo is gone.")),
-        );
-    };
-
-    partial!(todo_item(todo))
-}
+// ui
 
 #[id]
 struct TodoItemId(usize);
@@ -346,7 +341,7 @@ fn todo_item_edit_form(todo: &Todo) -> Markup {
 #[fragment]
 fn add_todo_form() -> Markup {
     html! {
-        form id=(Self) class="todo-add" hx-action=(AddTodo::action()) {
+        form hx-action=(AddTodo::action()) id=(Self) class="todo-add" {
             input name=(AddTodo::FIELD.title) placeholder="What needs doing?"
                 aria-label="New todo" maxlength="160";
             (priority_select(AddTodo::FIELD.priority, Priority::default()))
@@ -405,25 +400,17 @@ fn todo_count(todos: &[Todo]) -> Markup {
     }
 }
 
-enum Message {
-    Info(&'static str),
-    Error(&'static str),
+#[id]
+struct MessageId;
+
+#[fragment(MessageId)]
+fn success(text: impl Into<String>) -> Markup {
+    html! { p id=(Self) role="status" {(text.into())} }
 }
 
-#[fragment]
-fn todo_message(message: Message) -> Markup {
-    html! {
-        @match message {
-            Message::Info(text) => {
-                p id=(Self) role="status" {
-                    (text)
-                }
-            }
-            Message::Error(text) => {
-                p id=(Self) role="alert" { (text) }
-            }
-        }
-    }
+#[fragment(MessageId)]
+fn warning(text: impl Into<String>) -> Markup {
+    html! { p id=(Self) role="alert" {(text.into())} }
 }
 
 #[fragment]

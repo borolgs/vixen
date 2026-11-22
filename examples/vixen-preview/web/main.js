@@ -1,14 +1,15 @@
 import htmx from 'htmx.org';
 import { createFetch } from './fetch.js';
 import { highlightSource } from './highlight.js';
+import { connectPreviewFlow } from './preview-flow.js';
 
 const previews = document.querySelectorAll('[data-vixen-preview]');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const stepDuration = 650;
 
-async function pause() {
+async function pause(duration = stepDuration) {
   if (!reducedMotion.matches) {
-    await new Promise((resolve) => setTimeout(resolve, stepDuration));
+    await new Promise((resolve) => setTimeout(resolve, duration));
   }
 }
 
@@ -61,7 +62,7 @@ function connect(preview, fetch, index) {
     });
   }
 
-  for (const panel of preview.querySelectorAll('.preview-code-panel')) {
+  for (const panel of preview.querySelectorAll('[data-preview-example="hello"] .preview-code-panel')) {
     for (const source of panel.querySelectorAll('[data-preview-imports], [data-preview-body]')) {
       source.innerHTML = highlightSource(source.textContent);
     }
@@ -83,6 +84,9 @@ function connect(preview, fetch, index) {
     source.innerHTML = highlightSource(source.textContent, pattern);
   }
 
+  const todos = preview.querySelector('[data-preview-example="todos"]');
+  const prepareTodos = connectPreviewFlow(todos, { reducedMotion });
+
   // Fragment selectors are document-wide; keep swaps inside the requesting preview.
   preview.addEventListener('htmx:before:swap', (event) => {
     console.log("htmx:before:swap", event.detail);
@@ -93,6 +97,7 @@ function connect(preview, fetch, index) {
   });
 
   preview.addEventListener('htmx:before:request', (event) => {
+    if (event.defaultPrevented) return;
     const { ctx } = event.detail;
     const example = ctx.sourceElement.closest('[data-preview-example]');
     const animated = example === hello;
@@ -129,7 +134,7 @@ function connect(preview, fetch, index) {
       'htmx:finally:request',
       (event) => {
         if (event.detail.ctx !== ctx) return;
-        output.setAttribute('aria-busy', 'false');
+        if (example !== todos) output.setAttribute('aria-busy', 'false');
         requestEvents.abort();
       },
       options,
@@ -147,7 +152,11 @@ function connect(preview, fetch, index) {
         status.textContent = 'Running handler';
       }
 
-      const response = await fetch(`/__axum__${url.pathname}${url.search}`, request);
+      const response = await fetch(
+        `/__axum__${url.pathname}${url.search}`,
+        request,
+        example === todos ? prepareTodos : undefined,
+      );
       if (animated) {
         if (!response.ok) {
           throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);

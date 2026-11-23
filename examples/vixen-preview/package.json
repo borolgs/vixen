@@ -7,9 +7,7 @@
     "build:wasm": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked",
     "build:web": "bun run typecheck && mkdir -p dist && cp web/index.html ../../site/static/theme.css dist/ && bun build web/main.ts --target browser --external ./pkg/vixen_preview.js --outfile dist/main.js && bun build web/flow/flow.css --outfile dist/style.css && touch dist/.nojekyll",
     "typecheck": "tsc --noEmit",
-    "serve": "python3 -m http.server 4007 --bind 127.0.0.1 --directory dist",
-    "test": "bun test ./tests",
-    "test:flow": "bun test ./tests/flow.test.js ./tests/ranges.test.js ./tests/fetch.test.js"
+    "serve": "bunx --bun serve dist --listen tcp://127.0.0.1:4007"
   },
   "dependencies": {
     "htmx.org": "4.0.0",

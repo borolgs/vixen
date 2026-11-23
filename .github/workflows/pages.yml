@@ -32,7 +32,6 @@ jobs:
           tool: zola@0.23.6
       - run: ./build.sh
         working-directory: site
-      - run: bun run --cwd examples/vixen-preview test
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist

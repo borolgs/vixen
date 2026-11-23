@@ -57,8 +57,6 @@ pub async fn greet(Greet { name }: Greet) -> impl IntoResponse {
             warning("A name is required."),
         };
     }
-
-    tracing::info!("greeting");
     partial! {
         greeting(&name),
         form(),

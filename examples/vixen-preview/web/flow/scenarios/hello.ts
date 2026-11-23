@@ -16,8 +16,7 @@ export const scenarios = {
   '/hello/greet': {
     200: [
       ...greetRequest,
-      { range: '63:9-63:23', target: '#greeting' },
-      { range: '64:9-64:14', target: '#form' },
+      { range: ['62:9-62:14', '61:9-61:23'], target: '#form, #greeting' },
     ],
     422: [
       ...greetRequest,

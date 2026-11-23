@@ -4,13 +4,13 @@ use axum::{
     Router,
     extract::{FromRequestParts, State},
     http::StatusCode,
+    response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
 use strum::{AsRefStr, EnumIter, IntoEnumIterator};
 use tokio::sync::Mutex;
 use vixen::{
-    HxPartialResponse, Part, ReqCtx, RouterExt, SyncStrategy, action, fragment,
-    id,
+    Part, ReqCtx, RouterExt, SyncStrategy, action, fragment, id,
     maud::{Markup, html},
     partial, route,
 };
@@ -59,7 +59,7 @@ impl SearchTodos {
     }
 }
 
-async fn search(search: SearchTodos) -> HxPartialResponse {
+async fn search(search: SearchTodos) -> impl IntoResponse {
     let mut state = ctx().todos.lock_owned().await;
     state.search = search;
 
@@ -73,7 +73,7 @@ struct AddTodo {
     priority: Priority,
 }
 
-async fn add(todo: AddTodo) -> HxPartialResponse {
+async fn add(todo: AddTodo) -> impl IntoResponse {
     if todo.title.trim().is_empty() {
         return partial! {
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -103,7 +103,7 @@ struct ToggleTodo {
     id: usize,
 }
 
-async fn toggle(toggle: ToggleTodo) -> HxPartialResponse {
+async fn toggle(toggle: ToggleTodo) -> impl IntoResponse {
     let mut state = ctx().todos.lock_owned().await;
 
     let Some(todo) = state.toggle(toggle) else {
@@ -126,7 +126,7 @@ struct EditTodo {
     id: usize,
 }
 
-async fn edit(EditTodo { id }: EditTodo) -> HxPartialResponse {
+async fn edit(EditTodo { id }: EditTodo) -> impl IntoResponse {
     let state = ctx().todos.lock_owned().await;
     let todos = &state.todos;
     let Some(todo) = todos.get(id) else {
@@ -146,7 +146,7 @@ struct SaveTodo {
     priority: Priority,
 }
 
-async fn save(save: SaveTodo) -> HxPartialResponse {
+async fn save(save: SaveTodo) -> impl IntoResponse {
     if save.title.trim().is_empty() {
         return partial! {
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -176,7 +176,7 @@ struct CancelEdit {
     id: usize,
 }
 
-async fn cancel(CancelEdit { id }: CancelEdit) -> HxPartialResponse {
+async fn cancel(CancelEdit { id }: CancelEdit) -> impl IntoResponse {
     let state = ctx().todos.lock_owned().await;
     let todos = &state.todos;
     let Some(todo) = todos.get(id) else {

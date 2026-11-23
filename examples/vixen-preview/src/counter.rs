@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use axum::{Router, extract::State};
+use axum::{Router, extract::State, response::IntoResponse};
 use tokio::sync::Mutex;
 use vixen::{
-    HxPartialResponse, RouterExt, action, fragment,
+    RouterExt, action, fragment,
     maud::{Markup, html},
     partial, route,
 };
@@ -41,7 +41,7 @@ struct Add {
 async fn add(
     State(count): State<Counter>,
     Add { by }: Add,
-) -> HxPartialResponse {
+) -> impl IntoResponse {
     let mut count = count.lock().await;
     *count = count.saturating_add(by);
 

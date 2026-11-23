@@ -219,7 +219,7 @@
   padding: var(--vixen-space-2) var(--vixen-space-3);
   border: var(--vixen-line) solid var(--preview-border);
   color: inherit;
-  background: var(--preview-surface);
+  background: transparent;
 }
 
 .vixen-preview select {

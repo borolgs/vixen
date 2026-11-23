@@ -5,6 +5,7 @@ export const startLine = 17;
 // Inclusive, 1-based Unicode coordinates in src/todos.rs, including imports.
 // target/swap select returned fragments to explain; they never control swapping.
 const addRequest = [
+  { range: '72:8-72:14', to: 'top', highlight: false, button: 'AddTodo', skip: true },
   { range: '354:4-354:16', to: 'top', highlight: false, button: 'add_todo_form()' },
   {
     range: [
@@ -13,10 +14,11 @@ const addRequest = [
     ],
     duration: 1000,
   },
-  { range: '77:20-77:27', to: 'top', button: 'add()' },
+  { range: '77:20-77:26', to: 'top', button: 'add()' },
 ] satisfies readonly Step[];
 
 const searchRequest = [
+  { range: '49:8-49:18', to: 'top', highlight: false, button: 'SearchTodos', skip: true },
   { range: '379:4-379:14', to: 'top', highlight: false, button: 'search_form()' },
   {
     range: [
@@ -26,22 +28,25 @@ const searchRequest = [
     ],
     duration: 1000,
   },
-  { range: '63:10-63:15', to: 'top', highlight: false, button: 'search()' },
+  { range: '63:25-63:35', to: 'top', button: 'search()' },
 ] satisfies readonly Step[];
 
 const toggleRequest = [
+  { range: '103:8-103:17', to: 'top', highlight: false, button: 'ToggleTodo', skip: true },
   { range: '320:4-320:12', to: 'top', highlight: false, button: 'todo_item()' },
   { range: '325:32-325:63', duration: 1000 }, // ToggleTodo::action().id(todo.id)
-  { range: '107:10-107:15', to: 'top', highlight: false, button: 'toggle()' },
+  { range: '107:25-107:34', to: 'top', button: 'toggle()' },
 ] satisfies readonly Step[];
 
 const editRequest = [
+  { range: '126:8-126:15', to: 'top', highlight: false, button: 'EditTodo', skip: true },
   { range: '320:4-320:12', to: 'top', highlight: false, button: 'todo_item()' },
   { range: '330:28-330:57', duration: 1000 }, // EditTodo::action().id(todo.id)
-  { range: '130:10-130:13', to: 'top', highlight: false, button: 'edit()' }
+  { range: '130:32-130:39', to: 'top', button: 'edit()' }
 ] satisfies readonly Step[];
 
 const saveRequest = [
+  { range: '142:8-142:15', to: 'top', highlight: false, button: 'SaveTodo', skip: true },
   { range: '336:4-336:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
   {
     range: [
@@ -52,13 +57,14 @@ const saveRequest = [
     ],
     duration: 1000,
   },
-  { range: '150:10-150:13', to: 'top', highlight: false, button: 'save()' },
+  { range: '150:21-150:28', to: 'top', button: 'save()' },
 ] satisfies readonly Step[];
 
 const cancelRequest = [
+  { range: '176:8-176:17', to: 'top', highlight: false, button: 'CancelEdit', skip: true },
   { range: '336:4-336:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
   { range: '347:32-347:63', duration: 1000 }, // CancelEdit::action().id(todo.id)
-  { range: '180:10-180:15', to: 'top', highlight: false, button: 'cancel()' },
+  { range: '180:36-180:45', to: 'top', button: 'cancel()' },
 ] satisfies readonly Step[];
 
 export const scenarios = {
@@ -122,7 +128,6 @@ export const scenarios = {
     ],
     422: [
       ...saveRequest,
-      { range: '150:10-150:13', to: 'top', highlight: false },
       { range: '154:13-154:44', target: '#message' }, // warning(...)
     ],
   },

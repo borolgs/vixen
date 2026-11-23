@@ -17,6 +17,15 @@ async page => {
       const example = document.querySelector('[data-preview-example="todos"]');
       const demo = example.querySelector('.preview-demo');
       window.flowCheck = { requests: 0, received: 0, done: 0, started: 0, elapsed: 0, transportError: false, source: example.querySelector('[data-preview-code]').textContent };
+      const source = example.querySelector('.preview-source');
+      const scrollTo = source.scrollTo.bind(source);
+      window.flowCheck.scrolls = [];
+      window.flowCheck.skippedTop = source.scrollTop + source.querySelectorAll('.sh__line')[71].getBoundingClientRect().top
+        - source.querySelector('.preview-code-header').getBoundingClientRect().bottom - 28;
+      source.scrollTo = options => {
+        if (Math.abs(options.top - source.scrollTop) >= 1) window.flowCheck.scrolls.push(options.top);
+        scrollTo(options);
+      };
       document.addEventListener('htmx:before:request', event => {
         window.flowCheck.requests++;
         if (window.flowCheck.transportError) event.detail.ctx.fetch = async () => { throw new Error('Injected transport failure'); };
@@ -44,6 +53,14 @@ async page => {
     const viewport = source.getBoundingClientRect();
     return rect.top >= header.bottom && rect.bottom <= viewport.top + source.clientTop + source.clientHeight;
   }, line);
+  const checkAction = async (type, declaration, handler) => {
+    assert(await todos.locator('.sh__line').nth(handler - 1).locator('.flow-mark').allTextContents().then(marks => marks.join(',') === type), `${type} must be highlighted in the handler signature`);
+    assert(await todos.locator('.sh__line').nth(declaration - 1).locator('.flow-mark').count() === 0, `${type}'s skipped declaration must not be highlighted`);
+    const requests = await page.evaluate(() => window.flowCheck.requests);
+    await todos.locator('.flow-bookmarks').getByRole('button', { name: type, exact: true }).click();
+    assert(await lineVisible(declaration), `${type}'s bookmark must navigate to its declaration`);
+    assert(await page.evaluate(() => window.flowCheck.requests) === requests, `${type}'s bookmark must not replay requests`);
+  };
   const snapshot = () => page.evaluate(() => {
     const example = document.querySelector('[data-preview-example="todos"]');
     const marks = [...example.querySelectorAll('.flow-mark')];
@@ -81,6 +98,11 @@ async page => {
   await done(1);
   const normal = await snapshot();
   assert(normal.requests === 1 && normal.items === 4 && normal.soft && !normal.running && normal.unlocked && normal.sourceIntact, JSON.stringify(normal));
+  assert(normal.scrolls.every(top => Math.abs(top - normal.skippedTop) > 1), 'Playback must not scroll to the skipped AddTodo step');
+  assert(await todos.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'AddTodo,add_todo_form(),add()'), 'Skipped steps must keep their bookmark in scenario order');
+  await todos.getByRole('button', { name: 'AddTodo', exact: true }).click();
+  assert(await lineVisible(72), 'Skipped step bookmarks must still navigate to their source');
+  assert((await snapshot()).requests === normal.requests, 'A skipped step bookmark must not repeat the request');
 
   await fresh(false);
   await todos.locator('.preview-source').evaluate(source => { source.scrollTop = 123; });
@@ -95,6 +117,9 @@ async page => {
   assert(JSON.stringify(instant.codeMarks) === JSON.stringify(normal.codeMarks), 'Both modes must mark the same selected source ranges');
   assert(JSON.stringify(instant.colors) === JSON.stringify(normal.colors), 'Static marks must use the completed animation’s pale color');
   const before = await page.evaluate(() => window.flowCheck.requests);
+  await todos.getByRole('button', { name: 'AddTodo', exact: true }).click();
+  assert(await lineVisible(72), 'Skipped step bookmarks must also work in static mode');
+  assert(await page.evaluate(() => window.flowCheck.requests) === before, 'Static skipped bookmarks must only scroll');
   await animation.check();
   const switched = await snapshot();
   assert(switched.requests === before && !switched.running && JSON.stringify(switched.codeMarks) === JSON.stringify(instant.codeMarks), 'Changing mode must not replay requests or highlights');
@@ -108,6 +133,7 @@ async page => {
   await page.getByRole('searchbox', { name: 'Search todos' }).fill('Static');
   await done(3);
   assert(await page.getByRole('searchbox', { name: 'Search todos' }).evaluate(input => input === document.activeElement), 'Search must retain focus after unlocking');
+  await checkAction('SearchTodos', 49, 63);
   await add('   ');
   await done(4);
   const validation = await snapshot();
@@ -116,12 +142,25 @@ async page => {
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await done(5);
   assert(await page.getByRole('textbox', { name: 'Todo title', exact: true }).evaluate(input => input === document.activeElement), 'Returned autofocus must wait until unlocking');
+  await checkAction('EditTodo', 126, 130);
   await animation.check();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.waitForFunction(() => window.flowCheck.received === 6);
   assert(await animation.isDisabled(), 'Re-enabled animation must lock the toggle');
   assert(await page.locator('[data-preview-example="todos"]').evaluate(example => !example.classList.contains('flow-static')), 'The next request must use the newly enabled animation');
   await done(6);
+  await checkAction('CancelEdit', 176, 180);
+
+  await fresh(false);
+  await todos.locator('#todo-list input[type="checkbox"]').first().click();
+  await done(1);
+  await checkAction('ToggleTodo', 103, 107);
+  await todos.getByRole('button', { name: 'Edit', exact: true }).first().click();
+  await done(2);
+  await todos.getByRole('textbox', { name: 'Todo title', exact: true }).fill('Saved flow');
+  await todos.getByRole('button', { name: 'Save', exact: true }).click();
+  await done(3);
+  await checkAction('SaveTodo', 142, 150);
 
   await fresh(true);
   await add('Hidden completion');

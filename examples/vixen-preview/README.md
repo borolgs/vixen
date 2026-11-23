@@ -40,6 +40,8 @@ not TypeScript sources. WASM stays an external import from
 
 Both tabs put the UI beside one Rust file, or above it on narrow screens.
 Hello's form, explanatory text, and greeting response live in `src/hello.rs`.
+Blank or whitespace-only names return HTTP 422 with a warning in the greeting
+slot, leaving the form unchanged. Its flow covers both success and validation.
 Todos lives in `src/todos.rs`; `src/lib.rs` assembles the shared preview router. Source text scales to fit the code panel. Switching tabs keeps the
 existing DOM, including unfinished edits.
 
@@ -76,7 +78,9 @@ is 450 ms.
 Each action first visits the UI function containing its `hx-action`, then
 highlights the action builder and field bindings together. Toggle, Edit, and
 Cancel bind their ID through `.id(todo.id)` rather than `FIELD`. The walkthrough
-then visits the handler and response expressions, including error branches.
+then highlights the handler's action type and visits the response expressions,
+including error branches. Each action also has a skipped step linking to its
+struct declaration through a bookmark.
 Rust has already produced the response; the walkthrough controls when its
 fragments reach the UI, not when the server executes.
 
@@ -84,7 +88,8 @@ The right side of the tabs row has an **Animate** checkbox for the active
 example, enabled by default. Each tab keeps its own setting. Uncheck it
 to deliver the whole response and immediately mark all selected code ranges and
 UI in the final pale color, then scroll instantly to the last selected step
-with a `button`. Without a bookmarked step, the scroll position stays unchanged.
+with a `button` and without `skip: true`. Without such a step, the scroll
+position stays unchanged.
 There are no intermediate scrolls, pauses, or draw/fade animations. Branch
 selection and `highlight: false` still apply; bookmarks navigate instantly.
 
@@ -125,6 +130,9 @@ ranges and arrays of separate spans also work. Update them when Rust lines move.
 The step's bookmark uses the same mode.
 `highlight: false` skips marking, not swaps, without clearing earlier marks.
 `duration` overrides the pause after that step; zero removes the pause.
+`skip: true` keeps the step out of playback in both modes: no scrolling,
+marks, or pause. Its `button` still appears after completion; any tasks not
+already delivered by other steps are flushed at the end.
 `button` supplies the bookmark label. There are no positional defaults,
 inherited function bounds, or implicit UI targets.
 
@@ -137,9 +145,10 @@ after its code highlight. Without `target`, a step only visits the source.
 
 ```ts
 [
+  { range: '72:8-72:14', skip: true, button: 'AddTodo' },
   { range: '354:4-354:16', to: 'top', highlight: false, button: 'add_todo_form()' },
   { range: ['356:25-356:41', '357:25-357:44'], duration: 1000 }, // action + field
-  { range: '77:10-77:12', to: 'top', highlight: false, button: 'add()' },
+  { range: '77:20-77:26', to: 'top', button: 'add()' },
   { range: '89:9-89:23', target: '#add-todo-form input[name="title"]' },
 ]
 ```

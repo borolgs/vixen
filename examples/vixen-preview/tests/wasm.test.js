@@ -41,6 +41,17 @@ test('Hello escapes names and preserves Unicode', async () => {
   expect(html).not.toContain('<b>');
 });
 
+test.each(['', '   ', '\t\n', '\u00a0\u2003'])('Hello rejects blank names (%j) with a targeted warning', async name => {
+  const response = await fetch('/__axum__/hello/greet', { method: 'POST', body: new URLSearchParams({ name }) });
+  const html = await response.text();
+  expect(response.status).toBe(422);
+  expect(html).toContain('id="greeting"');
+  expect(html).toContain('role="alert"');
+  expect(html).toContain('A name is required.');
+  expect(html).not.toContain('Hello,');
+  expect(html).not.toContain('id="form"');
+});
+
 test('invalid Hello requests remain HTTP responses, not transport exceptions', async () => {
   const response = await fetch('/__axum__/hello/greet', { method: 'POST', body: new URLSearchParams() });
   expect(response.status).toBe(422);

@@ -23,6 +23,7 @@ async page => {
     document.addEventListener('htmx:before:swap', event => {
       if (!greet(event.detail.ctx)) return;
       window.helloCheck.received++;
+      window.helloCheck.status = event.detail.ctx.response.status;
       window.helloCheck.started = performance.now();
     }, true);
     document.addEventListener('htmx:finally:request', event => {
@@ -40,7 +41,7 @@ async page => {
   });
   const greet = async name => {
     await hello.getByRole('textbox', { name: 'Your name' }).fill(name);
-    await hello.getByRole('button', { name: 'Greet', exact: true }).click();
+    await hello.locator('.preview-demo').getByRole('button', { name: 'Greet', exact: true }).click();
   };
   const done = count => page.waitForFunction(count => window.helloCheck.done === count, count);
   await greet('Ada');
@@ -57,7 +58,16 @@ async page => {
   }
   assert(await hello.locator('#greeting').innerText() === 'Hello, Ada!', 'Greeting must come from WASM');
   assert(await hello.getByRole('textbox', { name: 'Your name' }).inputValue() === '', 'The returned form must reset');
-  assert(await hello.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'form(),greet()'), 'Hello must have common source bookmarks');
+  assert(await hello.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'Greet,form(),greet()'), 'Hello must include its skipped action bookmark');
+  assert(await hello.locator('.sh__line').nth(52).locator('.flow-mark').allTextContents().then(marks => marks.join(',') === 'Greet'), 'The handler step must highlight its action type');
+  assert(await hello.locator('.sh__line').nth(48).locator('.flow-mark').count() === 0, 'The skipped action declaration must not be highlighted');
+  await hello.locator('.flow-bookmarks').getByRole('button', { name: 'Greet', exact: true }).click();
+  assert(await hello.locator('.preview-source').evaluate(source => {
+    const line = source.querySelectorAll('.sh__line')[48].getBoundingClientRect();
+    return line.top >= source.querySelector('.preview-code-header').getBoundingClientRect().bottom
+      && line.bottom <= source.getBoundingClientRect().bottom;
+  }), 'The Greet bookmark must navigate to its declaration');
+  assert(await page.evaluate(() => window.helloCheck.requests) === 1, 'The Greet bookmark must not submit the form');
   assert(await page.locator('[data-preview-example="todos"] .flow-mark').count() === 0, 'Hello must not mark Todos');
 
   await animation.uncheck();
@@ -72,7 +82,7 @@ async page => {
     scroll: example.querySelector('.preview-source').scrollTop,
   }));
   assert(instant.elapsed < 500 && instant.allSoft && instant.sourceIntact && instant.noteIntact, JSON.stringify(instant));
-  assert(instant.marks.join(',') === ['Greet::action()', 'Greet::FIELD.name', 'greeting(&name)', 'form()'].join(','), 'Static Hello must mark request and response expressions');
+  assert(instant.marks.join(',') === ['Greet::action()', 'Greet::FIELD.name', 'Greet', 'greeting(&name)', 'form()'].join(','), 'Static Hello must mark request and response expressions');
   assert(await hello.locator('#greeting').innerText() === 'Hello, <b>Лиса 🦊</b>!', 'Names must remain escaped text');
   assert(await hello.locator('#greeting b').count() === 0, 'Names must not become HTML');
   await hello.getByRole('button', { name: 'greet()', exact: true }).click();
@@ -95,6 +105,22 @@ async page => {
   const mobileCode = await hello.locator('.preview-source').boundingBox();
   assert(mobileCode.y >= mobileDemo.y + mobileDemo.height - 1, 'Mobile must put source below the UI');
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Long greetings must not overflow mobile');
+  let completed = 4;
+  for (const animated of [true, false]) {
+    await animation.setChecked(animated);
+    await greet('   ');
+    await done(++completed);
+    assert(await page.evaluate(() => window.helloCheck.status) === 422, 'Blank names must return HTTP 422');
+    assert(await hello.getByRole('alert').innerText() === 'A name is required.', 'Validation must replace the greeting with a warning');
+    assert(await hello.getByRole('textbox', { name: 'Your name' }).inputValue() === '   ', 'Validation must leave the form unchanged');
+    assert(await hello.locator('.preview-source .flow-mark').allTextContents().then(marks => marks.join(',') === ['Greet::action()', 'Greet::FIELD.name', 'Greet', 'warning("A name is required.")'].join(',')), 'Validation must play only the error response branch');
+    assert(await animation.isEnabled() && await hello.locator('.preview-demo').evaluate(demo => !demo.inert), 'Validation must unlock the demo');
+    assert(await hello.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'Greet,form(),greet()'), 'Validation must keep the request bookmarks');
+    await greet('Recovered');
+    await done(++completed);
+    assert(await hello.locator('#greeting').innerText() === 'Hello, Recovered!', 'A valid name must replace the warning');
+    assert(await hello.getByRole('alert').count() === 0, 'Recovery must remove the alert');
+  }
   assert(errors.length === 0, JSON.stringify(errors));
   return { phased: phased.map(batch => batch.ids), static: instant, mobile: true, errors };
 }

@@ -35,6 +35,20 @@ test('scroll modes are preserved per step without adding an implicit mode', () =
   expect(result[2]).not.toHaveProperty('scroll');
 });
 
+test('skipped steps retain bookmarks and still follow response branch selection', () => {
+  const element = {};
+  const response = task('outerHTML', { '#count': element });
+  const steps = [
+    { range: '1', skip: true, button: 'Request' },
+    { range: '2', skip: true, button: 'Count', target: '#count' },
+    { range: '3', skip: true, button: 'Error', target: '#error' },
+  ];
+  expect(selectSteps(steps, [response])).toEqual([
+    { ...steps[0], elements: [], tasks: [] },
+    { ...steps[1], elements: [element], tasks: [response] },
+  ]);
+});
+
 test('only incoming response branches are selected, not stale UI', () => {
   const warning = {};
   const response = task('outerHTML', { '#message[role="alert"]': warning }, ['#message[role="status"]']);
@@ -127,7 +141,7 @@ test('sequential delivery waits for each native swap before advancing', async ()
   expect(batches).toEqual([[first], [last]]);
 });
 
-test('every other action starts with its UI function and request bindings on every status', async () => {
+test('every action keeps a struct bookmark and highlights its handler type on every status', async () => {
   const source = (await Bun.file(new URL('../src/todos.rs', import.meta.url)).text()).split('\n');
   const extract = spec => {
     const { start, end, from, to } = parseRange(spec, source);
@@ -136,28 +150,38 @@ test('every other action starts with its UI function and request bindings on eve
       .join('\n').replace(/\s+/g, ' ');
   };
   const expected = {
-    search: ['search_form', [
+    add: ['AddTodo', 'add_todo_form', ['AddTodo::action()', 'AddTodo::FIELD.title']],
+    search: ['SearchTodos', 'search_form', [
       'SearchTodos::action() .hx() .trigger("input delay:200ms, submit") .sync(SyncStrategy::Replace)',
       'SearchTodos::FIELD.q', 'SearchTodos::FIELD.filter',
     ]],
-    toggle: ['todo_item', ['ToggleTodo::action().id(todo.id)']],
-    edit: ['todo_item', ['EditTodo::action().id(todo.id)']],
-    save: ['todo_item_edit_form', [
+    toggle: ['ToggleTodo', 'todo_item', ['ToggleTodo::action().id(todo.id)']],
+    edit: ['EditTodo', 'todo_item', ['EditTodo::action().id(todo.id)']],
+    save: ['SaveTodo', 'todo_item_edit_form', [
       'SaveTodo::action().id(todo.id)', 'SaveTodo::FIELD.done',
       'SaveTodo::FIELD.title', 'SaveTodo::FIELD.priority',
     ]],
-    cancel: ['todo_item_edit_form', ['CancelEdit::action().id(todo.id)']],
+    cancel: ['CancelEdit', 'todo_item_edit_form', ['CancelEdit::action().id(todo.id)']],
   };
-  for (const [action, [ui, bindings]] of Object.entries(expected)) {
+  for (const [action, [type, ui, bindings]] of Object.entries(expected)) {
     for (const steps of Object.values(scenarios[`/todos/${action}`])) {
-      expect(extract(steps[0].range)).toBe(ui);
-      expect(steps[0]).toMatchObject({ to: 'top', highlight: false, button: `${ui}()` });
-      expect(steps[0].scroll ?? 'instant').toBe('instant');
-      expect([steps[1].range].flat().map(extract)).toEqual(bindings);
-      expect(steps[1].duration).toBe(1000);
-      expect(steps[0]).not.toHaveProperty('target');
-      expect(steps[1]).not.toHaveProperty('target');
-      expect(extract(steps[2].range)).toBe(action);
+      const [bookmark, view, request, handler] = steps;
+      expect(extract(bookmark.range)).toBe(type);
+      expect(bookmark).toMatchObject({ skip: true, button: type });
+      expect(source[parseRange(bookmark.range, source).start - 1]).toContain(`struct ${type}`);
+      expect(extract(view.range)).toBe(ui);
+      expect(view).toMatchObject({ to: 'top', highlight: false, button: `${ui}()` });
+      expect(view.scroll ?? 'instant').toBe('instant');
+      expect([request.range].flat().map(extract)).toEqual(bindings);
+      expect(request.duration).toBe(1000);
+      expect(extract(handler.range)).toBe(type);
+      expect(handler).toMatchObject({ to: 'top', button: `${action}()` });
+      expect(handler.highlight).not.toBe(false);
+      expect(handler.skip).toBeUndefined();
+      const { start, from } = parseRange(handler.range, source);
+      expect(source[start - 1]).toContain(`fn ${action}(`);
+      expect(source[start - 1].slice(0, from)).toEndWith(': ');
+      for (const step of [bookmark, view, request, handler]) expect(step).not.toHaveProperty('target');
     }
   }
 });
@@ -171,13 +195,25 @@ test('Hello narrates its real request bindings and both response fragments', asy
     return source[start - 1].slice(from, to);
   };
   expect(steps.flatMap(step => [step.range].flat().map(extract))).toEqual([
-    'form', 'Greet::action()', 'Greet::FIELD.name', 'greet', 'greeting(&name)', 'form()',
+    'Greet', 'form', 'Greet::action()', 'Greet::FIELD.name', 'Greet', 'greeting(&name)', 'form()',
   ]);
-  expect(steps.filter(step => step.button).map(step => step.button)).toEqual(['form()', 'greet()']);
+  expect(steps[0]).toMatchObject({ skip: true, button: 'Greet' });
+  expect(steps[3]).toMatchObject({ range: '53:36-53:40', to: 'top', button: 'greet()' });
+  expect(steps[3].highlight).not.toBe(false);
+  expect(steps[3].skip).toBeUndefined();
+  expect(steps.filter(step => step.button).map(step => step.button)).toEqual(['Greet', 'form()', 'greet()']);
   const greeting = task('outerHTML', { '#greeting': {} });
   const form = task('outerHTML', { '#form': {} });
   expect(selectSteps(steps, [greeting, form]).map(step => step.tasks)).toEqual([
-    [], [], [], [greeting], [form],
+    [], [], [], [], [greeting], [form],
+  ]);
+  const invalid = hello['/hello/greet'][422];
+  expect(invalid.slice(0, 4)).toEqual(steps.slice(0, 4));
+  expect(invalid.flatMap(step => [step.range].flat().map(extract))).toEqual([
+    'Greet', 'form', 'Greet::action()', 'Greet::FIELD.name', 'Greet', 'warning("A name is required.")',
+  ]);
+  expect(selectSteps(invalid, [greeting]).map(step => step.tasks)).toEqual([
+    [], [], [], [], [greeting],
   ]);
 });
 
@@ -212,9 +248,4 @@ test('scenario coordinates match the Rust source, including request bindings', a
     if (step.scroll !== undefined) expect(['instant', 'smooth']).toContain(step.scroll);
     expect(step.target).not.toBe(false);
   }
-  const bindings = scenarios['/todos/add'][200][1].range.map(spec => {
-    const { start, from, to } = parseRange(spec, source);
-    return source[start - 1].slice(from, to);
-  });
-  expect(bindings).toEqual(['AddTodo::action()', 'AddTodo::FIELD.title']);
 });

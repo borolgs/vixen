@@ -1,4 +1,4 @@
-use axum::{Router, response::IntoResponse};
+use axum::{Router, http::StatusCode, response::IntoResponse};
 use vixen::{
     RouterExt, action, fragment,
     maud::{Markup, html},
@@ -40,12 +40,24 @@ fn greeting(name: &str) -> Markup {
     }
 }
 
+#[fragment(GreetingId)]
+fn warning(message: &str) -> Markup {
+    html! { p id=(Self) role="alert" { (message) } }
+}
+
 #[action("/hello/greet")]
 pub struct Greet {
     name: String,
 }
 
 pub async fn greet(Greet { name }: Greet) -> impl IntoResponse {
+    if name.trim().is_empty() {
+        return partial! {
+            StatusCode::UNPROCESSABLE_ENTITY,
+            warning("A name is required."),
+        };
+    }
+
     tracing::info!("greeting");
     partial! {
         greeting(&name),

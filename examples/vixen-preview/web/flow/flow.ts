@@ -10,6 +10,7 @@ export interface Step {
   target?: string;
   swap?: string;
   duration?: number;
+  skip?: true;
   button?: string;
 }
 
@@ -226,6 +227,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       lines = [...code.querySelectorAll('.sh__line')];
       if (!animated) await apply();
       for (const frame of frames) {
+        if (frame.skip) continue;
         if (!current()) return;
         if (animated && !manualScroll) await scroll(frame.ranges, lines, frame.to === 'top', frame.scroll);
         if (!current()) return;
@@ -270,7 +272,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       });
       bookmarks.append(button);
     }
-    const last = frames.findLast(frame => frame.button);
+    const last = frames.findLast(frame => frame.button && !frame.skip);
     if (!animated && last) await scroll(last.ranges, lines, last.to === 'top', 'instant');
     if (animated) {
       await pause(rest);

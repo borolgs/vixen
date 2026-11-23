@@ -6,6 +6,17 @@ use vixen::{
 
 use super::{counter, hello, todos};
 
+fn demo_panel(content: Markup) -> Markup {
+    html! {
+        div class="preview-demo-panel" {
+            header class="preview-demo-header" {
+                span data-preview-status role="status" {}
+            }
+            div class="preview-demo" { (content) }
+        }
+    }
+}
+
 fn code_panel(title: &str, source: &str) -> Markup {
     let columns = source
         .lines()
@@ -59,15 +70,9 @@ pub async fn preview(
             aria-labelledby="preview-tab-hello"
             data-preview-example="hello" class="preview-layout"
         {
-            div class="preview-demo" {
-                (hello::view(hello::Index).await)
-            }
+            (demo_panel(hello::view(hello::Index).await))
             div class="preview-source" {
                 (code_panel("hello.rs", include_str!("hello.rs")))
-            }
-            footer class="preview-footer" {
-                span data-preview-status role="status" { "Ready" }
-                span { "Rust / WASM" }
             }
             p class="preview-error" data-preview-error role="alert" hidden {}
         }
@@ -76,15 +81,9 @@ pub async fn preview(
             aria-labelledby="preview-tab-counter"
             data-preview-example="counter" class="preview-layout" hidden
         {
-            div class="preview-demo" {
-                (counter::view(counter::Index, State(count)).await)
-            }
+            (demo_panel(counter::view(counter::Index, State(count)).await))
             div class="preview-source" {
                 (code_panel("counter.rs", include_str!("counter.rs")))
-            }
-            footer class="preview-footer" {
-                span data-preview-status role="status" { "Ready" }
-                span { "Rust / WASM · state resets on reload" }
             }
             p class="preview-error" data-preview-error role="alert" hidden {}
         }
@@ -93,15 +92,9 @@ pub async fn preview(
             aria-labelledby="preview-tab-todos"
             data-preview-example="todos" class="preview-layout" hidden
         {
-            div class="preview-demo" {
-                (todos::view(todos::Index).await)
-            }
+            (demo_panel(todos::view(todos::Index).await))
             div class="preview-source" {
                 (code_panel("todos.rs", include_str!("todos.rs")))
-            }
-            footer class="preview-footer" {
-                span data-preview-status role="status" { "Ready" }
-                span { "Rust / WASM · state resets on reload" }
             }
             p class="preview-error" data-preview-error role="alert" hidden {}
         }

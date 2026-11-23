@@ -180,7 +180,7 @@
 
 .vixen-preview .preview-more a {
   color: var(--vixen-link);
-  text-underline-offset: .2em;
+  text-underline-offset: 0.2em;
 }
 
 .vixen-preview .preview-more a:hover {

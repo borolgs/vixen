@@ -17,13 +17,22 @@ export function parseRange(spec: string, lines: readonly string[]): SourceRange 
   const last = Array.from(lines[end - 1] ?? '');
   const from = Number(match?.[2] ?? 1);
   const to = Number(match?.[4] ?? (!match?.[3] && match?.[2] ? match[2] : last.length));
-  if (!match || start < 1 || end < start || end > lines.length
-    || from < 1 || from > first.length || to < 1 || to > last.length
-    || (start === end && to < from)) {
+  if (
+    !match ||
+    start < 1 ||
+    end < start ||
+    end > lines.length ||
+    from < 1 ||
+    from > first.length ||
+    to < 1 ||
+    to > last.length ||
+    (start === end && to < from)
+  ) {
     throw new Error(`Invalid preview range "${spec}".`);
   }
   return {
-    start, end,
+    start,
+    end,
     from: first.slice(0, from - 1).join('').length,
     to: last.slice(0, to).join('').length,
   };

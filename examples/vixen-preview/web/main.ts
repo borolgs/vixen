@@ -35,7 +35,7 @@ function connect(preview: any, fetch: any, index: any) {
   for (const [i, tab] of tabs.entries()) {
     tab.addEventListener('click', () => selectTab(tab));
     tab.addEventListener('keydown', (event: any) => {
-      let next;
+      let next: number;
       switch (event.key) {
         case 'ArrowRight':
           next = (i + 1) % tabs.length;
@@ -61,17 +61,26 @@ function connect(preview: any, fetch: any, index: any) {
   const options = {
     reducedMotion,
     controls: preview.querySelector('.preview-tabs'),
-    swap: ctx => htmx.swap(ctx),
+    swap: (ctx) => htmx.swap(ctx),
   } satisfies FlowOptions;
   const flows = [
-    connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, { ...options, startLine: hello.startLine }),
-    connectFlow(preview.querySelector('[data-preview-example="counter"]'), counter.scenarios, { ...options, startLine: counter.startLine }),
-    connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, { ...options, startLine: todos.startLine }),
+    connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, {
+      ...options,
+      startLine: hello.startLine,
+    }),
+    connectFlow(preview.querySelector('[data-preview-example="counter"]'), counter.scenarios, {
+      ...options,
+      startLine: counter.startLine,
+    }),
+    connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, {
+      ...options,
+      startLine: todos.startLine,
+    }),
   ];
 
   // Fragment selectors are document-wide; keep swaps inside the requesting preview.
   preview.addEventListener('htmx:before:swap', (event: any) => {
-    console.log("htmx:before:swap", event.detail);
+    console.log('htmx:before:swap', event.detail);
     const { tasks } = event.detail;
     for (let i = tasks.length - 1; i >= 0; i--) {
       if (tasks[i].target && !preview.contains(tasks[i].target)) tasks.splice(i, 1);

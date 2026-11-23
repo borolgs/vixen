@@ -6,11 +6,11 @@ export const startLine = 17;
 // target/swap select returned fragments to explain; they never control swapping.
 const addRequest = [
   { range: '71:8-71:14', to: 'top', highlight: false, button: 'AddTodo', skip: true },
-  { range: '353:4-353:16', to: 'top', highlight: false, button: 'add_todo_form()' },
+  { range: '349:4-349:16', to: 'top', highlight: false, button: 'add_todo_form()' },
   {
     range: [
-      '355:25-355:41', // AddTodo::action()
-      '356:25-356:44', // AddTodo::FIELD.title
+      '351:25-351:41', // AddTodo::action()
+      '352:25-352:44', // AddTodo::FIELD.title
     ],
     duration: 1000,
   },
@@ -19,12 +19,12 @@ const addRequest = [
 
 const searchRequest = [
   { range: '48:8-48:18', to: 'top', highlight: false, button: 'SearchTodos', skip: true },
-  { range: '378:4-378:14', to: 'top', highlight: false, button: 'search_form()' },
+  { range: '374:4-374:14', to: 'top', highlight: false, button: 'search_form()' },
   {
     range: [
-      '379:18-382:36', // SearchTodos::action().hx().trigger(...).sync(...)
-      '386:39-386:58', // SearchTodos::FIELD.q
-      '392:50-392:74', // SearchTodos::FIELD.filter
+      '375:18-378:36', // SearchTodos::action().hx().trigger(...).sync(...)
+      '382:39-382:58', // SearchTodos::FIELD.q
+      '388:50-388:74', // SearchTodos::FIELD.filter
     ],
     duration: 1000,
   },
@@ -33,27 +33,27 @@ const searchRequest = [
 
 const toggleRequest = [
   { range: '102:8-102:17', to: 'top', highlight: false, button: 'ToggleTodo', skip: true },
-  { range: '319:4-319:12', to: 'top', highlight: false, button: 'todo_item()' },
-  { range: '324:32-324:63', duration: 1000 }, // ToggleTodo::action().id(todo.id)
+  { range: '315:4-315:12', to: 'top', highlight: false, button: 'todo_item()' },
+  { range: '320:32-320:63', duration: 1000 }, // ToggleTodo::action().id(todo.id)
   { range: '106:25-106:34', to: 'top', button: 'toggle()' },
 ] satisfies readonly Step[];
 
 const editRequest = [
   { range: '125:8-125:15', to: 'top', highlight: false, button: 'EditTodo', skip: true },
-  { range: '319:4-319:12', to: 'top', highlight: false, button: 'todo_item()' },
-  { range: '329:28-329:57', duration: 1000 }, // EditTodo::action().id(todo.id)
-  { range: '129:32-129:39', to: 'top', button: 'edit()' }
+  { range: '315:4-315:12', to: 'top', highlight: false, button: 'todo_item()' },
+  { range: '325:28-325:57', duration: 1000 }, // EditTodo::action().id(todo.id)
+  { range: '129:32-129:39', to: 'top', button: 'edit()' },
 ] satisfies readonly Step[];
 
 const saveRequest = [
   { range: '141:8-141:15', to: 'top', highlight: false, button: 'SaveTodo', skip: true },
-  { range: '335:4-335:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
+  { range: '331:4-331:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
   {
     range: [
-      '338:29-338:58', // SaveTodo::action().id(todo.id)
-      '339:45-339:64', // SaveTodo::FIELD.done
-      '341:29-341:49', // SaveTodo::FIELD.title
-      '343:34-343:57', // SaveTodo::FIELD.priority
+      '334:29-334:58', // SaveTodo::action().id(todo.id)
+      '335:45-335:64', // SaveTodo::FIELD.done
+      '337:29-337:49', // SaveTodo::FIELD.title
+      '339:34-339:57', // SaveTodo::FIELD.priority
     ],
     duration: 1000,
   },
@@ -62,8 +62,8 @@ const saveRequest = [
 
 const cancelRequest = [
   { range: '175:8-175:17', to: 'top', highlight: false, button: 'CancelEdit', skip: true },
-  { range: '335:4-335:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
-  { range: '346:32-346:63', duration: 1000 }, // CancelEdit::action().id(todo.id)
+  { range: '331:4-331:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
+  { range: '342:32-342:63', duration: 1000 }, // CancelEdit::action().id(todo.id)
   { range: '179:36-179:45', to: 'top', button: 'cancel()' },
 ] satisfies readonly Step[];
 
@@ -83,7 +83,8 @@ export const scenarios = {
       }, // add_todo_form(), todo_count(&state.todos),
       {
         range: ['91:17-91:71', '92:17-92:40'],
-        target: 'li, #message[role="status"]', swap: 'beforeend'
+        target: 'li, #message[role="status"]',
+        swap: 'beforeend',
       }, // Part::before_end(...), success(...)
       { range: '95:24-95:67', target: '#message[role="alert"]' }, // warning(...)
     ],

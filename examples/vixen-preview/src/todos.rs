@@ -222,9 +222,7 @@ impl TodoState {
     }
 
     fn update(&mut self, edit: SaveTodo) -> Option<Todo> {
-        let Some(todo) = self.todos.get_mut(edit.id) else {
-            return None;
-        };
+        let todo = self.todos.get_mut(edit.id)?;
 
         todo.done = edit.done;
         todo.title = edit.title;
@@ -234,9 +232,7 @@ impl TodoState {
     }
 
     fn toggle(&mut self, edit: ToggleTodo) -> Option<Todo> {
-        let Some(todo) = self.todos.get_mut(edit.id) else {
-            return None;
-        };
+        let todo = self.todos.get_mut(edit.id)?;
 
         todo.done = !todo.done;
 

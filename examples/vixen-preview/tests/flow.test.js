@@ -243,9 +243,13 @@ test('Counter narrates button parameters, state mutation, and both response frag
   ]);
 });
 
-test('examples start just after their imports using 1-based source lines', async () => {
+test('Hello starts at its form using 1-based source lines', async () => {
+  const source = (await Bun.file(new URL('../src/hello.rs', import.meta.url)).text()).split('\n');
+  expect(source.slice(helloStartLine - 1, helloStartLine + 2)).toEqual(['', '#[fragment]', 'fn form() -> Markup {']);
+});
+
+test('Counter and Todos start just after their imports using 1-based source lines', async () => {
   for (const [name, startLine, firstLine] of [
-    ['hello', helloStartLine, 'pub fn router() -> Router {'],
     ['counter', counterStartLine, 'pub fn router() -> Router<Counter> {'],
     ['todos', todosStartLine, 'pub fn router() -> Router<Todos> {'],
   ]) {

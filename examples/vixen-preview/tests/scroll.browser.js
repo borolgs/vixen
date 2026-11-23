@@ -62,15 +62,43 @@ async page => {
   assert(playback.cuts.every(cut => cut.header === playback.cuts[0].header), 'Cuts must not move the header');
   assert(await restored(), 'Playback must remove its temporary transform');
 
-  await reset();
-  await source.evaluate(source => { source.scrollTop -= 40; });
-  assert(await lineVisible(76), 'The handler should already be visible');
-  await bookmark('add()');
-  await settled();
-  assert(await page.evaluate(() => window.scrollCheck.cuts.map(cut => cut.duration).join(',') === '140'), 'Visible top alignment must settle when it moves the code');
-  await reset();
-  await bookmark('add()');
-  assert(await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'An already aligned step must not animate');
+  for (const offset of [-1, 0, 2.9, 3.1]) {
+    await reset();
+    const before = await source.evaluate((source, offset) => {
+      const lines = source.querySelectorAll('.sh__line');
+      const line = lines[75].getBoundingClientRect();
+      const lineHeight = lines[76].getBoundingClientRect().top - line.top;
+      const header = source.querySelector('.preview-code-header').getBoundingClientRect();
+      source.scrollTop += line.top - header.bottom - 28 - offset * lineHeight;
+      return source.scrollTop;
+    }, offset);
+    assert(await lineVisible(76), 'The handler must already be visible');
+    await bookmark('add()');
+    await settled();
+    assert(await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'Visible steps must not animate');
+    if (Math.abs(offset) <= 3) {
+      assert(await source.evaluate(source => source.scrollTop) === before
+        && await page.evaluate(() => window.scrollCheck.jumps.length === 0), `An offset of ${offset} lines must not scroll`);
+    } else {
+      assert(await page.evaluate(() => window.scrollCheck.jumps.length === 1 && window.scrollCheck.jumps[0].behavior === 'instant'), 'Visible steps outside the tolerance must align instantly');
+      assert(await source.evaluate(source => Math.abs(source.querySelectorAll('.sh__line')[75].getBoundingClientRect().top
+        - source.querySelector('.preview-code-header').getBoundingClientRect().bottom - 28) <= 1), 'Distant visible steps must align below the header');
+    }
+  }
+
+  for (const edge of ['top', 'bottom']) {
+    await reset();
+    await source.evaluate((source, edge) => {
+      const line = source.querySelectorAll('.sh__line')[75].getBoundingClientRect();
+      const header = source.querySelector('.preview-code-header').getBoundingClientRect();
+      const bottom = source.getBoundingClientRect().top + source.clientTop + source.clientHeight;
+      source.scrollTop += edge === 'top' ? line.top - header.bottom + line.height / 2 : line.bottom - bottom - line.height / 2;
+    }, edge);
+    assert(!await lineVisible(76), `The handler must be clipped at the ${edge} edge`);
+    await bookmark('add()');
+    await settled();
+    assert(await lineVisible(76) && await page.evaluate(() => window.scrollCheck.cuts.length === 1), `A range clipped at the ${edge} edge must still animate`);
+  }
 
   const before = await source.evaluate(source => source.scrollTop);
   await reset(true);

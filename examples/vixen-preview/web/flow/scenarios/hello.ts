@@ -1,12 +1,12 @@
 import type { Scenarios, Step } from '../flow.ts';
 
-export const startLine = 7;
+export const startLine = 24;
 
 const greetRequest = [
   { range: '49:12-49:16', to: 'top', highlight: false, button: 'Greet', skip: true },
   { range: '26:4-26:7', to: 'top', highlight: false, button: 'form()' },
   {
-    range: ['28:35-28:49', '29:25-29:41'],
+    range: ['28:25-28:40', '29:25-29:41'],
     duration: 1000,
   },
   { range: '53:36-53:40', to: 'top', button: 'greet()' },

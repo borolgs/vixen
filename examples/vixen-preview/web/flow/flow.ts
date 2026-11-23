@@ -138,7 +138,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   reducedMotion.addEventListener('change', () => { if (animated && reducedMotion.matches) stop(); });
-  const scroll = async (ranges: readonly Pick<SourceRange, 'start' | 'end'>[], lines: readonly Element[], top = false, behavior: Step['scroll'] = 'cut', inset = 28) => {
+  const scroll = async (ranges: readonly Pick<SourceRange, 'start' | 'end'>[], lines: readonly Element[], top = false, behavior: Step['scroll'] = 'cut', { inset = 28, toleranceLines = 3 } = {}) => {
     stopScroll();
     const first = lines[Math.min(...ranges.map(range => range.start)) - 1].getBoundingClientRect();
     const last = lines[Math.max(...ranges.map(range => range.end)) - 1].getBoundingClientRect();
@@ -147,8 +147,9 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
     const inView = first.top >= edge && last.bottom <= viewport.top + source.clientTop + source.clientHeight;
     if (!top && inView) return;
     const y = Math.max(0, Math.min(source.scrollTop + first.top - edge - inset, source.scrollHeight - source.clientHeight));
-    if (Math.abs(y - source.scrollTop) < 1) return;
-    if (!animated || !visible() || behavior === 'instant') {
+    const distance = Math.abs(y - source.scrollTop);
+    if (distance < 1 || (inView && distance <= parseFloat(getComputedStyle(code).lineHeight) * toleranceLines)) return;
+    if (inView || !animated || !visible() || behavior === 'instant') {
       source.scrollTo({ top: y, behavior: 'instant' });
       return;
     }
@@ -209,7 +210,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       console.warn('Invalid preview start line.', line);
       return;
     }
-    void scroll([{ start: line, end: line }], [...code.querySelectorAll('.sh__line')], true, 'instant', 0);
+    void scroll([{ start: line, end: line }], [...code.querySelectorAll('.sh__line')], true, 'instant', { inset: 0, toleranceLines: 0 });
   };
   const clearPresentation = () => {
     bookmarks.replaceChildren();

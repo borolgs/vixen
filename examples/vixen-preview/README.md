@@ -111,8 +111,9 @@ default is `true`.
 Source jumps use a short cut: the code scrolls instantly, then settles from
 a 32 px offset in the scroll direction over 140 ms. Text stays fully opaque,
 and the header stays fixed. Highlighting starts after the cut. Visible ranges stay still
-unless `to: 'top'` aligns them 28 px below the sticky header; that movement also
-uses a cut. An already aligned range doesn't animate. Manual input cancels the
+unless `to: 'top'` aligns them 28 px below the sticky header. A fully visible range
+within three line heights of that position stays put. Farther visible ranges
+align instantly, without a cut or smooth scrolling. Manual input cancels the
 cut and stops automatic following for the rest of the run. Steps with a `button` label get
 plain header bookmarks after completion. These only scroll, without repeating
 requests or swaps.
@@ -133,16 +134,19 @@ The player in `web/flow/flow.ts` receives them as an argument.
 Each module also exports `startLine`, a 1-based line number passed to
 `connectFlow` as an option. On the tab's first display and after switching back,
 the source scrolls there instantly to skip imports, without highlighting or
-sending a request. Without `startLine`, it returns to the top. `connectFlow`
+sending a request. Initial positioning and resets are exact, without the
+three-line tolerance used during playback. Without `startLine`, it returns to the top. `connectFlow`
 returns `reset()`, which the tab handler calls directly after switching panels.
 
 Only `range` is required. It uses inclusive, 1-based Unicode line/column
 coordinates in the corresponding Rust file; imports count toward line numbers. Whole-line
 ranges and arrays of separate spans also work. Update them when Rust lines move.
 
-`to: 'top'` forces alignment; otherwise only clipped ranges scroll.
+`to: 'top'` aligns with a three-line tolerance for fully visible ranges;
+otherwise only clipped ranges scroll.
 `scroll: 'cut'` is the default; `'instant'` skips the cut, and `'smooth'` animates
-the scroll itself. The step's bookmark uses the same mode. Disabling Animate or
+the scroll itself. Visible ranges outside the tolerance align instantly in every mode.
+The step's bookmark uses the same mode. Disabling Animate or
 preferring reduced motion makes bookmark navigation instant.
 `highlight: false` skips marking, not swaps, without clearing earlier marks.
 `duration` overrides the pause after that step; zero removes the pause.

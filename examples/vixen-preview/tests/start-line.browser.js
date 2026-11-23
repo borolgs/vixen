@@ -24,7 +24,7 @@ async page => {
     };
   });
   const results = [];
-  const starts = [['hello', 7], ['counter', 10], ['todos', 17]];
+  const starts = [['hello', 24], ['counter', 10], ['todos', 17]];
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto('http://127.0.0.1:4007/');
@@ -41,7 +41,7 @@ async page => {
       assert(position.top > 0 && Math.abs(position.gap) <= 1, `${name} must start at line ${line} below its header: ${JSON.stringify(position)}`);
       const calls = await page.evaluate(name => window.startLineCheck.scrolls.filter(call => call.example === name && !call.hidden), name);
       assert(calls.length === 1 && calls[0].behavior === 'instant' && Math.abs(calls[0].requested - calls[0].actual) <= 1, `${name} must scroll once without animation: ${JSON.stringify(calls)}`);
-      await source.evaluate(source => { source.scrollTop = 37; });
+      await source.evaluate(source => { source.scrollTop -= 20; });
     }
     for (const [name, line] of starts) {
       await page.getByRole('tab', { name, exact: true }).click();

@@ -25,7 +25,7 @@ pub async fn view(_: Index) -> Markup {
 #[fragment]
 fn form() -> Markup {
     html! {
-        form id=(Self) hx-action=(Greet::action()) {
+        form hx-action=(Greet::action()) id=(Self) {
             input name=(Greet::FIELD.name) placeholder="Your name"
                 aria-label="Your name" maxlength="80";
             button type="submit" { "Greet" }

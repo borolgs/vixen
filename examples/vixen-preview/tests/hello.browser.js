@@ -23,6 +23,7 @@ async page => {
     const first = source.querySelectorAll('.sh__line')[25].getBoundingClientRect();
     window.helloCheck.firstStepVisible = first.top >= source.querySelector('.preview-code-header').getBoundingClientRect().bottom
       && first.bottom <= source.getBoundingClientRect().bottom;
+    window.helloCheck.initialScroll = source.scrollTop;
     window.helloCheck.scrolls = [];
     window.helloCheck.cuts = [];
     const animate = listing.animate.bind(listing);
@@ -69,12 +70,14 @@ async page => {
   assert(await animation.isDisabled(), 'Hello must lock its animation mode');
   assert(await hello.locator('#greeting').innerText() === '', 'The response must wait for the code');
   assert(await hello.locator('#form input').inputValue() === 'Ada', 'The form must not reset ahead of its step');
+  assert(await hello.locator('.preview-source').evaluate(source => source.scrollTop === window.helloCheck.initialScroll
+    && window.helloCheck.scrolls.length === 0 && window.helloCheck.cuts.length === 0), 'Hello must leave its nearby visible form in place');
   await done(1);
   const firstJump = await page.evaluate(() => ({ visible: window.helloCheck.firstStepVisible, jump: window.helloCheck.scrolls[0], cut: window.helloCheck.cuts[0] }));
   assert(firstJump.visible, 'The first Hello step must already be visible for this regression');
   assert(firstJump.jump?.behavior === 'instant' && firstJump.jump.opacity === '1', `Hello must jump without fading: ${JSON.stringify(firstJump)}`);
   assert(firstJump.cut?.afterJump === 1 && firstJump.cut.duration === 140 && firstJump.cut.frames[0].transform === 'translateY(32px)'
-    && firstJump.cut.frames.every(frame => !('opacity' in frame)), `Hello must settle even when aligning a visible step: ${JSON.stringify(firstJump)}`);
+    && firstJump.cut.frames.every(frame => !('opacity' in frame)), `Hello must only scroll when reaching the offscreen handler: ${JSON.stringify(firstJump)}`);
   const phased = await page.evaluate(() => window.helloCheck.inserts);
   for (const [id, expression] of [['greeting', 'greeting(&name)'], ['form', 'form()']]) {
     const batch = phased.find(batch => batch.ids.includes(id));

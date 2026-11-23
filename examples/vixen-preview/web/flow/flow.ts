@@ -64,6 +64,23 @@ export function createDelivery(tasks: readonly SwapTask[], swap: (batch: readonl
   };
 }
 
+const animationControls = new WeakMap<HTMLElement, { input: HTMLInputElement; animatedRequests: Set<HtmxRequestCtx> }>();
+
+function animationControl(container: HTMLElement, animated: boolean) {
+  const existing = animationControls.get(container);
+  if (existing) return existing;
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = animated;
+  const label = document.createElement('label');
+  label.className = 'flow-animation';
+  label.append(input, 'Animate');
+  container.append(label);
+  const control = { input, animatedRequests: new Set<HtmxRequestCtx>() };
+  animationControls.set(container, control);
+  return control;
+}
+
 export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reducedMotion, swap, animated = true, startLine, controls, duration = 450, fade = 250, rest = 400, soften = 400 }: FlowOptions) {
   const source = example.querySelector<HTMLElement>('.preview-source');
   const code = source?.querySelector<HTMLElement>('[data-preview-code]');
@@ -77,16 +94,10 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
   const bookmarks = document.createElement('nav');
   bookmarks.className = 'flow-bookmarks';
   bookmarks.setAttribute('aria-label', 'Flow steps');
-  const animation = document.createElement('input');
-  animation.type = 'checkbox';
-  animation.checked = animated;
-  const label = document.createElement('label');
-  label.className = 'flow-animation';
-  label.hidden = example.hidden;
-  label.append(animation, 'Animate');
   header.classList.add('flow-header');
   header.append(bookmarks);
-  (controls ?? header).append(label);
+  const { input: animation, animatedRequests } = animationControl(controls ?? header, animated);
+  animated = animation.checked;
   example.classList.toggle('flow-static', !animated);
   example.style.setProperty('--flow-duration', `${duration}ms`);
   example.style.setProperty('--flow-fade', `${fade}ms`);
@@ -97,9 +108,9 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
   let scrolling: AbortController | undefined;
   let activeRequest: HtmxRequestCtx | undefined;
   let focused: HTMLElement | null = null;
+  let resetPending = false;
   animation.addEventListener('change', () => {
-    if (activeRequest) { animation.checked = animated; return; }
-    animated = animation.checked;
+    if (!activeRequest) animated = animation.checked;
     stopScroll();
   });
   const batches = new WeakMap<object, readonly SwapTask[]>();
@@ -186,23 +197,35 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
     });
   };
 
-  let initialLine = startLine;
   const scrollToStart = () => {
-    if (initialLine === undefined || example.hidden) return;
-    const line = initialLine;
-    initialLine = undefined;
+    if (example.hidden) return;
+    listing.scrollLeft = 0;
+    if (startLine === undefined) {
+      source.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+    const line = startLine;
     if (!Number.isInteger(line) || line < 1 || line > text.length) {
       console.warn('Invalid preview start line.', line);
       return;
     }
     void scroll([{ start: line, end: line }], [...code.querySelectorAll('.sh__line')], true, 'instant', 0);
   };
-  new MutationObserver(() => {
-    label.hidden = example.hidden;
-    if (example.hidden) stop();
-    else scrollToStart();
-  })
-    .observe(example, { attributes: true, attributeFilter: ['hidden'] });
+  const clearPresentation = () => {
+    bookmarks.replaceChildren();
+    code.innerHTML = pristine;
+    for (const element of demo.querySelectorAll('.flow-mark, .flow-soft, .flow-retiring')) {
+      element.classList.remove('flow-mark', 'flow-soft', 'flow-retiring');
+    }
+  };
+  const reset = () => {
+    stop();
+    resetPending = !!activeRequest;
+    focused = null;
+    manualScroll = false;
+    clearPresentation();
+    scrollToStart();
+  };
   scrollToStart();
 
   function mark(line: Element, from: number, to: number) {
@@ -328,16 +351,23 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
     if (activeRequest) { event.preventDefault(); return; }
     stop();
     activeRequest = event.detail.ctx;
+    resetPending = false;
+    animated = animation.checked;
+    if (animated) animatedRequests.add(event.detail.ctx);
     focused = document.activeElement instanceof HTMLElement && demo.contains(document.activeElement) ? document.activeElement : null;
     demo.inert = true;
-    animation.disabled = true;
+    animation.disabled = animatedRequests.size > 0;
     bookmarks.replaceChildren();
   });
   document.addEventListener('htmx:finally:request', event => {
     if (event.detail.ctx !== activeRequest) return;
+    animatedRequests.delete(event.detail.ctx);
     activeRequest = undefined;
+    animated = animation.checked;
     demo.inert = false;
-    animation.disabled = false;
+    animation.disabled = animatedRequests.size > 0;
+    if (resetPending) clearPresentation();
+    resetPending = false;
     if (focused?.isConnected && !example.hidden && !document.hidden && document.activeElement === document.body) {
       focused.focus({ preventScroll: true });
     }
@@ -352,6 +382,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       return;
     }
     if (ctx !== activeRequest || event.defaultPrevented || !ctx.response) return;
+    if (resetPending) return;
     // Native autofocus runs while inert; defer it until the demo unlocks.
     for (const task of tasks) focused = task.fragment.querySelector<HTMLElement>('[autofocus]') ?? focused;
     if (!visible()) return;
@@ -368,4 +399,5 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       console.warn('Could not select preview steps.', error);
     }
   });
+  return { reset };
 }

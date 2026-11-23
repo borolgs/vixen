@@ -19,6 +19,7 @@ function connect(preview: any, fetch: any, index: any) {
   }
 
   function selectTab(selected: any) {
+    if (selected.getAttribute('aria-selected') === 'true') return;
     // Show first: focus updates can flush layout while both panels would be hidden.
     panels[tabs.indexOf(selected)].hidden = false;
     for (const [i, tab] of tabs.entries()) {
@@ -27,6 +28,7 @@ function connect(preview: any, fetch: any, index: any) {
       tab.tabIndex = active ? 0 : -1;
       panels[i].hidden = !active;
     }
+    for (const flow of flows) flow.reset();
   }
 
   for (const [i, tab] of tabs.entries()) {
@@ -60,8 +62,10 @@ function connect(preview: any, fetch: any, index: any) {
     controls: preview.querySelector('.preview-tabs'),
     swap: ctx => htmx.swap(ctx),
   } satisfies FlowOptions;
-  connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, { ...options, startLine: hello.startLine });
-  connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, { ...options, startLine: todos.startLine });
+  const flows = [
+    connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, { ...options, startLine: hello.startLine }),
+    connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, { ...options, startLine: todos.startLine }),
+  ];
 
   // Fragment selectors are document-wide; keep swaps inside the requesting preview.
   preview.addEventListener('htmx:before:swap', (event: any) => {

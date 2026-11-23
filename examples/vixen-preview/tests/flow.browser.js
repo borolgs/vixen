@@ -81,6 +81,34 @@ async page => {
     };
   });
 
+  await fresh(false);
+  await page.evaluate(() => {
+    document.addEventListener('htmx:before:request', event => {
+      const fetch = event.detail.ctx.fetch;
+      event.detail.ctx.fetch = async (...args) => {
+        const response = await fetch(...args);
+        await new Promise(resolve => { window.flowCheck.release = resolve; });
+        return response;
+      };
+    }, { once: true });
+  });
+  await add('Static toggle');
+  await page.waitForFunction(() => !!window.flowCheck.release);
+  assert(await animation.isEnabled(), 'Static requests must not disable Animate');
+  assert(await animation.evaluate(input => getComputedStyle(input.closest('label')).opacity === '1'), 'Static requests must not dim Animate');
+  await animation.check();
+  await page.evaluate(() => window.flowCheck.release());
+  await done(1);
+  const changedWhilePending = await snapshot();
+  assert(changedWhilePending.elapsed < 500 && changedWhilePending.soft && !changedWhilePending.running, 'Changing Animate during a static request must only affect the next run');
+  assert(await todos.evaluate(example => example.classList.contains('flow-static')), 'The pending response must keep its original mode');
+  await add('Next run animates');
+  await page.waitForFunction(() => window.flowCheck.received === 2);
+  assert(await animation.isDisabled(), 'The next animated request must lock Animate');
+  assert(await todos.evaluate(example => !example.classList.contains('flow-static')), 'The next request must use the updated mode');
+  await page.getByRole('tab', { name: 'hello', exact: true }).click();
+  await done(2);
+
   await fresh(true);
   await add('Animated lock');
   await page.waitForFunction(() => window.flowCheck.received === 1);
@@ -203,7 +231,7 @@ async page => {
     return label.right <= tabs.right && tabs.right - label.right < 2 && label.top >= tabs.top && label.bottom <= tabs.bottom;
   }), 'Animate must fit at the right edge of the tabs row on mobile');
   await page.getByRole('tab', { name: 'hello', exact: true }).click();
-  assert(await animation.isVisible() && await animation.isChecked(), 'Hello must retain its own animation setting');
+  assert(await animation.isVisible() && !(await animation.isChecked()), 'Hello must use the shared animation setting');
   await page.getByRole('tab', { name: 'hello', exact: true }).press('ArrowRight');
   assert(await animation.isVisible() && !(await animation.isChecked()), 'Keyboard tab switching must preserve the toggle state');
   assert(errors.length === 0, JSON.stringify(errors));

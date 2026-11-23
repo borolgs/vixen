@@ -31,9 +31,12 @@
   Reject additional requests while locked; unlock at `htmx:finally:request`,
   including transport and playback errors. Keep the source and tabs interactive.
 - `Animate` sits at the right of `.preview-tabs`, outside the tablist's ARIA
-  group. Each tab retains its own setting, checked by default (`animated: true`).
+  group. Flows sharing a `controls` container share one checkbox and setting,
+  checked by default (`animated: true`).
   It changes the next run's mode without replaying marks or requests and is
-  disabled while a request is active. With it off, deliver the whole response,
+  disabled only while an animated request in that preview is active. Static
+  requests keep it enabled; each request keeps the mode it started with.
+  With it off, deliver the whole response,
   mark selected ranges/UI in their pale state, then scroll instantly to the
   last selected step with a `button` (no bookmark means no scrolling). Skip
   intermediate scrolling, pauses, and CSS animations.
@@ -52,6 +55,10 @@
   never sends requests or repeats swaps. A new request removes the old buttons.
   `highlight: false` skips marking; `duration` overrides the step pause,
   including zero. `connectFlow` defaults to a 450 ms step and 250 ms fade.
+- `selectTab` calls each flow's `reset()` directly after switching panels.
+  Reset stops playback, clears marks and bookmarks, and restores `startLine`
+  when visible. Keep the demo DOM and WASM state; late responses still swap
+  without restarting playback. Don't observe DOM mutations for tab changes.
 - An abort, hidden tab/document, or reduced motion stops animated playback.
   The `finally` block delivers remaining swaps, including after rendering errors.
   Validate before taking over; bad scenarios mustn't discard a response or turn

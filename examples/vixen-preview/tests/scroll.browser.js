@@ -103,6 +103,13 @@ async page => {
   await page.getByRole('tab', { name: 'hello', exact: true }).click();
   await page.getByRole('tab', { name: 'todos', exact: true }).click();
   assert(await restored(), 'Hiding must remove the temporary transform');
+  assert(await todos.locator('.flow-bookmarks button').count() === 0, 'Switching tabs must remove old bookmarks');
+  await reset();
+  await animation.uncheck();
+  await page.locator('#add-todo-form [name="title"]').fill('Bookmarks after reset');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.waitForFunction(() => window.scrollCheck.done === 2);
+  await animation.check();
 
   await reset(true);
   await source.evaluate(source => { source.scrollTop = 0; });

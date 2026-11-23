@@ -43,7 +43,8 @@ Hello's form, explanatory text, and greeting response live in `src/hello.rs`.
 Blank or whitespace-only names return HTTP 422 with a warning in the greeting
 slot, leaving the form unchanged. Its flow covers both success and validation.
 Todos lives in `src/todos.rs`; `src/lib.rs` assembles the shared preview router. Source text scales to fit the code panel. Switching tabs keeps the
-existing DOM, including unfinished edits.
+demo DOM, including unfinished edits and Rust state. It resets the flow's
+marks, bookmarks, and source scrolling.
 
 Each mounted preview owns a WASM `PreviewApp` with one `axum::Router`.
 Requests clone that router, sharing its `axum::State` rather than rebuilding
@@ -84,8 +85,8 @@ struct declaration through a bookmark.
 Rust has already produced the response; the walkthrough controls when its
 fragments reach the UI, not when the server executes.
 
-The right side of the tabs row has an **Animate** checkbox for the active
-example, enabled by default. Each tab keeps its own setting. Uncheck it
+The right side of the tabs row has one **Animate** checkbox shared by all
+examples in that preview, enabled by default. Uncheck it
 to deliver the whole response and immediately mark all selected code ranges and
 UI in the final pale color, then scroll instantly to the last selected step
 with a `button` and without `skip: true`. Without such a step, the scroll
@@ -94,8 +95,11 @@ There are no intermediate scrolls, pauses, or draw/fade animations. Branch
 selection and `highlight: false` still apply; bookmarks navigate instantly.
 
 The checkbox changes the next run, without replaying requests or marks. It's
-disabled while a request is active. `connectFlow`'s `animated` option sets its
-initial state; the default is `true`.
+disabled only while an animated request in that preview is active. During a
+static request it stays enabled, without dimming; changing it applies to the
+next request. Flows sharing a `controls` container share the checkbox. The
+first `connectFlow` call's `animated` option sets its initial state; the
+default is `true`.
 
 Source jumps use a short cut: the code scrolls instantly, then settles from
 a 32 px offset in the scroll direction over 140 ms. Text stays fully opaque,
@@ -120,9 +124,10 @@ are keyed by pathname and HTTP status.
 The player in `web/flow/flow.ts` receives them as an argument.
 
 Each module also exports `startLine`, a 1-based line number passed to
-`connectFlow` as an option. On the tab's first display, the source scrolls there
-instantly to skip imports, without highlighting or sending a request. Switching
-back preserves your position. Omit `startLine` to leave the initial scroll unchanged.
+`connectFlow` as an option. On the tab's first display and after switching back,
+the source scrolls there instantly to skip imports, without highlighting or
+sending a request. Without `startLine`, it returns to the top. `connectFlow`
+returns `reset()`, which the tab handler calls directly after switching panels.
 
 Only `range` is required. It uses inclusive, 1-based Unicode line/column
 coordinates in the corresponding Rust file; imports count toward line numbers. Whole-line
@@ -180,6 +185,7 @@ NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/flow.browse
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/hello.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/scroll.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/start-line.browser.js)"
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/tabs.browser.js)"
 playwright-cli -s=flow close
 ```
 

@@ -224,9 +224,9 @@ test('examples start just after their imports using 1-based source lines', async
     ['todos', todosStartLine, 'pub fn router() -> Router<Todos> {'],
   ]) {
     const source = (await Bun.file(new URL(`../src/${name}.rs`, import.meta.url)).text()).split('\n');
-    expect(source[startLine - 1]).toBe(firstLine);
-    expect(source[startLine - 2]).toBe('');
-    expect(source[startLine - 3]).toBe('};');
+    expect(source[startLine]).toBe(firstLine);
+    expect(source[startLine - 1]).toBe('');
+    expect(source[startLine - 2]).toBe('};');
   }
 });
 

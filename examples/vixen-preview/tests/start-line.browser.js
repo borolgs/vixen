@@ -24,12 +24,13 @@ async page => {
     };
   });
   const results = [];
+  const starts = [['hello', 7], ['todos', 17]];
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto('http://127.0.0.1:4007/');
     await page.getByRole('tab', { name: 'hello', exact: true }).waitFor();
     assert(await page.evaluate(() => !window.startLineCheck.scrolls.some(call => call.example === 'todos')), 'Hidden Todos must wait for its first display');
-    for (const [name, line] of [['hello', 8], ['todos', 18]]) {
+    for (const [name, line] of starts) {
       await page.getByRole('tab', { name, exact: true }).click();
       const source = page.locator(`[data-preview-example="${name}"] .preview-source`);
       const position = await source.evaluate((source, line) => {
@@ -42,9 +43,12 @@ async page => {
       assert(calls.length === 1 && calls[0].behavior === 'instant' && Math.abs(calls[0].requested - calls[0].actual) <= 1, `${name} must scroll once without animation: ${JSON.stringify(calls)}`);
       await source.evaluate(source => { source.scrollTop = 37; });
     }
-    for (const name of ['hello', 'todos']) {
+    for (const [name, line] of starts) {
       await page.getByRole('tab', { name, exact: true }).click();
-      assert(await page.locator(`[data-preview-example="${name}"] .preview-source`).evaluate(source => source.scrollTop === 37), `${name} must retain manual scrolling when revisited`);
+      assert(await page.locator(`[data-preview-example="${name}"] .preview-source`).evaluate((source, line) => {
+        const first = source.querySelectorAll('.sh__line')[line - 1].getBoundingClientRect();
+        return Math.abs(first.top - source.querySelector('.preview-code-header').getBoundingClientRect().bottom) <= 1;
+      }, line), `${name} must return to its starting line when revisited`);
     }
     assert(await page.locator('.flow-mark, .flow-bookmarks button').count() === 0, 'Initial scrolling must not create marks or bookmarks');
     assert(await page.evaluate(() => window.startLineCheck.requests === 0), 'Initial scrolling must not send a request');

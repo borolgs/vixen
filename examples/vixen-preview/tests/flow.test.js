@@ -164,7 +164,7 @@ test('every other action starts with its UI function and request bindings on eve
 
 test('Hello narrates its real request bindings and both response fragments', async () => {
   const source = (await Bun.file(new URL('../src/hello.rs', import.meta.url)).text()).split('\n');
-  const steps = hello['/greet'][200];
+  const steps = hello['/hello/greet'][200];
   const extract = spec => {
     const { start, end, from, to } = parseRange(spec, source);
     expect(start).toBe(end);
@@ -183,7 +183,7 @@ test('Hello narrates its real request bindings and both response fragments', asy
 
 test('examples start just after their imports using 1-based source lines', async () => {
   for (const [name, startLine, firstLine] of [
-    ['hello', helloStartLine, '#[action("/greet")]'],
+    ['hello', helloStartLine, 'pub fn router() -> Router {'],
     ['todos', todosStartLine, 'pub fn router() -> Router<Todos> {'],
   ]) {
     const source = (await Bun.file(new URL(`../src/${name}.rs`, import.meta.url)).text()).split('\n');

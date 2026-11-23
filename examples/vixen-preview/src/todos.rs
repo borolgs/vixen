@@ -1,16 +1,23 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use axum::{Router, extract::State, http::StatusCode};
+use axum::{
+    Router,
+    extract::{FromRequestParts, State},
+    http::StatusCode,
+};
 use serde::{Deserialize, Serialize};
 use strum::{AsRefStr, EnumIter, IntoEnumIterator};
+use tokio::sync::Mutex;
 use vixen::{
-    HxPartialResponse, Part, RouterExt, SyncStrategy, action, fragment, id,
+    HxPartialResponse, Part, ReqCtx, RouterExt, SyncStrategy, action, fragment,
+    id,
     maud::{Markup, html},
-    partial,
+    partial, route,
 };
 
 pub fn router() -> Router<Todos> {
     Router::new()
+        .view(view)
         .action(search)
         .action(add)
         .action(toggle)
@@ -19,7 +26,11 @@ pub fn router() -> Router<Todos> {
         .action(cancel)
 }
 
-pub fn view(state: &TodoState) -> Markup {
+#[route("/todos")]
+pub struct Index;
+
+pub async fn view(_: Index) -> Markup {
+    let state = ctx().todos.lock_owned().await;
     html! {
         h2 { "Todos" }
         div class="todo-status" {
@@ -49,11 +60,8 @@ impl SearchTodos {
     }
 }
 
-async fn search(
-    State(state): State<Todos>,
-    search: SearchTodos,
-) -> HxPartialResponse {
-    let mut state = state.lock().expect("todo state poisoned");
+async fn search(search: SearchTodos) -> HxPartialResponse {
+    let mut state = ctx().todos.lock_owned().await;
     state.search = search;
 
     partial!(todo_list(&state.todos, &state.search))
@@ -66,7 +74,7 @@ struct AddTodo {
     priority: Priority,
 }
 
-async fn add(State(state): State<Todos>, todo: AddTodo) -> HxPartialResponse {
+async fn add(todo: AddTodo) -> HxPartialResponse {
     if todo.title.trim().is_empty() {
         return partial! {
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -74,7 +82,7 @@ async fn add(State(state): State<Todos>, todo: AddTodo) -> HxPartialResponse {
         };
     }
 
-    let state = &mut *state.lock().expect("todo state poisoned");
+    let mut state = ctx().todos.lock_owned().await;
     let created = state.create(todo);
 
     partial! {
@@ -96,11 +104,8 @@ struct ToggleTodo {
     id: usize,
 }
 
-async fn toggle(
-    State(state): State<Todos>,
-    toggle: ToggleTodo,
-) -> HxPartialResponse {
-    let mut state = state.lock().expect("todo state poisoned");
+async fn toggle(toggle: ToggleTodo) -> HxPartialResponse {
+    let mut state = ctx().todos.lock_owned().await;
 
     let Some(todo) = state.toggle(toggle) else {
         return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
@@ -122,11 +127,8 @@ struct EditTodo {
     id: usize,
 }
 
-async fn edit(
-    State(state): State<Todos>,
-    EditTodo { id }: EditTodo,
-) -> HxPartialResponse {
-    let state = state.lock().expect("todo state poisoned");
+async fn edit(EditTodo { id }: EditTodo) -> HxPartialResponse {
+    let state = ctx().todos.lock_owned().await;
     let todos = &state.todos;
     let Some(todo) = todos.get(id) else {
         return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
@@ -145,7 +147,7 @@ struct SaveTodo {
     priority: Priority,
 }
 
-async fn save(State(state): State<Todos>, save: SaveTodo) -> HxPartialResponse {
+async fn save(save: SaveTodo) -> HxPartialResponse {
     if save.title.trim().is_empty() {
         return partial! {
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -153,7 +155,7 @@ async fn save(State(state): State<Todos>, save: SaveTodo) -> HxPartialResponse {
         };
     }
 
-    let mut state = state.lock().expect("todo state poisoned");
+    let mut state = ctx().todos.lock_owned().await;
     let Some(todo) = state.update(save) else {
         return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
     };
@@ -175,17 +177,27 @@ struct CancelEdit {
     id: usize,
 }
 
-async fn cancel(
-    State(state): State<Todos>,
-    CancelEdit { id }: CancelEdit,
-) -> HxPartialResponse {
-    let state = state.lock().expect("todo state poisoned");
+async fn cancel(CancelEdit { id }: CancelEdit) -> HxPartialResponse {
+    let state = ctx().todos.lock_owned().await;
     let todos = &state.todos;
     let Some(todo) = todos.get(id) else {
         return partial!(StatusCode::NOT_FOUND, warning("That todo is gone."),);
     };
 
     partial!(todo_item(todo))
+}
+
+// state
+
+#[derive(Clone, FromRequestParts, ReqCtx)]
+#[from_request(state(Todos))]
+pub(super) struct Ctx {
+    #[from_request(via(State))]
+    pub todos: Todos,
+}
+
+fn ctx() -> Ctx {
+    Ctx::current()
 }
 
 // model

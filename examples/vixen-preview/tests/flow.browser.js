@@ -88,7 +88,7 @@ async page => {
   await done(1);
   const instant = await snapshot();
   assert(instant.elapsed < 500 && instant.soft && !instant.running && instant.scroll !== 123 && instant.unlocked && instant.sourceIntact, JSON.stringify(instant));
-  assert(await lineVisible(69), 'Static mode must scroll to the last selected step with a button');
+  assert(await lineVisible(77), 'Static mode must scroll to the last selected step with a button');
   await page.getByRole('button', { name: 'add()', exact: true }).click();
   assert(await todos.locator('.preview-source').evaluate(source => source.scrollTop) === instant.scroll, 'Static scrolling must land on the last bookmark');
   assert(instant.items === 4 && instant.count === '3 left' && instant.message === 'Todo created.', 'Static mode must deliver the whole response');
@@ -112,7 +112,7 @@ async page => {
   await done(4);
   const validation = await snapshot();
   assert(validation.message === 'A todo needs a title.' && validation.soft && !validation.inert && !validation.running && validation.elapsed < 500, 'Static validation response must mark and unlock');
-  assert(await lineVisible(69), 'Static errors must also scroll to the last step with a button');
+  assert(await lineVisible(77), 'Static errors must also scroll to the last step with a button');
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await done(5);
   assert(await page.getByRole('textbox', { name: 'Todo title', exact: true }).evaluate(input => input === document.activeElement), 'Returned autofocus must wait until unlocking');
@@ -152,7 +152,7 @@ async page => {
   await fresh(false);
   await add('Mobile flow');
   await done(1);
-  assert(await lineVisible(69), 'Last bookmarked step must remain visible below the wrapping mobile header');
+  assert(await lineVisible(77), 'Last bookmarked step must remain visible below the wrapping mobile header');
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'The toggle and bookmarks must not overflow on mobile');
   assert(await animation.isEnabled(), 'Toggle must unlock after completion');
   assert(await animation.evaluate(input => {

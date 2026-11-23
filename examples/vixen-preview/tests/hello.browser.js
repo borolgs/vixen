@@ -18,7 +18,7 @@ async page => {
   await page.evaluate(() => {
     const hello = document.querySelector('[data-preview-example="hello"]');
     window.helloCheck = { requests: 0, received: 0, done: 0, started: 0, elapsed: 0, inserts: [], source: hello.querySelector('[data-preview-code]').textContent, note: hello.querySelector('.preview-demo > p') };
-    const greet = ctx => ctx.request && new URL(ctx.request.action, location.href).pathname === '/greet';
+    const greet = ctx => ctx.request && new URL(ctx.request.action, location.href).pathname === '/hello/greet';
     document.addEventListener('htmx:before:request', event => { if (greet(event.detail.ctx)) window.helloCheck.requests++; });
     document.addEventListener('htmx:before:swap', event => {
       if (!greet(event.detail.ctx)) return;
@@ -72,7 +72,7 @@ async page => {
     scroll: example.querySelector('.preview-source').scrollTop,
   }));
   assert(instant.elapsed < 500 && instant.allSoft && instant.sourceIntact && instant.noteIntact, JSON.stringify(instant));
-  assert(instant.marks.join(',') === ['greeting(&name)', 'form()', 'Greet::action()', 'Greet::FIELD.name'].join(','), 'Static Hello must mark request and response expressions');
+  assert(instant.marks.join(',') === ['Greet::action()', 'Greet::FIELD.name', 'greeting(&name)', 'form()'].join(','), 'Static Hello must mark request and response expressions');
   assert(await hello.locator('#greeting').innerText() === 'Hello, <b>Лиса 🦊</b>!', 'Names must remain escaped text');
   assert(await hello.locator('#greeting b').count() === 0, 'Names must not become HTML');
   await hello.getByRole('button', { name: 'greet()', exact: true }).click();

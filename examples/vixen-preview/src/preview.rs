@@ -1,4 +1,3 @@
-use axum::extract::State;
 use vixen::{
     maud::{Markup, html},
     route,
@@ -30,12 +29,7 @@ fn code_panel(title: &str, source: &str) -> Markup {
 #[route("/")]
 pub struct PreviewPath;
 
-pub async fn preview(
-    _: PreviewPath,
-    State(state): State<todos::Todos>,
-) -> Markup {
-    let state = state.lock().expect("todo state poisoned");
-
+pub async fn preview(_: PreviewPath) -> Markup {
     html! {
         div class="preview-tabs" {
             div class="preview-tab-list" role="tablist" aria-label="Examples" {
@@ -54,7 +48,7 @@ pub async fn preview(
             data-preview-example="hello" class="preview-layout"
         {
             div class="preview-demo" {
-                (hello::view())
+                (hello::view(hello::Index).await)
             }
             div class="preview-source" {
                 (code_panel("hello.rs", include_str!("hello.rs")))
@@ -71,7 +65,7 @@ pub async fn preview(
             data-preview-example="todos" class="preview-layout" hidden
         {
             div class="preview-demo" {
-                (todos::view(&state))
+                (todos::view(todos::Index).await)
             }
             div class="preview-source" {
                 (code_panel("todos.rs", include_str!("todos.rs")))
@@ -89,10 +83,10 @@ pub async fn preview(
 mod tests {
     use super::code_panel;
 
-    #[test]
-    fn todos_start_with_active_and_completed_samples() {
-        let state = super::todos::TodoState::default();
-        let markup = super::todos::view(&state).into_string();
+    #[tokio::test]
+    async fn todos_start_with_active_and_completed_samples() {
+        let markup =
+            super::todos::view(super::todos::Index).await.into_string();
 
         for (id, title) in [
             (0, "Buy milk"),
@@ -124,9 +118,10 @@ mod tests {
         assert!(!markup.contains("data-preview-full"));
     }
 
-    #[test]
-    fn hello_has_a_form_static_text_and_a_response_slot() {
-        let markup = super::hello::view().into_string();
+    #[tokio::test]
+    async fn hello_has_a_form_static_text_and_a_response_slot() {
+        let markup =
+            super::hello::view(super::hello::Index).await.into_string();
         let form = markup.find("id=\"form\"").expect("greeting form");
         let note = markup.find("Submit a name").expect("static explanation");
         let response = markup.find("id=\"greeting\"").expect("response slot");

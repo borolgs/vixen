@@ -23,7 +23,7 @@ test('fetch dispatches to the WASM router', async () => {
 });
 
 test('Hello returns the greeting and an empty form', async () => {
-  const response = await fetch('/__axum__/greet', { method: 'POST', body: new URLSearchParams({ name: 'Ada' }) });
+  const response = await fetch('/__axum__/hello/greet', { method: 'POST', body: new URLSearchParams({ name: 'Ada' }) });
   const html = await response.text();
   expect(response.status).toBe(200);
   expect(html).toContain('id="greeting"');
@@ -34,7 +34,7 @@ test('Hello returns the greeting and an empty form', async () => {
 });
 
 test('Hello escapes names and preserves Unicode', async () => {
-  const response = await fetch('/__axum__/greet', { method: 'POST', body: new URLSearchParams({ name: '<b>Лиса 🦊</b>' }) });
+  const response = await fetch('/__axum__/hello/greet', { method: 'POST', body: new URLSearchParams({ name: '<b>Лиса 🦊</b>' }) });
   const html = await response.text();
   expect(response.status).toBe(200);
   expect(html).toContain('&lt;b&gt;Лиса 🦊&lt;/b&gt;');
@@ -42,6 +42,6 @@ test('Hello escapes names and preserves Unicode', async () => {
 });
 
 test('invalid Hello requests remain HTTP responses, not transport exceptions', async () => {
-  const response = await fetch('/__axum__/greet', { method: 'POST', body: new URLSearchParams() });
+  const response = await fetch('/__axum__/hello/greet', { method: 'POST', body: new URLSearchParams() });
   expect(response.status).toBe(422);
 });

@@ -24,6 +24,8 @@ tower = { version = "0.5", default-features = false, features = ["util"] }
 tracing = "0.1.44"
 serde = { workspace = true }
 strum = { workspace = true, features = ["derive"] }
+# Async locks work with wasm-bindgen-futures; don't enable the workspace's full runtime.
+tokio = { version = "1.49.0", default-features = false, features = ["sync"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3"

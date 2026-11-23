@@ -29,7 +29,7 @@ async page => {
     await page.goto('http://127.0.0.1:4007/');
     await page.getByRole('tab', { name: 'hello', exact: true }).waitFor();
     assert(await page.evaluate(() => !window.startLineCheck.scrolls.some(call => call.example === 'todos')), 'Hidden Todos must wait for its first display');
-    for (const [name, line] of [['hello', 8], ['todos', 12]]) {
+    for (const [name, line] of [['hello', 8], ['todos', 18]]) {
       await page.getByRole('tab', { name, exact: true }).click();
       const source = page.locator(`[data-preview-example="${name}"] .preview-source`);
       const position = await source.evaluate((source, line) => {

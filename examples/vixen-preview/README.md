@@ -45,8 +45,12 @@ existing DOM, including unfinished edits.
 
 Each mounted preview owns a WASM `PreviewApp` with one `axum::Router`.
 Requests clone that router, sharing its `axum::State` rather than rebuilding
-the application. Todos live in an `Arc<Mutex<TodoState>>`; handlers hold the
-lock only while updating state and rendering, never across an `await`.
+the application. `Ctx::middleware` exposes that state through `ctx()` in todo
+handlers. `ReqCtx` uses Tokio's task-local scope without a Tokio runtime;
+`wasm-bindgen-futures` polls the request futures. Todos live in an
+`Arc<tokio::sync::Mutex<TodoState>>`. Handlers acquire the lock with
+`ctx().todos.lock_owned().await`, then update state and render without further
+awaits.
 New previews start with the standalone example's sample todos. Reloading the
 page restores those samples. Nothing uses localStorage.
 
@@ -133,10 +137,10 @@ after its code highlight. Without `target`, a step only visits the source.
 
 ```ts
 [
-  { range: '342:4-342:16', to: 'top', highlight: false, button: 'add_todo_form()' },
-  { range: ['344:25-344:41', '345:25-345:44'], duration: 1000 }, // action + field
-  { range: '69:10-69:12', to: 'top', highlight: false, button: 'add()' },
-  { range: '81:9-81:23', target: '#add-todo-form input[name="title"]' },
+  { range: '354:4-354:16', to: 'top', highlight: false, button: 'add_todo_form()' },
+  { range: ['356:25-356:41', '357:25-357:44'], duration: 1000 }, // action + field
+  { range: '77:10-77:12', to: 'top', highlight: false, button: 'add()' },
+  { range: '89:9-89:23', target: '#add-todo-form input[name="title"]' },
 ]
 ```
 

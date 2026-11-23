@@ -1,18 +1,18 @@
 import type { Scenarios } from '../flow.ts';
 
-export const startLine = 8;
+export const startLine = 7;
 
 export const scenarios = {
-  '/greet': {
+  '/hello/greet': {
     200: [
-      { range: '32:4-32:7', to: 'top', highlight: false, button: 'form()' },
+      { range: '26:4-26:7', to: 'top', highlight: false, button: 'form()' },
       {
-        range: ['34:35-34:49', '35:25-35:41'],
+        range: ['28:35-28:49', '29:25-29:41'],
         duration: 1000,
       },
-      { range: '13:14-13:18', to: 'top', highlight: false, button: 'greet()' },
-      { range: '16:9-16:23', target: '#greeting' },
-      { range: '17:9-17:14', target: '#form' },
+      { range: '48:14-48:18', to: 'top', highlight: false, button: 'greet()' },
+      { range: '51:9-51:23', target: '#greeting' },
+      { range: '52:9-52:14', target: '#form' },
     ],
   },
 } satisfies Scenarios;

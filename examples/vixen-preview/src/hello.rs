@@ -1,24 +1,18 @@
-use axum::response::IntoResponse;
+use axum::{Router, response::IntoResponse};
 use vixen::{
-    action, fragment,
+    RouterExt, action, fragment,
     maud::{Markup, html},
-    partial,
+    partial, route,
 };
 
-#[action("/greet")]
-pub struct Greet {
-    name: String,
+pub fn router() -> Router {
+    Router::new().view(view).action(greet)
 }
 
-pub async fn greet(Greet { name }: Greet) -> impl IntoResponse {
-    tracing::info!("greeting");
-    partial! {
-        greeting(&name),
-        form(),
-    }
-}
+#[route("/hello")]
+pub struct Index;
 
-pub fn view() -> Markup {
+pub async fn view(_: Index) -> Markup {
     html! {
         (form())
         p { "Submit a name to update the greeting below." }
@@ -43,5 +37,18 @@ fn form() -> Markup {
 fn greeting(name: &str) -> Markup {
     html! {
         p id=(Self) { "Hello, " strong { (name) } "!" }
+    }
+}
+
+#[action("/hello/greet")]
+pub struct Greet {
+    name: String,
+}
+
+pub async fn greet(Greet { name }: Greet) -> impl IntoResponse {
+    tracing::info!("greeting");
+    partial! {
+        greeting(&name),
+        form(),
     }
 }

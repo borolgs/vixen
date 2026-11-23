@@ -5,13 +5,19 @@ mod todos;
 #[cfg(target_arch = "wasm32")]
 mod browser;
 
-use axum::Router;
+use axum::{Router, middleware};
 use vixen::RouterExt;
 
 pub fn router() -> Router {
+    let state = todos::Todos::default();
+
     Router::new()
         .view(preview::preview)
-        .action(hello::greet)
         .merge(todos::router())
-        .with_state(todos::Todos::default())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            todos::Ctx::middleware,
+        ))
+        .with_state(state)
+        .merge(hello::router())
 }

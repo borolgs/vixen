@@ -5,7 +5,7 @@ import { parseRange, type SourceRange } from './ranges.ts';
 export interface Step {
   range: string | readonly string[];
   to?: 'top';
-  scroll?: 'instant' | 'smooth';
+  scroll?: 'cut' | 'instant' | 'smooth';
   highlight?: boolean;
   target?: string;
   swap?: string;
@@ -68,8 +68,9 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
   const source = example.querySelector<HTMLElement>('.preview-source');
   const code = source?.querySelector<HTMLElement>('[data-preview-code]');
   const header = source?.querySelector<HTMLElement>('.preview-code-header');
+  const listing = code?.closest('pre');
   const demo = example.querySelector<HTMLElement>('.preview-demo');
-  if (!source || !code || !header || !demo) throw new Error('Incomplete preview flow markup.');
+  if (!source || !code || !header || !listing || !demo) throw new Error('Incomplete preview flow markup.');
   const text = code.textContent.replace(/\r\n/g, '\n').split('\n');
   const pristine = highlightSource(text.join('\n'));
   code.innerHTML = pristine;
@@ -93,11 +94,13 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
 
   let manualScroll = false;
   let motion = new AbortController();
+  let scrolling: AbortController | undefined;
   let activeRequest: HtmxRequestCtx | undefined;
   let focused: HTMLElement | null = null;
   animation.addEventListener('change', () => {
     if (activeRequest) { animation.checked = animated; return; }
     animated = animation.checked;
+    stopScroll();
   });
   const batches = new WeakMap<object, readonly SwapTask[]>();
   const wait = (work: Promise<unknown>) => new Promise<void>(resolve => {
@@ -109,25 +112,56 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
   });
   const pause = (ms: number) => wait(new Promise<void>(resolve => setTimeout(resolve, ms)));
   const visible = () => !example.hidden && !document.hidden && (!animated || !reducedMotion.matches);
-  const stop = () => {
-    motion.abort();
+  const stopScroll = () => {
+    if (!scrolling) return;
+    scrolling.abort();
+    scrolling = undefined;
     source.scrollTo({ top: source.scrollTop, behavior: 'instant' });
   };
+  const stop = () => {
+    motion.abort();
+    stopScroll();
+  };
   for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
-    source.addEventListener(type, () => { manualScroll = true; }, { passive: true });
+    source.addEventListener(type, () => { manualScroll = true; stopScroll(); }, { passive: true });
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   reducedMotion.addEventListener('change', () => { if (animated && reducedMotion.matches) stop(); });
-  const scroll = async (ranges: readonly Pick<SourceRange, 'start' | 'end'>[], lines: readonly Element[], top = false, behavior: Step['scroll'] = 'instant', inset = 28) => {
+  const scroll = async (ranges: readonly Pick<SourceRange, 'start' | 'end'>[], lines: readonly Element[], top = false, behavior: Step['scroll'] = 'cut', inset = 28) => {
+    stopScroll();
     const first = lines[Math.min(...ranges.map(range => range.start)) - 1].getBoundingClientRect();
     const last = lines[Math.max(...ranges.map(range => range.end)) - 1].getBoundingClientRect();
     const viewport = source.getBoundingClientRect();
     const edge = Math.max(viewport.top + source.clientTop, header.getBoundingClientRect().bottom);
-    if (!top && first.top >= edge && last.bottom <= viewport.top + source.clientTop + source.clientHeight) return;
+    const inView = first.top >= edge && last.bottom <= viewport.top + source.clientTop + source.clientHeight;
+    if (!top && inView) return;
     const y = Math.max(0, Math.min(source.scrollTop + first.top - edge - inset, source.scrollHeight - source.clientHeight));
     if (Math.abs(y - source.scrollTop) < 1) return;
-    if (!animated || behavior === 'instant' || reducedMotion.matches) {
+    if (!animated || !visible() || behavior === 'instant') {
       source.scrollTo({ top: y, behavior: 'instant' });
+      return;
+    }
+    scrolling = new AbortController();
+    const { signal } = scrolling;
+    if (behavior === 'cut') {
+      const offset = Math.sign(y - source.scrollTop) * 32;
+      // Settle the new fragment without fading the text or moving the header.
+      source.scrollTo({ top: y, behavior: 'instant' });
+      const effect = listing.animate([
+        { transform: `translateY(${offset}px)` },
+        { transform: 'translateY(0)' },
+      ], { duration: 140, easing: 'ease-out', fill: 'forwards' });
+      const cancel = () => effect.cancel();
+      signal.addEventListener('abort', cancel, { once: true });
+      try {
+        await effect.finished;
+      } catch (error) {
+        if (!signal.aborted) throw error;
+      } finally {
+        signal.removeEventListener('abort', cancel);
+        effect.cancel();
+        if (scrolling?.signal === signal) scrolling = undefined;
+      }
       return;
     }
     await new Promise<void>(resolve => {
@@ -135,6 +169,8 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
         clearTimeout(timer);
         source.removeEventListener('scroll', moving);
         source.removeEventListener('scrollend', finish);
+        signal.removeEventListener('abort', finish);
+        if (scrolling?.signal === signal) scrolling = undefined;
         resolve();
       };
       const moving = () => {
@@ -145,6 +181,7 @@ export function connectFlow(example: HTMLElement, scenarios: Scenarios, { reduce
       let timer = setTimeout(finish, 150);
       source.addEventListener('scroll', moving, { passive: true });
       source.addEventListener('scrollend', finish, { once: true });
+      signal.addEventListener('abort', finish, { once: true });
       source.scrollTo({ top: y, behavior: 'smooth' });
     });
   };

@@ -47,6 +47,7 @@ async page => {
     await page.getByRole('button', { name: 'Add', exact: true }).click();
   };
   const done = count => page.waitForFunction(count => window.flowCheck.done === count, count);
+  const scrollSettled = () => page.waitForFunction(() => document.querySelector('[data-preview-example="todos"] pre').getAnimations().length === 0);
   const lineVisible = line => todos.locator('.preview-source').evaluate((source, number) => {
     const rect = source.querySelectorAll('.sh__line')[number - 1].getBoundingClientRect();
     const header = source.querySelector('.preview-code-header').getBoundingClientRect();
@@ -58,6 +59,7 @@ async page => {
     assert(await todos.locator('.sh__line').nth(declaration - 1).locator('.flow-mark').count() === 0, `${type}'s skipped declaration must not be highlighted`);
     const requests = await page.evaluate(() => window.flowCheck.requests);
     await todos.locator('.flow-bookmarks').getByRole('button', { name: type, exact: true }).click();
+    await scrollSettled();
     assert(await lineVisible(declaration), `${type}'s bookmark must navigate to its declaration`);
     assert(await page.evaluate(() => window.flowCheck.requests) === requests, `${type}'s bookmark must not replay requests`);
   };
@@ -101,6 +103,7 @@ async page => {
   assert(normal.scrolls.every(top => Math.abs(top - normal.skippedTop) > 1), 'Playback must not scroll to the skipped AddTodo step');
   assert(await todos.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'AddTodo,add_todo_form(),add()'), 'Skipped steps must keep their bookmark in scenario order');
   await todos.getByRole('button', { name: 'AddTodo', exact: true }).click();
+  await scrollSettled();
   assert(await lineVisible(72), 'Skipped step bookmarks must still navigate to their source');
   assert((await snapshot()).requests === normal.requests, 'A skipped step bookmark must not repeat the request');
 

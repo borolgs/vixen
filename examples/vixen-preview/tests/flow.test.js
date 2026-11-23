@@ -28,11 +28,12 @@ test('scroll modes are preserved per step without adding an implicit mode', () =
   const steps = [
     { range: '1', scroll: 'instant' },
     { range: '2', scroll: 'smooth', target: '#count' },
-    { range: '3' },
+    { range: '3', scroll: 'cut' },
+    { range: '4' },
   ];
   const result = selectSteps(steps, [task('outerHTML', { '#count': {} })]);
-  expect(result.map(step => step.scroll)).toEqual(['instant', 'smooth', undefined]);
-  expect(result[2]).not.toHaveProperty('scroll');
+  expect(result.map(step => step.scroll)).toEqual(['instant', 'smooth', 'cut', undefined]);
+  expect(result[3]).not.toHaveProperty('scroll');
 });
 
 test('skipped steps retain bookmarks and still follow response branch selection', () => {

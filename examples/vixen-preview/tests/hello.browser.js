@@ -18,6 +18,25 @@ async page => {
   await page.evaluate(() => {
     const hello = document.querySelector('[data-preview-example="hello"]');
     window.helloCheck = { requests: 0, received: 0, done: 0, started: 0, elapsed: 0, inserts: [], source: hello.querySelector('[data-preview-code]').textContent, note: hello.querySelector('.preview-demo > p') };
+    const source = hello.querySelector('.preview-source');
+    const listing = source.querySelector('pre');
+    const first = source.querySelectorAll('.sh__line')[25].getBoundingClientRect();
+    window.helloCheck.firstStepVisible = first.top >= source.querySelector('.preview-code-header').getBoundingClientRect().bottom
+      && first.bottom <= source.getBoundingClientRect().bottom;
+    window.helloCheck.scrolls = [];
+    window.helloCheck.cuts = [];
+    const animate = listing.animate.bind(listing);
+    listing.animate = (frames, options) => {
+      window.helloCheck.cuts.push({ frames, duration: options.duration, afterJump: window.helloCheck.scrolls.length });
+      return animate(frames, options);
+    };
+    const scrollTo = source.scrollTo.bind(source);
+    source.scrollTo = options => {
+      if (Math.abs(options.top - source.scrollTop) >= 1) {
+        window.helloCheck.scrolls.push({ behavior: options.behavior, opacity: getComputedStyle(listing).opacity });
+      }
+      scrollTo(options);
+    };
     const greet = ctx => ctx.request && new URL(ctx.request.action, location.href).pathname === '/hello/greet';
     document.addEventListener('htmx:before:request', event => { if (greet(event.detail.ctx)) window.helloCheck.requests++; });
     document.addEventListener('htmx:before:swap', event => {
@@ -51,6 +70,11 @@ async page => {
   assert(await hello.locator('#greeting').innerText() === '', 'The response must wait for the code');
   assert(await hello.locator('#form input').inputValue() === 'Ada', 'The form must not reset ahead of its step');
   await done(1);
+  const firstJump = await page.evaluate(() => ({ visible: window.helloCheck.firstStepVisible, jump: window.helloCheck.scrolls[0], cut: window.helloCheck.cuts[0] }));
+  assert(firstJump.visible, 'The first Hello step must already be visible for this regression');
+  assert(firstJump.jump?.behavior === 'instant' && firstJump.jump.opacity === '1', `Hello must jump without fading: ${JSON.stringify(firstJump)}`);
+  assert(firstJump.cut?.afterJump === 1 && firstJump.cut.duration === 140 && firstJump.cut.frames[0].transform === 'translateY(32px)'
+    && firstJump.cut.frames.every(frame => !('opacity' in frame)), `Hello must settle even when aligning a visible step: ${JSON.stringify(firstJump)}`);
   const phased = await page.evaluate(() => window.helloCheck.inserts);
   for (const [id, expression] of [['greeting', 'greeting(&name)'], ['form', 'form()']]) {
     const batch = phased.find(batch => batch.ids.includes(id));
@@ -62,6 +86,7 @@ async page => {
   assert(await hello.locator('.sh__line').nth(52).locator('.flow-mark').allTextContents().then(marks => marks.join(',') === 'Greet'), 'The handler step must highlight its action type');
   assert(await hello.locator('.sh__line').nth(48).locator('.flow-mark').count() === 0, 'The skipped action declaration must not be highlighted');
   await hello.locator('.flow-bookmarks').getByRole('button', { name: 'Greet', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('[data-preview-example="hello"] pre').getAnimations().length === 0);
   assert(await hello.locator('.preview-source').evaluate(source => {
     const line = source.querySelectorAll('.sh__line')[48].getBoundingClientRect();
     return line.top >= source.querySelector('.preview-code-header').getBoundingClientRect().bottom

@@ -97,9 +97,12 @@ The checkbox changes the next run, without replaying requests or marks. It's
 disabled while a request is active. `connectFlow`'s `animated` option sets its
 initial state; the default is `true`.
 
-Source scrolling is instant by default. Visible ranges stay still;
-`to: 'top'` explicitly aligns 28 px below the sticky header. Manual input stops
-automatic following for the rest of the run. Steps with a `button` label get
+Source jumps use a short cut: the code scrolls instantly, then settles from
+a 32 px offset in the scroll direction over 140 ms. Text stays fully opaque,
+and the header stays fixed. Highlighting starts after the cut. Visible ranges stay still
+unless `to: 'top'` aligns them 28 px below the sticky header; that movement also
+uses a cut. An already aligned range doesn't animate. Manual input cancels the
+cut and stops automatic following for the rest of the run. Steps with a `button` label get
 plain header bookmarks after completion. These only scroll, without repeating
 requests or swaps.
 
@@ -126,8 +129,9 @@ coordinates in the corresponding Rust file; imports count toward line numbers. W
 ranges and arrays of separate spans also work. Update them when Rust lines move.
 
 `to: 'top'` forces alignment; otherwise only clipped ranges scroll.
-`scroll: 'instant'` is the default; `'smooth'` animates the scroll.
-The step's bookmark uses the same mode.
+`scroll: 'cut'` is the default; `'instant'` skips the cut, and `'smooth'` animates
+the scroll itself. The step's bookmark uses the same mode. Disabling Animate or
+preferring reduced motion makes bookmark navigation instant.
 `highlight: false` skips marking, not swaps, without clearing earlier marks.
 `duration` overrides the pause after that step; zero removes the pause.
 `skip: true` keeps the step out of playback in both modes: no scrolling,
@@ -174,6 +178,7 @@ regression from this directory:
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow open http://127.0.0.1:4007/
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/flow.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/hello.browser.js)"
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/scroll.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/start-line.browser.js)"
 playwright-cli -s=flow close
 ```

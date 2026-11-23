@@ -14,7 +14,7 @@ function contracts(example: HTMLElement, reducedMotion: MediaQueryList, tasks: r
   connectFlow(example, scenarios, { reducedMotion, swap, animated: true, controls: example });
   // @ts-expect-error The controls container must be an HTML element.
   connectFlow(example, scenarios, { reducedMotion, swap, controls: {} });
-  selectSteps([{ range: '1', scroll: 'instant' }, { range: '2', scroll: 'smooth' }], tasks);
+  selectSteps([{ range: '1', scroll: 'cut' }, { range: '2', scroll: 'instant' }, { range: '3', scroll: 'smooth' }], tasks);
   selectSteps([{ range: '1', skip: true, button: 'Handler' }], tasks);
   // @ts-expect-error Omit skip to play a step; only true opts out.
   selectSteps([{ range: '1', skip: false }], tasks);

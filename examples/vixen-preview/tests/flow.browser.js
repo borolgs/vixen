@@ -20,7 +20,7 @@ async page => {
       const source = example.querySelector('.preview-source');
       const scrollTo = source.scrollTo.bind(source);
       window.flowCheck.scrolls = [];
-      window.flowCheck.skippedTop = source.scrollTop + source.querySelectorAll('.sh__line')[71].getBoundingClientRect().top
+      window.flowCheck.skippedTop = source.scrollTop + source.querySelectorAll('.sh__line')[70].getBoundingClientRect().top
         - source.querySelector('.preview-code-header').getBoundingClientRect().bottom - 28;
       source.scrollTo = options => {
         if (Math.abs(options.top - source.scrollTop) >= 1) window.flowCheck.scrolls.push(options.top);
@@ -132,7 +132,7 @@ async page => {
   assert(await todos.locator('.flow-bookmarks button').allTextContents().then(labels => labels.join(',') === 'AddTodo,add_todo_form(),add()'), 'Skipped steps must keep their bookmark in scenario order');
   await todos.getByRole('button', { name: 'AddTodo', exact: true }).click();
   await scrollSettled();
-  assert(await lineVisible(72), 'Skipped step bookmarks must still navigate to their source');
+  assert(await lineVisible(71), 'Skipped step bookmarks must still navigate to their source');
   assert((await snapshot()).requests === normal.requests, 'A skipped step bookmark must not repeat the request');
 
   await fresh(false);
@@ -141,7 +141,7 @@ async page => {
   await done(1);
   const instant = await snapshot();
   assert(instant.elapsed < 500 && instant.soft && !instant.running && instant.scroll !== 123 && instant.unlocked && instant.sourceIntact, JSON.stringify(instant));
-  assert(await lineVisible(77), 'Static mode must scroll to the last selected step with a button');
+  assert(await lineVisible(76), 'Static mode must scroll to the last selected step with a button');
   await page.getByRole('button', { name: 'add()', exact: true }).click();
   assert(await todos.locator('.preview-source').evaluate(source => source.scrollTop) === instant.scroll, 'Static scrolling must land on the last bookmark');
   assert(instant.items === 4 && instant.count === '3 left' && instant.message === 'Todo created.', 'Static mode must deliver the whole response');
@@ -149,7 +149,7 @@ async page => {
   assert(JSON.stringify(instant.colors) === JSON.stringify(normal.colors), 'Static marks must use the completed animation’s pale color');
   const before = await page.evaluate(() => window.flowCheck.requests);
   await todos.getByRole('button', { name: 'AddTodo', exact: true }).click();
-  assert(await lineVisible(72), 'Skipped step bookmarks must also work in static mode');
+  assert(await lineVisible(71), 'Skipped step bookmarks must also work in static mode');
   assert(await page.evaluate(() => window.flowCheck.requests) === before, 'Static skipped bookmarks must only scroll');
   await animation.check();
   const switched = await snapshot();
@@ -164,34 +164,34 @@ async page => {
   await page.getByRole('searchbox', { name: 'Search todos' }).fill('Static');
   await done(3);
   assert(await page.getByRole('searchbox', { name: 'Search todos' }).evaluate(input => input === document.activeElement), 'Search must retain focus after unlocking');
-  await checkAction('SearchTodos', 49, 63);
+  await checkAction('SearchTodos', 48, 62);
   await add('   ');
   await done(4);
   const validation = await snapshot();
   assert(validation.message === 'A todo needs a title.' && validation.soft && !validation.inert && !validation.running && validation.elapsed < 500, 'Static validation response must mark and unlock');
-  assert(await lineVisible(77), 'Static errors must also scroll to the last step with a button');
+  assert(await lineVisible(76), 'Static errors must also scroll to the last step with a button');
   await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await done(5);
   assert(await page.getByRole('textbox', { name: 'Todo title', exact: true }).evaluate(input => input === document.activeElement), 'Returned autofocus must wait until unlocking');
-  await checkAction('EditTodo', 126, 130);
+  await checkAction('EditTodo', 125, 129);
   await animation.check();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.waitForFunction(() => window.flowCheck.received === 6);
   assert(await animation.isDisabled(), 'Re-enabled animation must lock the toggle');
   assert(await page.locator('[data-preview-example="todos"]').evaluate(example => !example.classList.contains('flow-static')), 'The next request must use the newly enabled animation');
   await done(6);
-  await checkAction('CancelEdit', 176, 180);
+  await checkAction('CancelEdit', 175, 179);
 
   await fresh(false);
   await todos.locator('#todo-list input[type="checkbox"]').first().click();
   await done(1);
-  await checkAction('ToggleTodo', 103, 107);
+  await checkAction('ToggleTodo', 102, 106);
   await todos.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await done(2);
   await todos.getByRole('textbox', { name: 'Todo title', exact: true }).fill('Saved flow');
   await todos.getByRole('button', { name: 'Save', exact: true }).click();
   await done(3);
-  await checkAction('SaveTodo', 142, 150);
+  await checkAction('SaveTodo', 141, 149);
 
   await fresh(true);
   await add('Hidden completion');
@@ -222,7 +222,7 @@ async page => {
   await fresh(false);
   await add('Mobile flow');
   await done(1);
-  assert(await lineVisible(77), 'Last bookmarked step must remain visible below the wrapping mobile header');
+  assert(await lineVisible(76), 'Last bookmarked step must remain visible below the wrapping mobile header');
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'The toggle and bookmarks must not overflow on mobile');
   assert(await animation.isEnabled(), 'Toggle must unlock after completion');
   assert(await animation.evaluate(input => {

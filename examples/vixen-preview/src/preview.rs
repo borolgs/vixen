@@ -40,6 +40,10 @@ pub async fn preview(_: PreviewPath) -> Markup {
                     aria-controls="preview-todos" aria-selected="false"
                     tabindex="-1"
                     data-preview-tab="todos" { "todos" }
+                button type="button" role="tab" id="preview-tab-more"
+                    aria-controls="preview-more" aria-selected="false"
+                    tabindex="-1"
+                    data-preview-tab="more" { "more" }
             }
         }
 
@@ -76,17 +80,79 @@ pub async fn preview(_: PreviewPath) -> Markup {
             }
             p class="preview-error" data-preview-error role="alert" hidden {}
         }
+
+        section id="preview-more" role="tabpanel"
+            aria-labelledby="preview-tab-more"
+            data-preview-example="more" class="preview-more" hidden
+        {
+            h2 { "More on localhost" }
+            p {
+                "Run the other examples locally to try real axum servers "
+                "and see the asset build flow in action."
+            }
+            pre tabindex="0" aria-label="Run the shop example" {
+                code class="language-bash" {
+                    (concat!(
+                        "git clone https://github.com/borolgs/vixen.git\n",
+                        "cd vixen\n",
+                        "bun install\n",
+                        "cargo run -p shop",
+                    ))
+                }
+            }
+            a href="https://github.com/borolgs/vixen/tree/main/examples"
+                target="_blank" rel="noopener noreferrer"
+            {
+                "Browse examples on GitHub "
+                span aria-hidden="true" { "↗" }
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::code_panel;
+    use super::{code_panel, todos::Ctx};
+
+    #[tokio::test]
+    async fn more_is_the_last_tab_and_links_to_local_examples() {
+        let markup = Ctx {
+            todos: Default::default(),
+        }
+        .scope(super::preview(super::PreviewPath))
+        .await
+        .into_string();
+        assert!(
+            markup
+                .rsplit_once("data-preview-tab=\"")
+                .expect("preview tabs")
+                .1
+                .starts_with("more\"")
+        );
+        assert!(markup.contains(
+            "data-preview-example=\"more\" class=\"preview-more\" hidden"
+        ));
+        assert!(markup.contains("real axum servers"));
+        assert!(markup.contains("asset build flow"));
+        assert!(markup.contains(concat!(
+            "git clone https://github.com/borolgs/vixen.git\n",
+            "cd vixen\n",
+            "bun install\n",
+            "cargo run -p shop",
+        )));
+        assert!(markup.contains(
+            "href=\"https://github.com/borolgs/vixen/tree/main/examples\""
+        ));
+    }
 
     #[tokio::test]
     async fn todos_start_with_active_and_completed_samples() {
-        let markup =
-            super::todos::view(super::todos::Index).await.into_string();
+        let markup = Ctx {
+            todos: Default::default(),
+        }
+        .scope(super::todos::view(super::todos::Index))
+        .await
+        .into_string();
 
         for (id, title) in [
             (0, "Buy milk"),

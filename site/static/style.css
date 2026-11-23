@@ -75,6 +75,10 @@ article .vixen-preview .preview-tabs {
   padding-inline-end: max(0px, calc((var(--demo-width) - var(--site-content-width) - var(--vixen-space-4)) / 2));
 }
 
+article .vixen-preview .preview-more {
+  margin-inline-start: max(0px, calc((var(--demo-width) - var(--site-content-width)) / 2));
+}
+
 h1,
 h2 {
   line-height: var(--vixen-leading-title);

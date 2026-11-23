@@ -154,11 +154,11 @@ after its code highlight. Without `target`, a step only visits the source.
 
 ```ts
 [
-  { range: '72:8-72:14', skip: true, button: 'AddTodo' },
-  { range: '354:4-354:16', to: 'top', highlight: false, button: 'add_todo_form()' },
-  { range: ['356:25-356:41', '357:25-357:44'], duration: 1000 }, // action + field
-  { range: '77:20-77:26', to: 'top', button: 'add()' },
-  { range: '89:9-89:23', target: '#add-todo-form input[name="title"]' },
+  { range: '71:8-71:14', skip: true, button: 'AddTodo' },
+  { range: '353:4-353:16', to: 'top', highlight: false, button: 'add_todo_form()' },
+  { range: ['355:25-355:41', '356:25-356:44'], duration: 1000 }, // action + field
+  { range: '76:20-76:26', to: 'top', button: 'add()' },
+  { range: '88:9-88:23', target: '#add-todo-form input[name="title"]' },
 ]
 ```
 

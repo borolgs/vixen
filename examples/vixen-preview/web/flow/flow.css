@@ -69,6 +69,10 @@
   cursor: pointer;
 }
 
+.vixen-preview .preview-tabs:has([data-preview-tab="more"][aria-selected="true"]) .flow-animation {
+  visibility: hidden;
+}
+
 .vixen-preview .flow-animation:has(:disabled) {
   cursor: default;
   opacity: .5;

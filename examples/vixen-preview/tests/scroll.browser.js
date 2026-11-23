@@ -64,7 +64,7 @@ async page => {
 
   await reset();
   await source.evaluate(source => { source.scrollTop -= 40; });
-  assert(await lineVisible(77), 'The handler should already be visible');
+  assert(await lineVisible(76), 'The handler should already be visible');
   await bookmark('add()');
   await settled();
   assert(await page.evaluate(() => window.scrollCheck.cuts.map(cut => cut.duration).join(',') === '140'), 'Visible top alignment must settle when it moves the code');
@@ -76,7 +76,7 @@ async page => {
   await reset(true);
   await bookmark('add_todo_form()');
   await paused();
-  assert(await lineVisible(354), 'The destination must be visible before settling finishes');
+  assert(await lineVisible(353), 'The destination must be visible before settling finishes');
   await source.evaluate(async source => {
     const interrupted = window.scrollCheck.current.finished.catch(() => {});
     window.scrollCheck.pause = false;
@@ -120,18 +120,18 @@ async page => {
   assert(await restored(), 'Changing motion preference must cancel settling');
   await reset();
   await bookmark('add()');
-  assert(await lineVisible(77) && await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'Reduced-motion bookmarks must jump instantly');
+  assert(await lineVisible(76) && await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'Reduced-motion bookmarks must jump instantly');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await animation.uncheck();
   await bookmark('add_todo_form()');
-  assert(await lineVisible(354) && await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'Static bookmarks must jump instantly');
+  assert(await lineVisible(353) && await page.evaluate(() => window.scrollCheck.cuts.length === 0), 'Static bookmarks must jump instantly');
 
   await animation.check();
   await page.setViewportSize({ width: 390, height: 844 });
   await reset();
   await bookmark('add()');
   await settled();
-  assert(await lineVisible(77) && await restored(), 'Mobile cuts must land below the wrapping header');
+  assert(await lineVisible(76) && await restored(), 'Mobile cuts must land below the wrapping header');
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'The shift must not overflow mobile');
   assert(errors.length === 0, JSON.stringify(errors));
   return { cuts: playback.cuts.length, opaque: true, cancellation: true, reducedMotion: true, mobile: true, errors };

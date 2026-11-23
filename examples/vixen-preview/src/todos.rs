@@ -32,7 +32,6 @@ pub struct Index;
 pub async fn view(_: Index) -> Markup {
     let state = ctx().todos.lock_owned().await;
     html! {
-        h2 { "Todos" }
         div class="todo-status" {
             (todo_count(&state.todos))
             (MessageId::slot())

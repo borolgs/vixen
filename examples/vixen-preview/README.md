@@ -38,11 +38,18 @@ not TypeScript sources. WASM stays an external import from
 
 ## Examples and state
 
-Both tabs put the UI beside one Rust file, or above it on narrow screens.
+The Hello, Counter, and Todos tabs put the UI beside one Rust file, or above
+it on narrow screens.
 Hello's form, explanatory text, and greeting response live in `src/hello.rs`.
 Blank or whitespace-only names return HTTP 422 with a warning in the greeting
 slot, leaving the form unchanged. Its flow covers both success and validation.
-Todos lives in `src/todos.rs`; `src/lib.rs` assembles the shared preview router. Source text scales to fit the code panel. Switching tabs keeps the
+Counter lives in `src/counter.rs`. Its buttons bind `Add::action().by(-1)`
+and `.by(1)`; one response updates the number and its Zero / Even / Odd heading.
+It introduces `axum::State` with an `Arc<tokio::sync::Mutex<i64>>`, starting at
+zero for each mounted preview. Addition saturates at the `i64` limits.
+
+Todos lives in `src/todos.rs`; `src/lib.rs` assembles the shared preview router.
+Source text scales to fit the code panel. Switching tabs keeps the
 demo DOM, including unfinished edits and Rust state. It resets the flow's
 marks, bookmarks, and source scrolling.
 
@@ -59,7 +66,7 @@ page restores those samples. Nothing uses localStorage.
 
 The todo actions follow [the standalone example](../todos/src/pages/todos/mod.rs).
 Search and filter live in the preview state rather than the host page's URL.
-Both examples show their full Rust source, including imports, and use the
+All interactive examples show their full Rust source, including imports, and use the
 same flow player.
 
 ## Flow
@@ -119,8 +126,8 @@ lives in `web/flow/ranges.ts`. The fetch adapter has no playback hooks.
 
 ### Customize a scenario
 
-Scenarios in `web/flow/scenarios/hello.ts` and `web/flow/scenarios/todos.ts`
-are keyed by pathname and HTTP status.
+Scenarios in `web/flow/scenarios/{hello,counter,todos}.ts` are keyed by
+pathname and HTTP status.
 The player in `web/flow/flow.ts` receives them as an argument.
 
 Each module also exports `startLine`, a 1-based line number passed to
@@ -183,6 +190,7 @@ regression from this directory:
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow open http://127.0.0.1:4007/
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/flow.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/hello.browser.js)"
+NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/counter.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/scroll.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/start-line.browser.js)"
 NO_PROXY='*' no_proxy='*' playwright-cli -s=flow run-code "$(< tests/tabs.browser.js)"

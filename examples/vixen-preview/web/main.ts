@@ -1,6 +1,7 @@
 import htmx from 'htmx.org';
 import { createFetch } from './fetch.ts';
 import { connectFlow, type FlowOptions } from './flow/flow.ts';
+import * as counter from './flow/scenarios/counter.ts';
 import * as hello from './flow/scenarios/hello.ts';
 import * as todos from './flow/scenarios/todos.ts';
 
@@ -64,6 +65,7 @@ function connect(preview: any, fetch: any, index: any) {
   } satisfies FlowOptions;
   const flows = [
     connectFlow(preview.querySelector('[data-preview-example="hello"]'), hello.scenarios, { ...options, startLine: hello.startLine }),
+    connectFlow(preview.querySelector('[data-preview-example="counter"]'), counter.scenarios, { ...options, startLine: counter.startLine }),
     connectFlow(preview.querySelector('[data-preview-example="todos"]'), todos.scenarios, { ...options, startLine: todos.startLine }),
   ];
 

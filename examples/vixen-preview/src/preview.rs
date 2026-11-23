@@ -1,9 +1,10 @@
+use axum::extract::State;
 use vixen::{
     maud::{Markup, html},
     route,
 };
 
-use super::{hello, todos};
+use super::{counter, hello, todos};
 
 fn code_panel(title: &str, source: &str) -> Markup {
     let columns = source
@@ -29,13 +30,20 @@ fn code_panel(title: &str, source: &str) -> Markup {
 #[route("/")]
 pub struct PreviewPath;
 
-pub async fn preview(_: PreviewPath) -> Markup {
+pub async fn preview(
+    _: PreviewPath,
+    State(count): State<counter::Counter>,
+) -> Markup {
     html! {
         div class="preview-tabs" {
             div class="preview-tab-list" role="tablist" aria-label="Examples" {
                 button type="button" role="tab" id="preview-tab-hello"
                     aria-controls="preview-hello" aria-selected="true"
                     data-preview-tab="hello" { "hello" }
+                button type="button" role="tab" id="preview-tab-counter"
+                    aria-controls="preview-counter" aria-selected="false"
+                    tabindex="-1"
+                    data-preview-tab="counter" { "counter" }
                 button type="button" role="tab" id="preview-tab-todos"
                     aria-controls="preview-todos" aria-selected="false"
                     tabindex="-1"
@@ -60,6 +68,23 @@ pub async fn preview(_: PreviewPath) -> Markup {
             footer class="preview-footer" {
                 span data-preview-status role="status" { "Ready" }
                 span { "Rust / WASM" }
+            }
+            p class="preview-error" data-preview-error role="alert" hidden {}
+        }
+
+        section id="preview-counter" role="tabpanel"
+            aria-labelledby="preview-tab-counter"
+            data-preview-example="counter" class="preview-layout" hidden
+        {
+            div class="preview-demo" {
+                (counter::view(counter::Index, State(count)).await)
+            }
+            div class="preview-source" {
+                (code_panel("counter.rs", include_str!("counter.rs")))
+            }
+            footer class="preview-footer" {
+                span data-preview-status role="status" { "Ready" }
+                span { "Rust / WASM · state resets on reload" }
             }
             p class="preview-error" data-preview-error role="alert" hidden {}
         }
@@ -119,7 +144,10 @@ mod tests {
         let markup = Ctx {
             todos: Default::default(),
         }
-        .scope(super::preview(super::PreviewPath))
+        .scope(super::preview(
+            super::PreviewPath,
+            super::State(Default::default()),
+        ))
         .await
         .into_string();
         assert!(
@@ -143,6 +171,24 @@ mod tests {
         assert!(markup.contains(
             "href=\"https://github.com/borolgs/vixen/tree/main/examples\""
         ));
+    }
+
+    #[tokio::test]
+    async fn counter_view_reads_its_state_and_binds_both_buttons() {
+        let count = super::counter::Counter::default();
+        *count.lock().await = -2;
+        let markup =
+            super::counter::view(super::counter::Index, super::State(count))
+                .await
+                .into_string();
+
+        assert!(markup.contains("id=\"counter-kind\">Even</h2>"));
+        assert!(markup.contains("aria-label=\"Count\">-2</output>"));
+        assert!(markup.contains("aria-label=\"Decrease\""));
+        assert!(markup.contains("aria-label=\"Increase\""));
+        assert!(markup.contains("/counter/add"));
+        assert!(markup.contains(r#"hx-vals="{&quot;by&quot;:-1}""#));
+        assert!(markup.contains(r#"hx-vals="{&quot;by&quot;:1}""#));
     }
 
     #[tokio::test]

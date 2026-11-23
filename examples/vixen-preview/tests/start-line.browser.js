@@ -24,12 +24,12 @@ async page => {
     };
   });
   const results = [];
-  const starts = [['hello', 7], ['todos', 17]];
+  const starts = [['hello', 7], ['counter', 10], ['todos', 17]];
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto('http://127.0.0.1:4007/');
     await page.getByRole('tab', { name: 'hello', exact: true }).waitFor();
-    assert(await page.evaluate(() => !window.startLineCheck.scrolls.some(call => call.example === 'todos')), 'Hidden Todos must wait for its first display');
+    assert(await page.evaluate(() => !window.startLineCheck.scrolls.some(call => call.example !== 'hello')), 'Hidden examples must wait for their first display');
     for (const [name, line] of starts) {
       await page.getByRole('tab', { name, exact: true }).click();
       const source = page.locator(`[data-preview-example="${name}"] .preview-source`);

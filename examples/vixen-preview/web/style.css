@@ -265,7 +265,7 @@
   background: var(--preview-code-surface);
 }
 
-.vixen-preview [data-preview-example="hello"] .preview-source {
+.vixen-preview :is([data-preview-example="hello"], [data-preview-example="counter"]) .preview-source {
   min-height: 0;
   height: 27rem;
   max-height: 70vh;
@@ -308,6 +308,20 @@
 .vixen-preview .preview-demo :is(input, select):focus-visible {
   outline: var(--vixen-focus-width) solid var(--vixen-focus);
   outline-offset: var(--vixen-focus-offset);
+}
+
+.vixen-preview .counter-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--vixen-space-4);
+}
+
+.vixen-preview .counter-controls output {
+  min-width: 3ch;
+  text-align: center;
+  font-family: var(--vixen-font-code);
+  font-size: var(--vixen-text-reading);
+  font-variant-numeric: tabular-nums;
 }
 
 .vixen-preview .todo-status {

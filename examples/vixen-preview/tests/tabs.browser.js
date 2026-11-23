@@ -66,6 +66,9 @@ async page => {
   await clean('todos');
   await animation.check();
   await tab('hello').press('ArrowRight');
+  assert(await panel('counter').isVisible(), 'ArrowRight from Hello must open Counter');
+  await tab('counter').press('ArrowRight');
+  assert(await panel('todos').isVisible(), 'ArrowRight from Counter must open Todos');
   assert(await animation.isChecked(), 'Keyboard switching must keep the shared mode');
   await clean('todos');
   assert(await panel('todos').locator('#todo-list > li').count() === 4, 'Switching must retain rendered todos');
@@ -119,7 +122,7 @@ async page => {
   assert(await animation.isEnabled() && await panel('todos').locator('.preview-demo').evaluate(demo => !demo.inert), 'Interrupted playback must unlock');
   assert(await page.evaluate(() => window.tabsCheck.requests) === 5, 'Switching must never replay a request');
   await page.setViewportSize({ width: 320, height: 740 });
-  for (const name of ['hello', 'todos', 'more']) {
+  for (const name of ['hello', 'counter', 'todos', 'more']) {
     await tab(name).click();
     assert(await page.locator('.preview-tabs').evaluate(tabs => tabs.scrollWidth <= tabs.clientWidth), `${name} tabs must fit a narrow screen`);
   }

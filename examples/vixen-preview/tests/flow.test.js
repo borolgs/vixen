@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import { createDelivery, selectSteps } from '../web/flow/flow.ts';
 import { scenarios, startLine as todosStartLine } from '../web/flow/scenarios/todos.ts';
 import { scenarios as hello, startLine as helloStartLine } from '../web/flow/scenarios/hello.ts';
+import { scenarios as counter, startLine as counterStartLine } from '../web/flow/scenarios/counter.ts';
 import { highlightSource } from '../web/highlight.ts';
 import { parseRange } from '../web/flow/ranges.ts';
 
@@ -218,9 +219,34 @@ test('Hello narrates its real request bindings and both response fragments', asy
   ]);
 });
 
+test('Counter narrates button parameters, state mutation, and both response fragments', async () => {
+  const source = (await Bun.file(new URL('../src/counter.rs', import.meta.url)).text()).split('\n');
+  const steps = counter['/counter/add'][200];
+  const extract = spec => {
+    const { start, end, from, to } = parseRange(spec, source);
+    expect(start).toBe(end);
+    return source[start - 1].slice(from, to);
+  };
+  expect(steps.flatMap(step => [step.range].flat().map(extract))).toEqual([
+    'Add', 'view', 'Add::action().by(-1)', 'Add::action().by(1)', 'Add',
+    '*count = count.saturating_add(by);', 'counter_value(*count)', 'counter_kind(*count)',
+  ]);
+  expect(steps[0]).toMatchObject({ skip: true, button: 'Add' });
+  expect(steps[1]).toMatchObject({ to: 'top', highlight: false, button: 'view()' });
+  expect(steps[3]).toMatchObject({ to: 'top', button: 'add()' });
+  expect(steps[3].highlight).not.toBe(false);
+  expect(steps.filter(step => step.button).map(step => step.button)).toEqual(['Add', 'view()', 'add()']);
+  const value = task('outerHTML', { '#counter-value': {} });
+  const kind = task('outerHTML', { '#counter-kind': {} });
+  expect(selectSteps(steps, [value, kind]).map(step => step.tasks)).toEqual([
+    [], [], [], [], [], [value], [kind],
+  ]);
+});
+
 test('examples start just after their imports using 1-based source lines', async () => {
   for (const [name, startLine, firstLine] of [
     ['hello', helloStartLine, 'pub fn router() -> Router {'],
+    ['counter', counterStartLine, 'pub fn router() -> Router<Counter> {'],
     ['todos', todosStartLine, 'pub fn router() -> Router<Todos> {'],
   ]) {
     const source = (await Bun.file(new URL(`../src/${name}.rs`, import.meta.url)).text()).split('\n');

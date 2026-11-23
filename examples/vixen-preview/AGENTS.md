@@ -2,23 +2,25 @@
 
 ## Runtime
 
-- `src/preview.rs` renders the `hello` and `todos` tabs and embeds Rust source
+- `src/preview.rs` renders `hello`, `counter`, and `todos` and embeds Rust source
   with `include_str!`. Tab switches preserve DOM and unfinished edits.
 - Each mounted preview owns a WASM `PreviewApp` (`src/browser.rs`). Requests
-  clone its router, sharing todo/search/filter state; reload resets everything.
+  clone its router, sharing counter/todo/search/filter state; reload resets everything.
 - `web/main.ts` keeps htmx serialization and swaps, replacing only `ctx.fetch`.
   `web/fetch.ts` dispatches same-origin `/__axum__/…` requests to WASM; other
   requests use network fetch. Swap targets stay inside the requesting preview.
 - `src/hello.rs` contains the greeting action and its UI; `src/lib.rs` assembles
-  the preview router. Both examples use the same `UI | Code` layout.
+  the preview router. Interactive examples share the `UI | Code` layout.
+- `src/counter.rs` uses `State<Arc<Mutex<i64>>>`, not a global static. One action
+  returns the value and Zero / Even / Odd fragments; each preview starts at zero.
 - `src/todos.rs` returns targeted `partial!` responses, including validation
   errors. Toggle/save emit either the item or its deletion, never both.
 
 ## Flow
 
 - `web/flow/flow.ts` is the player. Pass scenarios to `connectFlow`; keep
-  example-specific ranges and selectors in `web/flow/scenarios/hello.ts` and
-  `web/flow/scenarios/todos.ts`. Both examples use this player.
+  example-specific ranges and selectors in `web/flow/scenarios/{hello,counter,todos}.ts`.
+  All interactive examples use this player.
 - The player takes over `htmx:before:swap` after validating the scenario.
   Each step waits for its code animation, delivers matching prepared tasks
   through the injected `swap: ctx => htmx.swap(ctx)`, then marks the UI.
@@ -85,7 +87,8 @@ need generated WASM files.
 `bun run test:flow` runs flow selection, Unicode range parsing, and fetch-adapter
 checks without WASM. `tests/flow.browser.js` checks both animation modes against real WASM,
 including the UI lock, response delivery, errors, and bookmarks.
-`tests/hello.browser.js` covers Hello through the same player. Also check
+`tests/hello.browser.js` and `tests/counter.browser.js` cover the smaller examples.
+Counter also checks isolated mounts and state retention. Check
 scrolling and narrow screens. `bun test ./tests` additionally uses built WASM;
 `cargo test -p vixen-preview` checks native helpers.
 Build prerequisites and layout: `README.md`.

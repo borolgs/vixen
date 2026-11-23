@@ -1,3 +1,4 @@
+mod counter;
 mod hello;
 mod preview;
 mod todos;
@@ -13,11 +14,12 @@ pub fn router() -> Router {
 
     Router::new()
         .view(preview::preview)
-        .merge(todos::router())
+        .merge(counter::router())
+        .with_state(counter::Counter::default())
+        .merge(todos::router().with_state(state.clone()))
         .layer(middleware::from_fn_with_state(
-            state.clone(),
+            state,
             todos::Ctx::middleware,
         ))
-        .with_state(state)
         .merge(hello::router())
 }

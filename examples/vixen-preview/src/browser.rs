@@ -1,4 +1,5 @@
 use axum::{
+    Router,
     body::{Body, to_bytes},
     http::Request,
 };
@@ -19,9 +20,42 @@ pub fn start() {
         .init();
 }
 
-/// Dispatch a page-local request without a socket or a server runtime.
+/// One mounted preview, with state retained across requests.
 #[wasm_bindgen]
-pub async fn handle_request(path: String, request: web_sys::Request) -> Result<Response, JsValue> {
+pub struct PreviewApp {
+    router: Router,
+}
+
+impl Default for PreviewApp {
+    fn default() -> Self {
+        Self {
+            router: super::router(),
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl PreviewApp {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Dispatch a page-local request without a socket or a server runtime.
+    pub async fn handle_request(
+        &self,
+        path: String,
+        request: web_sys::Request,
+    ) -> Result<Response, JsValue> {
+        dispatch(self.router.clone(), path, request).await
+    }
+}
+
+async fn dispatch(
+    router: Router,
+    path: String,
+    request: web_sys::Request,
+) -> Result<Response, JsValue> {
     let is_head = request.method() == "HEAD";
     let mut builder = Request::builder()
         .method(request.method().as_str())
@@ -48,7 +82,7 @@ pub async fn handle_request(path: String, request: web_sys::Request) -> Result<R
         .body(Body::from(Uint8Array::new(&bytes).to_vec()))
         .map_err(|error| JsError::new(&error.to_string()))?;
 
-    let response = match super::router().oneshot(request).await {
+    let response = match router.oneshot(request).await {
         Ok(response) => response,
         Err(never) => match never {},
     };

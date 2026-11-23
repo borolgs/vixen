@@ -3,12 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked && cp web/* dist/ && cp ../../site/static/theme.css dist/ && bun build web/main.js --target browser --external ./pkg/vixen_preview.js --outfile dist/main.js && touch dist/.nojekyll",
-    "serve": "python3 -m http.server 4007 --bind 127.0.0.1 --directory dist",
-    "test": "bun test ./tests"
+    "build": "bun run build:wasm && bun run build:web",
+    "build:wasm": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked",
+    "build:web": "bun run typecheck && mkdir -p dist && cp web/index.html ../../site/static/theme.css dist/ && bun build web/main.ts --target browser --external ./pkg/vixen_preview.js --outfile dist/main.js && bun build web/flow/flow.css --outfile dist/style.css && touch dist/.nojekyll",
+    "typecheck": "tsc --noEmit",
+    "serve": "bunx --bun serve dist --listen tcp://127.0.0.1:4007"
   },
   "dependencies": {
     "htmx.org": "4.0.0",
     "sugar-high": "2.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }

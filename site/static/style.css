@@ -1,6 +1,7 @@
 @import url("./theme.css");
 
 :root {
+  --site-content-width: 48rem;
   color-scheme: only light;
   font-family: var(--vixen-font-ui);
   font-size: var(--vixen-text-base);
@@ -15,7 +16,7 @@
 }
 
 body {
-  max-width: 48rem;
+  max-width: var(--site-content-width);
   margin: 0 auto;
 }
 
@@ -58,9 +59,24 @@ main {
 }
 
 article {
-  max-width: 48rem;
+  max-width: var(--site-content-width);
   font-family: var(--vixen-font-reading);
   font-size: var(--vixen-text-reading);
+}
+
+article .vixen-preview {
+  --demo-width: min(70rem, calc(100vw - 2 * var(--vixen-space-4)));
+  width: var(--demo-width);
+  margin-inline: calc((100% - var(--demo-width)) / 2);
+}
+
+article .vixen-preview .preview-tabs {
+  padding-inline-start: max(0px, calc((var(--demo-width) - var(--site-content-width)) / 2));
+  padding-inline-end: max(0px, calc((var(--demo-width) - var(--site-content-width) - var(--vixen-space-4)) / 2));
+}
+
+article .vixen-preview .preview-more {
+  margin-inline-start: max(0px, calc((var(--demo-width) - var(--site-content-width)) / 2));
 }
 
 h1,

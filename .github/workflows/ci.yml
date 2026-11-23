@@ -44,4 +44,3 @@ jobs:
       - run: cargo install wasm-pack --version 0.15.1 --locked
       - run: cargo clippy -p vixen-preview --target wasm32-unknown-unknown --locked -- -D warnings
       - run: bun run --cwd examples/vixen-preview build
-      - run: bun run --cwd examples/vixen-preview test

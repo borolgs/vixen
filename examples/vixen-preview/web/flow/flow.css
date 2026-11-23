@@ -1,0 +1,165 @@
+@import "../style.css";
+
+@property --flow-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+.vixen-preview .flow-mark,
+.vixen-preview .preview-demo .flow-mark {
+  --flow-color: var(--preview-highlight);
+  background-image: linear-gradient(var(--flow-color), var(--flow-color));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 100% 64%;
+  box-decoration-break: clone;
+  animation: flow-draw var(--flow-duration) ease-out;
+  transition: --flow-color var(--flow-fade) linear;
+}
+
+.vixen-preview .flow-mark.flow-soft {
+  --flow-color: color-mix(in srgb, var(--preview-highlight) 35%, transparent);
+  transition-duration: var(--flow-soften);
+}
+
+.vixen-preview .flow-mark.flow-retiring {
+  --flow-color: transparent;
+  transition-duration: var(--flow-fade);
+  animation: none;
+}
+
+.vixen-preview .flow-static .flow-mark,
+.vixen-preview .flow-static .preview-demo .flow-mark {
+  animation: none;
+  transition: none;
+}
+
+@keyframes flow-draw {
+  from {
+    background-size: 0% 64%;
+  }
+}
+
+.vixen-preview .preview-source .flow-header {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: var(--vixen-space-12);
+  gap: 0.25rem 0.75rem;
+}
+
+.vixen-preview .preview-tabs {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.vixen-preview .preview-tab-list {
+  display: flex;
+  gap: var(--vixen-space-1);
+}
+
+.vixen-preview .flow-animation:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: none;
+  margin-inline-start: auto;
+  padding-inline-end: var(--vixen-space-4);
+  color: var(--preview-muted);
+  font-family: var(--vixen-font-code);
+  font-size: var(--vixen-text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.vixen-preview .preview-tabs:has([data-preview-tab="more"][aria-selected="true"]) .flow-animation {
+  visibility: hidden;
+}
+
+.vixen-preview .flow-animation:has(:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.vixen-preview .flow-bookmarks {
+  --flow-bookmark-tip: var(--vixen-space-2);
+  margin-inline-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--vixen-space-1) var(--vixen-line-strong);
+  min-width: 0;
+}
+
+.vixen-preview .flow-bookmarks:empty {
+  display: none;
+}
+
+.vixen-preview .flow-bookmarks button:enabled {
+  --flow-bookmark-start: var(--flow-bookmark-tip);
+  --flow-bookmark-end: var(--flow-bookmark-tip);
+  --flow-bookmark-bg: color-mix(in srgb, var(--preview-highlight) 60%, var(--preview-code-surface));
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  max-width: 100%;
+  padding-block: calc(var(--vixen-space-1) / 2);
+  padding-inline: calc(var(--vixen-space-2) + var(--flow-bookmark-start))
+    calc(var(--vixen-space-2) + var(--flow-bookmark-end));
+  border-radius: 0;
+  background: transparent;
+  color: var(--vixen-text);
+  font-size: var(--vixen-text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vixen-preview .flow-bookmarks button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--flow-bookmark-bg);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--flow-bookmark-end)) 0,
+    100% 50%,
+    calc(100% - var(--flow-bookmark-end)) 100%,
+    0 100%,
+    var(--flow-bookmark-start) 50%
+  );
+}
+
+.vixen-preview .flow-bookmarks button + button {
+  margin-inline-start: calc(-1 * var(--flow-bookmark-tip));
+}
+
+.vixen-preview .flow-bookmarks button:first-child {
+  --flow-bookmark-start: 0px;
+}
+
+.vixen-preview .flow-bookmarks button:last-child {
+  --flow-bookmark-end: 0px;
+}
+
+.vixen-preview .flow-bookmarks button:enabled:hover,
+.vixen-preview .flow-bookmarks button:focus-visible {
+  --flow-bookmark-bg: var(--preview-highlight);
+}
+
+.vixen-preview .flow-bookmarks button:enabled:active {
+  --flow-bookmark-bg: color-mix(in srgb, var(--preview-highlight) 85%, var(--vixen-ink));
+}
+
+.vixen-preview .flow-bookmarks button:focus-visible {
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vixen-preview .flow-mark,
+  .vixen-preview .preview-demo .flow-mark {
+    animation: none;
+    transition: none;
+  }
+}

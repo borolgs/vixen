@@ -1,35 +1,38 @@
+use axum::extract::State;
 use vixen::{
     maud::{Markup, html},
     route,
 };
 
-use super::ui;
+use super::{counter, hello, todos};
 
-fn without_imports(mut source: &str) -> &str {
-    source = source.trim_start();
-    while source.starts_with("use ") {
-        let Some((_, rest)) = source.split_once(';') else {
-            break;
-        };
-        source = rest.trim_start();
+fn demo_panel(content: Markup) -> Markup {
+    html! {
+        div class="preview-demo-panel" {
+            header class="preview-demo-header" {
+                span data-preview-status role="status" {}
+            }
+            div class="preview-demo" { (content) }
+        }
     }
-    source
 }
 
-fn code_panel(title: &str, language: &str, source: &str) -> Markup {
-    let body = without_imports(source);
-    let (imports, _) = source.split_at(source.len() - body.len());
+fn code_panel(title: &str, source: &str) -> Markup {
+    let columns = source
+        .lines()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(1);
 
     html! {
-        section class="preview-code-panel" aria-label=(title) {
-            button type="button" class="preview-code-toggle" data-preview-full
-                aria-pressed="false" aria-label=(format!("Full {title} source"))
-            { "Full" }
+        section class="preview-code-panel" aria-label=(title)
+            style=(format!("--preview-code-columns: {columns}"))
+        {
+            header class="preview-code-header" {
+                span { (title) }
+            }
             pre {
-                code data-preview-code=(language) {
-                    span data-preview-imports hidden { (imports) }
-                    span data-preview-body { (body) }
-                }
+                code data-preview-code="rust" { (source) ("\n".repeat(20)) }
             }
         }
     }
@@ -38,51 +41,89 @@ fn code_panel(title: &str, language: &str, source: &str) -> Markup {
 #[route("/")]
 pub struct PreviewPath;
 
-pub async fn preview(_: PreviewPath) -> Markup {
+pub async fn preview(
+    _: PreviewPath,
+    State(count): State<counter::Counter>,
+) -> Markup {
     html! {
-        (ui::form())
-
-        div class="preview-snippets" {
-            (code_panel("UI", "maud", include_str!("ui.rs")))
-            (code_panel("App", "rust", include_str!("app.rs")))
-        }
-
-        p class="preview-error" data-preview-error role="alert" hidden {}
-
-        section class="preview-result-panel" aria-label="Result" {
-            div class="preview-result" role="status" aria-live="polite" {
-                span data-preview-status { "Ready" }
-                (ui::greeting::slot())
+        div class="preview-tabs" {
+            div class="preview-tab-list" role="tablist" aria-label="Examples" {
+                button type="button" role="tab" id="preview-tab-hello"
+                    aria-controls="preview-hello" aria-selected="true"
+                    data-preview-tab="hello" { "hello" }
+                button type="button" role="tab" id="preview-tab-counter"
+                    aria-controls="preview-counter" aria-selected="false"
+                    tabindex="-1"
+                    data-preview-tab="counter" { "counter" }
+                button type="button" role="tab" id="preview-tab-todos"
+                    aria-controls="preview-todos" aria-selected="false"
+                    tabindex="-1"
+                    data-preview-tab="todos" { "todos" }
+                button type="button" role="tab" id="preview-tab-more"
+                    aria-controls="preview-more" aria-selected="false"
+                    tabindex="-1"
+                    data-preview-tab="more" { "more" }
             }
         }
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::without_imports;
+        section id="preview-hello" role="tabpanel"
+            aria-labelledby="preview-tab-hello"
+            data-preview-example="hello" class="preview-layout"
+        {
+            (demo_panel(hello::view(hello::Index).await))
+            div class="preview-source" {
+                (code_panel("hello.rs", include_str!("hello.rs")))
+            }
+            p class="preview-error" data-preview-error role="alert" hidden {}
+        }
 
-    #[test]
-    fn strips_leading_single_and_multiline_imports() {
-        let source = "\nuse vixen::{\n    fragment,\n    maud::Markup,\n};\n\nuse super::Greet;\n\n#[fragment]\nfn form() {}\n";
-        assert_eq!(without_imports(source), "#[fragment]\nfn form() {}\n");
-    }
+        section id="preview-counter" role="tabpanel"
+            aria-labelledby="preview-tab-counter"
+            data-preview-example="counter" class="preview-layout" hidden
+        {
+            (demo_panel(counter::view(counter::Index, State(count)).await))
+            div class="preview-source" {
+                (code_panel("counter.rs", include_str!("counter.rs")))
+            }
+            p class="preview-error" data-preview-error role="alert" hidden {}
+        }
 
-    #[test]
-    fn preserves_body_imports_and_formatting() {
-        let source = "fn example() {\n    use vixen::maud::html;\n}\n";
-        assert_eq!(without_imports(source), source);
-    }
+        section id="preview-todos" role="tabpanel"
+            aria-labelledby="preview-tab-todos"
+            data-preview-example="todos" class="preview-layout" hidden
+        {
+            (demo_panel(todos::view(todos::Index).await))
+            div class="preview-source" {
+                (code_panel("todos.rs", include_str!("todos.rs")))
+            }
+            p class="preview-error" data-preview-error role="alert" hidden {}
+        }
 
-    #[test]
-    fn strips_import_only_source() {
-        assert_eq!(without_imports("use vixen::maud::html;\n\n"), "");
-        assert_eq!(without_imports(""), "");
-    }
-
-    #[test]
-    fn keeps_incomplete_import() {
-        let source = "use vixen::maud::html";
-        assert_eq!(without_imports(source), source);
+        section id="preview-more" role="tabpanel"
+            aria-labelledby="preview-tab-more"
+            data-preview-example="more" class="preview-more" hidden
+        {
+            h2 { "More on localhost" }
+            p {
+                "Run the other examples locally to try real axum servers "
+                "and see the asset build flow in action."
+            }
+            pre tabindex="0" aria-label="Run the shop example" {
+                code class="language-bash" {
+                    (concat!(
+                        "git clone https://github.com/borolgs/vixen.git\n",
+                        "cd vixen\n",
+                        "bun install\n",
+                        "cargo run -p shop",
+                    ))
+                }
+            }
+            a href="https://github.com/borolgs/vixen/tree/main/examples"
+                target="_blank" rel="noopener noreferrer"
+            {
+                "Browse examples on GitHub "
+                span aria-hidden="true" { "↗" }
+            }
+        }
     }
 }

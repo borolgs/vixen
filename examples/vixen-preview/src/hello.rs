@@ -28,6 +28,7 @@ fn form() -> Markup {
         form hx-action=(Greet::action()) id=(Self) {
             input name=(Greet::FIELD.name) placeholder="Your name"
                 aria-label="Your name" maxlength="80";
+
             button type="submit" { "Greet" }
         }
     }

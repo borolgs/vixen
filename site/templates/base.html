@@ -1,0 +1,35 @@
+{% if page is defined %}
+{% set document = page %}
+{% else %}
+{% set document = section %}
+{% endif %}
+<!doctype html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% if document.title %}{{ document.title }}{% else %}vixen{% endif %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ get_url(path='favicon.svg') }}" />
+    <link rel="canonical" href="{{ document.permalink }}" />
+    {% for translation in document.translations %}
+    <link rel="alternate" hreflang="{{ translation.lang }}" href="{{ translation.permalink }}" />
+    {% endfor %}
+    <link rel="stylesheet" href="{{ get_url(path='style.css') }}" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="{{ get_url(path='', lang=lang, trailing_slash=true) }}">
+        <img src="{{ get_url(path='logo.svg') }}" alt="vixen" width="256" height="64" />
+      </a>
+      <nav aria-label="{{ trans(key='navigation', lang=lang) }}">
+        <a href="https://docs.rs/axum-vixen/latest/vixen/">{{ trans(key='api_reference', lang=lang) }}</a>
+        <a href="https://github.com/borolgs/vixen">GitHub</a>
+      </nav>
+    </header>
+    <main>
+      <article>
+        {% block content %}{% endblock content %}
+      </article>
+    </main>
+  </body>
+</html>

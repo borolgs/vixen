@@ -6,43 +6,46 @@ export const startLine = 17;
 // target/swap select returned fragments to explain; they never control swapping.
 const addRequest = [
   { range: '71:8-71:14', to: 'top', highlight: false, button: 'AddTodo', skip: true },
-  { range: '349:4-349:16', to: 'top', highlight: false, button: 'add_todo_form()' },
+  { range: '357:4-357:16', to: 'top', highlight: false, button: 'add_todo_form()' },
   {
     range: [
-      '351:25-351:41', // AddTodo::action()
-      '352:25-352:44', // AddTodo::FIELD.title
+      '359:25-359:41', // AddTodo::action()
+      '360:25-360:44', // AddTodo::FIELD.title
     ],
     duration: 1000,
   },
-  { range: '76:20-76:26', to: 'top', button: 'add()' },
+  { range: '76:20-76:26', to: 'top', button: 'add()', highlight: false },
 ] satisfies readonly Step[];
 
 const searchRequest = [
   { range: '48:8-48:18', to: 'top', highlight: false, button: 'SearchTodos', skip: true },
-  { range: '374:4-374:14', to: 'top', highlight: false, button: 'search_form()' },
+  { range: '382:4-382:14', to: 'top', highlight: false, button: 'search_form()' },
   {
     range: [
-      '375:18-378:36', // SearchTodos::action().hx().trigger(...).sync(...)
-      '382:39-382:58', // SearchTodos::FIELD.q
-      '388:50-388:74', // SearchTodos::FIELD.filter
+      '383:18-383:38', // SearchTodos::action()
+      '384:9-384:13', // .hx()
+      '385:9-385:45', // .trigger(...)
+      '386:9-386:36', // .sync(...)
+      '390:39-390:58', // SearchTodos::FIELD.q
+      '396:50-396:74', // SearchTodos::FIELD.filter
     ],
     duration: 1000,
   },
-  { range: '62:25-62:35', to: 'top', button: 'search()' },
+  { range: '62:25-62:35', to: 'top', button: 'search()', highlight: false },
 ] satisfies readonly Step[];
 
 const toggleRequest = [
   { range: '102:8-102:17', to: 'top', highlight: false, button: 'ToggleTodo', skip: true },
   { range: '315:4-315:12', to: 'top', highlight: false, button: 'todo_item()' },
   { range: '320:32-320:63', duration: 1000 }, // ToggleTodo::action().id(todo.id)
-  { range: '106:25-106:34', to: 'top', button: 'toggle()' },
+  { range: '106:25-106:34', to: 'top', button: 'toggle()', highlight: false },
 ] satisfies readonly Step[];
 
 const editRequest = [
   { range: '125:8-125:15', to: 'top', highlight: false, button: 'EditTodo', skip: true },
   { range: '315:4-315:12', to: 'top', highlight: false, button: 'todo_item()' },
   { range: '325:28-325:57', duration: 1000 }, // EditTodo::action().id(todo.id)
-  { range: '129:32-129:39', to: 'top', button: 'edit()' },
+  { range: '129:32-129:39', to: 'top', button: 'edit()', highlight: false },
 ] satisfies readonly Step[];
 
 const saveRequest = [
@@ -50,21 +53,21 @@ const saveRequest = [
   { range: '331:4-331:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
   {
     range: [
-      '334:29-334:58', // SaveTodo::action().id(todo.id)
-      '335:45-335:64', // SaveTodo::FIELD.done
-      '337:29-337:49', // SaveTodo::FIELD.title
-      '339:34-339:57', // SaveTodo::FIELD.priority
+      '335:28-335:57', // SaveTodo::action().id(todo.id)
+      '338:33-338:53', // SaveTodo::FIELD.done
+      '340:33-340:53', // SaveTodo::FIELD.title
+      '344:38-344:61', // SaveTodo::FIELD.priority
     ],
     duration: 1000,
   },
-  { range: '149:21-149:28', to: 'top', button: 'save()' },
+  { range: '149:21-149:28', to: 'top', button: 'save()', highlight: false },
 ] satisfies readonly Step[];
 
 const cancelRequest = [
   { range: '175:8-175:17', to: 'top', highlight: false, button: 'CancelEdit', skip: true },
   { range: '331:4-331:22', to: 'top', highlight: false, button: 'todo_item_edit_form()' },
-  { range: '342:32-342:63', duration: 1000 }, // CancelEdit::action().id(todo.id)
-  { range: '179:36-179:45', to: 'top', button: 'cancel()' },
+  { range: '348:40-348:71', duration: 1000 }, // CancelEdit::action().id(todo.id)
+  { range: '179:36-179:45', to: 'top', button: 'cancel()', highlight: false },
 ] satisfies readonly Step[];
 
 export const scenarios = {
@@ -78,15 +81,14 @@ export const scenarios = {
     200: [
       ...addRequest,
       {
-        range: ['88:9-88:23', '88:26-88:49'],
-        target: '#add-todo-form, #todo-count, #message',
-      }, // add_todo_form(), todo_count(&state.todos),
-      {
-        range: ['91:17-91:71', '92:17-92:40'],
-        target: 'li, #message[role="status"]',
-        swap: 'beforeend',
-      }, // Part::before_end(...), success(...)
-      { range: '95:24-95:67', target: '#message[role="alert"]' }, // warning(...)
+        range: [
+          '88:9-88:23', // add_todo_form()
+          '88:26-88:49', // todo_count(&state.todos)
+          '91:17-91:71', // Part::before_end(...)
+          '92:17-92:40', // success(...)
+        ],
+        target: '#add-todo-form, #todo-count, #message, li',
+      },
     ],
     422: [
       ...addRequest,
@@ -96,9 +98,14 @@ export const scenarios = {
   '/todos/toggle': {
     200: [
       ...toggleRequest,
-      { range: '115:13-115:35', target: 'li', swap: 'outerHTML' }, // todo_item(&todo).into()
-      { range: '117:13-117:45', target: 'li', swap: 'delete' }, // Part::delete(...)
-      { range: '119:9-119:32', target: '#todo-count' }, // todo_count(&state.todos)
+      {
+        range: [
+          '115:13-115:35', // todo_item(&todo).into()
+          '117:13-117:45', // Part::delete(...)
+          '119:9-119:32', // todo_count(&state.todos)
+        ],
+        target: 'li, #todo-count',
+      },
     ],
     404: [
       ...toggleRequest,
@@ -118,10 +125,15 @@ export const scenarios = {
   '/todos/save': {
     200: [
       ...saveRequest,
-      { range: '164:13-164:35', target: 'li label span', swap: 'outerHTML' }, // todo_item(&todo).into()
-      { range: '166:13-166:45', target: 'li', swap: 'delete' }, // Part::delete(...)
-      { range: '168:9-168:32', target: '#todo-count' }, // todo_count(&state.todos)
-      { range: '169:9-169:32', target: '#message' }, // success(...)
+      {
+        range: [
+          '164:13-164:35', // todo_item(&todo).into()
+          '166:13-166:45', // Part::delete(...)
+          '168:9-168:32', // todo_count(&state.todos)
+          '169:9-169:32', // success(...)
+        ],
+        target: 'li, #todo-count, #message',
+      },
     ],
     404: [
       ...saveRequest,

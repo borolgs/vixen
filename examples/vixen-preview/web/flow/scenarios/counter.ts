@@ -9,7 +9,6 @@ export const scenarios = {
       { range: '20:14-20:17', to: 'top', highlight: false, button: 'view()' },
       { range: ['27:28-27:47', '30:28-30:46'], duration: 1000 },
       { range: '41:10-41:13', to: 'top', button: 'add()', highlight: false },
-      { range: '43:17-43:19' },
       { range: ['49:9-49:29', '50:9-50:28'], target: '#counter-value, #counter-kind' },
     ],
   },

@@ -6,8 +6,8 @@
   initial-value: transparent;
 }
 
-.vixen-preview .flow-mark,
-.vixen-preview .preview-demo .flow-mark {
+.vixen-preview .preview-source .flow-mark,
+.vixen-preview .preview-demo .flow-mark::before {
   --flow-color: var(--preview-highlight);
   background-image: linear-gradient(var(--flow-color), var(--flow-color));
   background-repeat: no-repeat;
@@ -18,26 +18,45 @@
   transition: --flow-color var(--flow-fade) linear;
 }
 
-.vixen-preview .flow-mark.flow-soft {
+.vixen-preview .preview-demo .flow-mark {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Keep the text outside the highlight's animation layer. */
+.vixen-preview .preview-demo .flow-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: 0 0;
+  background-size: 100% 100%;
+  animation: flow-fade-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vixen-preview .preview-source .flow-mark.flow-soft,
+.vixen-preview .preview-demo .flow-mark.flow-soft::before {
   --flow-color: color-mix(in srgb, var(--preview-highlight) 35%, transparent);
   transition-duration: var(--flow-soften);
 }
 
-.vixen-preview .flow-mark.flow-retiring {
+.vixen-preview .preview-source .flow-mark.flow-retiring,
+.vixen-preview .preview-demo .flow-mark.flow-retiring::before {
   --flow-color: transparent;
   transition-duration: var(--flow-fade);
   animation: none;
 }
 
-.vixen-preview .flow-static .flow-mark,
-.vixen-preview .flow-static .preview-demo .flow-mark {
-  animation: none;
-  transition: none;
-}
-
 @keyframes flow-draw {
   from {
     background-size: 0% 64%;
+  }
+}
+
+@keyframes flow-fade-in {
+  from {
+    opacity: 0;
   }
 }
 
@@ -64,16 +83,11 @@
   gap: 0.375rem;
   flex: none;
   margin-inline-start: auto;
-  padding-inline-end: var(--vixen-space-4);
   color: var(--preview-muted);
   font-family: var(--vixen-font-code);
   font-size: var(--vixen-text-xs);
   white-space: nowrap;
   cursor: pointer;
-}
-
-.vixen-preview .preview-tabs:has([data-preview-tab="more"][aria-selected="true"]) .flow-animation {
-  visibility: hidden;
 }
 
 .vixen-preview .flow-animation:has(:disabled) {
@@ -93,6 +107,15 @@
 
 .vixen-preview .flow-bookmarks:empty {
   display: none;
+}
+
+.vixen-preview .flow-bookmarks button {
+  visibility: hidden;
+}
+
+.vixen-preview .flow-bookmarks button.flow-bookmark-visible {
+  visibility: visible;
+  animation: flow-fade-in 220ms ease-out;
 }
 
 .vixen-preview .flow-bookmarks button:enabled {
@@ -156,9 +179,43 @@
   z-index: 1;
 }
 
+.vixen-preview .flow-static .preview-source .flow-mark,
+.vixen-preview .flow-static .preview-demo .flow-mark::before,
+.vixen-preview .flow-static .flow-bookmarks button.flow-bookmark-visible {
+  animation: none;
+  transition: none;
+}
+
+@container preview (max-width: 44rem) {
+  .vixen-preview .preview-source .flow-header {
+    flex-wrap: nowrap;
+  }
+
+  .vixen-preview .flow-bookmarks {
+    flex: 1;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin-inline-start: 0;
+    padding-block: var(--vixen-space-1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .vixen-preview .flow-bookmarks button:enabled {
+    flex: none;
+    max-width: none;
+  }
+
+  .vixen-preview .flow-bookmarks button:focus-visible {
+    outline-offset: calc(-1 * var(--vixen-focus-width));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .vixen-preview .flow-mark,
-  .vixen-preview .preview-demo .flow-mark {
+  .vixen-preview .preview-source .flow-mark,
+  .vixen-preview .preview-demo .flow-mark::before,
+  .vixen-preview .flow-bookmarks button.flow-bookmark-visible {
     animation: none;
     transition: none;
   }

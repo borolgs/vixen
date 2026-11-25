@@ -4,12 +4,14 @@ import { connectFlow, type FlowOptions } from './flow/flow.ts';
 import * as counter from './flow/scenarios/counter.ts';
 import * as hello from './flow/scenarios/hello.ts';
 import * as todos from './flow/scenarios/todos.ts';
+import { highlightCodeBlocks } from './highlight.ts';
 
 const previews = document.querySelectorAll('[data-vixen-preview]');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function connect(preview: any, fetch: any, index: any) {
   const tabs = [...preview.querySelectorAll('[data-preview-tab]')];
   const panels = [...preview.querySelectorAll('[data-preview-example]')];
+  highlightCodeBlocks(preview);
 
   for (const [i, tab] of tabs.entries()) {
     const panel = panels[i];
@@ -60,7 +62,7 @@ function connect(preview: any, fetch: any, index: any) {
 
   const options = {
     reducedMotion,
-    controls: preview.querySelector('.preview-tabs'),
+    controls: preview,
     swap: (ctx) => htmx.swap(ctx),
   } satisfies FlowOptions;
   const flows = [

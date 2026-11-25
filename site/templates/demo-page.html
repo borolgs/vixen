@@ -1,26 +1,5 @@
-<!doctype html>
-<html lang="{{ lang }}">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ page.title }}</title>
-    <link rel="icon" href="data:," />
-    <link rel="canonical" href="{{ page.permalink }}" />
-    <style>
-      :root {
-        color-scheme: only light;
-        color: var(--vixen-text);
-        background: var(--vixen-surface);
-        font-family: var(--vixen-font-ui);
-      }
+{% extends "base.html" %}
 
-      body {
-        max-width: 70rem;
-        margin: 0 auto;
-      }
-    </style>
-  </head>
-  <body>
-    <main>{% include "demo.html" %}</main>
-  </body>
-</html>
+{% block content %}
+{% include "demo.html" %}
+{% endblock content %}

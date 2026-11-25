@@ -4,6 +4,7 @@ An axum-based library for rapid web development, currently focused on the view
 layer.
 
 [![Try the interactive vixen demo](site/static/demo.gif)](https://borolgs.github.io/vixen/demo/)
+[Try the interactive demo](https://borolgs.github.io/vixen/demo/)
 
 Conceived as a thin glue layer over [maud](https://github.com/lambda-fairy/maud)
 and the `axum-*` crates. Under active development: the API is unstable and large

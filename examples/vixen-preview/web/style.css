@@ -96,8 +96,8 @@
   counter-increment: sh-line-number;
   content: counter(sh-line-number);
   display: inline-block;
-  width: var(--vixen-space-8);
-  margin-inline-end: var(--vixen-space-4);
+  width: calc(var(--preview-line-digits) * 1ch);
+  margin-inline-end: 2ch;
   text-align: right;
   color: color-mix(in srgb, var(--preview-muted) 45%, var(--preview-code-surface));
   user-select: none;
@@ -129,7 +129,6 @@
 .vixen-preview .preview-tabs {
   display: flex;
   gap: var(--vixen-space-1);
-  margin-bottom: var(--vixen-space-4);
   border-bottom: var(--vixen-line) solid var(--preview-border);
 }
 
@@ -156,26 +155,9 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 }
 
-.vixen-preview .preview-more {
-  max-width: 38rem;
-  padding-top: var(--vixen-space-6);
-}
-
-.vixen-preview .preview-more h2 {
-  margin: 0;
-  font-size: var(--vixen-text-base);
-  font-weight: 600;
-}
-
 .vixen-preview .preview-more p {
-  margin: var(--vixen-space-3) 0 var(--vixen-space-6);
+  margin: 0 0 var(--vixen-space-6);
   color: var(--preview-muted);
-}
-
-.vixen-preview .preview-more pre {
-  margin-block: var(--vixen-space-6);
-  background: var(--preview-code-surface);
-  font-size: var(--vixen-text-sm);
 }
 
 .vixen-preview .preview-more pre:focus-visible {
@@ -204,6 +186,7 @@
 .vixen-preview .preview-demo-header {
   display: flex;
   align-items: center;
+  gap: var(--vixen-space-3);
   height: var(--vixen-space-12);
   padding: var(--vixen-space-2) var(--vixen-space-6);
 }
@@ -281,13 +264,18 @@
   background: var(--preview-code-surface);
 }
 
+.vixen-preview .preview-more .preview-source {
+  contain: none;
+  min-height: 0;
+}
+
 .vixen-preview :is([data-preview-example="hello"], [data-preview-example="counter"]) .preview-source {
   min-height: 0;
   height: 27rem;
   max-height: 70vh;
 }
 
-.vixen-preview .preview-source .preview-code-header {
+.vixen-preview .preview-code-header {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -305,9 +293,12 @@
 }
 
 .vixen-preview .preview-source pre {
-  /* Fit the longest source line, including imports, using the code font's character width. */
+  /* Include the line-number gutter when fitting the longest source line. */
   font-size: min(
-    calc((100cqi - 2 * var(--vixen-space-4)) / (var(--preview-code-columns) * 0.625)),
+    calc(
+      (100cqi - 2 * var(--vixen-space-4)) /
+      ((var(--preview-code-columns) + var(--preview-line-digits) + 2) * 0.625)
+    ),
     var(--vixen-text-xs)
   );
 }
@@ -342,6 +333,7 @@
 
 .vixen-preview .todo-status {
   display: flex;
+  align-items: baseline;
   flex-wrap: wrap;
   gap: var(--vixen-space-2) var(--vixen-space-4);
   margin-bottom: var(--vixen-space-4);
@@ -349,8 +341,12 @@
   font-size: var(--vixen-text-sm);
 }
 
-.vixen-preview .todo-status p {
+.vixen-preview .todo-status :is(h2, p) {
   margin: 0;
+}
+
+.vixen-preview .todo-status h2 {
+  color: var(--vixen-text);
 }
 
 .vixen-preview .todo-status [role="alert"] {
@@ -378,7 +374,6 @@
 
 .vixen-preview .todo-list {
   max-height: 28rem;
-  overflow-y: auto;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -408,10 +403,45 @@
   text-decoration: line-through;
 }
 
-.vixen-preview .todo-list form {
-  align-items: center;
+.vixen-preview .todo-list .todo-edit {
+  display: grid;
+  gap: var(--vixen-space-3);
   width: 100%;
   margin: 0;
+}
+
+.vixen-preview :is(.todo-edit-title, .todo-edit-footer, .todo-edit-buttons) {
+  display: flex;
+  align-items: center;
+  gap: var(--vixen-space-2);
+  min-width: 0;
+}
+
+.vixen-preview .todo-edit-title input:not([type="checkbox"]) {
+  min-width: 0;
+}
+
+.vixen-preview .todo-edit-footer {
+  flex-wrap: wrap;
+}
+
+.vixen-preview .todo-edit-buttons {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+.vixen-preview .todo-edit-buttons button[type="button"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--vixen-line) var(--preview-border);
+}
+
+.vixen-preview .todo-edit-buttons button[type="button"]:hover {
+  background: var(--vixen-selection);
+}
+
+.vixen-preview .todo-edit-buttons button[type="button"]:active {
+  color: var(--vixen-action-active-text);
+  background: var(--vixen-action-active);
 }
 
 .vixen-preview .preview-layout > .preview-error {
@@ -450,8 +480,7 @@
     padding-inline: var(--vixen-space-4);
   }
 
-  .vixen-preview .preview-demo,
-  .vixen-preview .preview-more {
-    padding: var(--vixen-space-4);
+  .vixen-preview .preview-demo {
+    padding: 0 var(--vixen-space-4) var(--vixen-space-4);
   }
 }

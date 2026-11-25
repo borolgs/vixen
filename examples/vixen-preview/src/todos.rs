@@ -331,15 +331,23 @@ fn todo_item(todo: &Todo) -> Markup {
 fn todo_item_edit_form(todo: &Todo) -> Markup {
     html! {
         li id=(Self) {
-            form hx-action=(SaveTodo::action().id(todo.id)) {
-                input type="checkbox" name=(SaveTodo::FIELD.done)
-                    value="true" checked[todo.done] aria-label="Done";
-                input name=(SaveTodo::FIELD.title) value=(todo.title)
-                    required autofocus aria-label="Todo title" maxlength="160";
-                (priority_select(SaveTodo::FIELD.priority, todo.priority))
-                button type="submit" { "Save" }
-                button type="button"
-                    hx-action=(CancelEdit::action().id(todo.id)) { "Cancel" }
+            form class="todo-edit"
+                hx-action=(SaveTodo::action().id(todo.id))
+            {
+                div class="todo-edit-title" {
+                    input name=(SaveTodo::FIELD.done) type="checkbox"
+                        value="true" checked[todo.done] aria-label="Done";
+                    input name=(SaveTodo::FIELD.title) value=(todo.title)
+                        required autofocus aria-label="Todo title" maxlength="160";
+                }
+                div class="todo-edit-footer" {
+                    (priority_select(SaveTodo::FIELD.priority, todo.priority))
+                    div class="todo-edit-buttons" {
+                        button type="button"
+                            hx-action=(CancelEdit::action().id(todo.id)) { "Cancel" }
+                        button type="submit" { "Save" }
+                    }
+                }
             }
         }
     }
@@ -401,7 +409,7 @@ fn todo_count(todos: &[Todo]) -> Markup {
     let left = todos.iter().filter(|todo| !todo.done).count();
 
     html! {
-        p id=(Self) {
+        h2 id=(Self) {
             (left) " left"
         }
     }

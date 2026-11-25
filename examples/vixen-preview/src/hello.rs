@@ -14,6 +14,7 @@ pub struct Index;
 
 pub async fn view(_: Index) -> Markup {
     html! {
+        h2 { "Say hello" }
         (form())
         p { "Submit a name to update the greeting below." }
         div role="status" aria-live="polite" {

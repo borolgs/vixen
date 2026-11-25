@@ -1,5 +1,4 @@
 import type { HtmxRequestCtx, HtmxSwapContext } from 'htmx.org';
-import { highlightSource } from '../highlight.ts';
 import { parseRange, type SourceRange } from './ranges.ts';
 
 export interface Step {
@@ -38,6 +37,39 @@ export interface SwapTask {
 type SelectedStep = Step & { elements: readonly Element[]; tasks: readonly SwapTask[] };
 type FlowRequest = HtmxRequestCtx & { extensionPromise?: Promise<unknown> };
 type Frame = SelectedStep & { ranges: readonly SourceRange[] };
+type BookmarkStep = Step & { button: string };
+
+// Only the shared, source-only prefix is known before the response arrives.
+function requestSteps(branches: Scenarios[string] = {}): readonly Step[] {
+  const variants = Object.values(branches).filter((steps) => steps !== undefined);
+  const first = variants[0] ?? [];
+  const end = first.findIndex(
+    (step, index) =>
+      step.target !== undefined ||
+      step.swap !== undefined ||
+      !variants.every((steps) => JSON.stringify(steps[index]) === JSON.stringify(step)),
+  );
+  return end < 0 ? first : first.slice(0, end);
+}
+
+const bookmarkKey = (step: Step) => JSON.stringify([step.button, step.range, step.to, step.scroll]);
+
+// Reserve every branch's bookmarks without changing their relative order.
+function bookmarkSteps(branches: Scenarios[string] = {}): BookmarkStep[] {
+  const plan: BookmarkStep[] = [];
+  for (const steps of Object.values(branches)) {
+    let cursor = 0;
+    for (const step of steps ?? []) {
+      if (!step.button) continue;
+      const match = plan.findIndex(
+        (candidate, index) => index >= cursor && bookmarkKey(candidate) === bookmarkKey(step),
+      );
+      if (match < 0) plan.splice(cursor++, 0, { ...step, button: step.button });
+      else cursor = match + 1;
+    }
+  }
+  return plan;
+}
 
 // Observe the response before htmx consumes its fragments. Never modify its tasks.
 export function selectSteps(steps: readonly Step[], tasks: readonly SwapTask[]): SelectedStep[] {
@@ -71,20 +103,21 @@ export function createDelivery(tasks: readonly SwapTask[], swap: (batch: readonl
 
 const animationControls = new WeakMap<
   HTMLElement,
-  { input: HTMLInputElement; animatedRequests: Set<HtmxRequestCtx> }
+  { inputs: HTMLInputElement[]; animatedRequests: Set<HtmxRequestCtx> }
 >();
 
 function animationControl(container: HTMLElement, animated: boolean) {
   const existing = animationControls.get(container);
   if (existing) return existing;
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.checked = animated;
-  const label = document.createElement('label');
-  label.className = 'flow-animation';
-  label.append(input, 'Animate');
-  container.append(label);
-  const control = { input, animatedRequests: new Set<HtmxRequestCtx>() };
+  const inputs = [...container.querySelectorAll<HTMLInputElement>('[data-flow-animation]')];
+  if (!inputs.length) throw new Error('Missing preview animation controls.');
+  for (const input of inputs) {
+    input.checked = animated;
+    input.addEventListener('change', () => {
+      for (const other of inputs) other.checked = input.checked;
+    });
+  }
+  const control = { inputs, animatedRequests: new Set<HtmxRequestCtx>() };
   animationControls.set(container, control);
   return control;
 }
@@ -111,14 +144,14 @@ export function connectFlow(
   const demo = example.querySelector<HTMLElement>('.preview-demo');
   if (!source || !code || !header || !listing || !demo) throw new Error('Incomplete preview flow markup.');
   const text = code.textContent.replace(/\r\n/g, '\n').split('\n');
-  const pristine = highlightSource(text.join('\n'));
-  code.innerHTML = pristine;
+  const pristine = code.innerHTML;
   const bookmarks = document.createElement('nav');
   bookmarks.className = 'flow-bookmarks';
   bookmarks.setAttribute('aria-label', 'Flow steps');
   header.classList.add('flow-header');
   header.append(bookmarks);
-  const { input: animation, animatedRequests } = animationControl(controls ?? header, animated);
+  const { inputs: animations, animatedRequests } = animationControl(controls ?? example, animated);
+  const animation = animations[0];
   animated = animation.checked;
   example.classList.toggle('flow-static', !animated);
   example.style.setProperty('--flow-duration', `${duration}ms`);
@@ -131,10 +164,13 @@ export function connectFlow(
   let activeRequest: HtmxRequestCtx | undefined;
   let focused: HTMLElement | null = null;
   let resetPending = false;
-  animation.addEventListener('change', () => {
-    if (!activeRequest) animated = animation.checked;
-    stopScroll();
-  });
+  let pendingPlayback: { player: ReturnType<typeof begin>; steps: readonly Step[]; done: Promise<void> } | undefined;
+  for (const input of animations) {
+    input.addEventListener('change', () => {
+      if (!activeRequest) animated = input.checked;
+      stopScroll();
+    });
+  }
   const batches = new WeakMap<object, readonly SwapTask[]>();
   const wait = (work: Promise<unknown>) =>
     new Promise<void>((resolve) => {
@@ -322,31 +358,70 @@ export function connectFlow(
     }
   };
 
-  const play = async (ctx: FlowRequest, frames: readonly Frame[], tasks: readonly SwapTask[]) => {
+  const framesFor = (steps: readonly SelectedStep[]): Frame[] =>
+    steps.map((step) => ({
+      ...step,
+      ranges: [step.range].flat().map((spec) => parseRange(spec, text)),
+    }));
+
+  const begin = (ctx: FlowRequest) => {
     motion = new AbortController();
     const signal = motion.signal;
     const current = () => visible() && !signal.aborted;
-    const apply = createDelivery(tasks, swapBatch);
     ctx.request.signal.addEventListener('abort', stop, { once: true, signal });
-    let lines: Element[] = [];
-    try {
-      manualScroll = false;
-      example.classList.toggle('flow-static', !animated);
-      bookmarks.replaceChildren();
-      const previous = [...example.querySelectorAll('.flow-mark')];
-      previous.forEach((element) => element.classList.add('flow-retiring'));
-      if (animated && previous.length && visible()) await pause(fade);
-      if (!current()) return;
-      previous.forEach((element) => element.classList.remove('flow-mark', 'flow-soft', 'flow-retiring'));
-      code.innerHTML = pristine;
-      if (!current()) return;
+    manualScroll = false;
+    example.classList.toggle('flow-static', !animated);
+    clearPresentation();
+    const lines = [...code.querySelectorAll('.sh__line')];
+    const path = new URL(ctx.request.action, document.baseURI).pathname;
+    const reserved = bookmarkSteps(scenarios[path]).map((step) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = step.button;
+      button.inert = true;
+      return { key: bookmarkKey(step), button };
+    });
+    bookmarks.append(...reserved.map(({ button }) => button));
+    let nextBookmark = 0;
+    let started = false;
+    let queuedButtons: Frame[] = [];
 
-      lines = [...code.querySelectorAll('.sh__line')];
-      if (!animated) await apply();
+    const revealBookmarks = (frames: readonly Frame[]) => {
       for (const frame of frames) {
+        if (!frame.button) continue;
+        const index = reserved.findIndex((entry, index) => index >= nextBookmark && entry.key === bookmarkKey(frame));
+        const entry = reserved[index];
+        if (!entry) throw new Error('Could not find a reserved preview bookmark.');
+        nextBookmark = index + 1;
+        const { button } = entry;
+        button.inert = false;
+        button.classList.add('flow-bookmark-visible');
+        button.addEventListener('click', () => {
+          if (button.isConnected) void scroll(frame.ranges, lines, true, frame.scroll);
+        });
+      }
+    };
+
+    const playFrames = async (frames: readonly Frame[], apply: ReturnType<typeof createDelivery>, complete = false) => {
+      const groups: { frame: Frame; buttons: Frame[] }[] = [];
+      for (const frame of frames) {
+        if (frame.button) queuedButtons.push(frame);
         if (frame.skip) continue;
+        groups.push({ frame, buttons: queuedButtons });
+        queuedButtons = [];
+      }
+      // A skipped run may straddle the request prefix and the response branch.
+      const last = groups.at(-1);
+      if (complete && last) {
+        last.buttons.push(...queuedButtons);
+        queuedButtons = [];
+      }
+      for (const { frame, buttons } of groups) {
         if (!current()) return;
-        if (animated && !manualScroll) await scroll(frame.ranges, lines, frame.to === 'top', frame.scroll);
+        revealBookmarks(buttons);
+        if (animated && !manualScroll) {
+          await scroll(frame.ranges, lines, frame.to === 'top', frame.scroll);
+        }
         if (!current()) return;
         const marks: HTMLSpanElement[] = [];
         if (frame.highlight !== false) {
@@ -371,24 +446,37 @@ export function connectFlow(
             if (!animated) element.classList.add('flow-soft');
           }
         }
-        if (animated) await pause(frame.duration ?? duration);
+        started ||= frame.highlight !== false || frame.tasks.length > 0;
+        if (animated && (started || frame.duration !== undefined)) await pause(frame.duration ?? duration);
       }
+      if (complete && current()) {
+        revealBookmarks(queuedButtons);
+        queuedButtons = [];
+      }
+    };
+    return { current, lines, playFrames };
+  };
+
+  const play = async (ctx: FlowRequest, frames: readonly Frame[], tasks: readonly SwapTask[]) => {
+    const pending = pendingPlayback;
+    const { current, lines, playFrames } = pending?.player ?? begin(ctx);
+    const afterSwap = () =>
+      example.dispatchEvent(new CustomEvent('htmx:after:swap', { detail: { ctx }, bubbles: true }));
+    const apply = createDelivery(tasks, async (batch) => {
+      await swapBatch(batch);
+      afterSwap();
+    });
+    try {
+      if (pending) await pending.done;
+      if (!current()) return;
+      if (!animated) await apply();
+      await playFrames(frames.slice(pending?.steps.length ?? 0), apply, true);
     } finally {
       // Cancellation or a rendering error must still deliver the whole response.
       await apply();
-      example.dispatchEvent(new CustomEvent('htmx:after:swap', { detail: { ctx }, bubbles: true }));
+      if (!tasks.length) afterSwap();
     }
     if (!current()) return;
-    for (const frame of frames) {
-      if (!frame.button) continue;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = frame.button;
-      button.addEventListener('click', () => {
-        if (button.isConnected) void scroll(frame.ranges, lines, true, frame.scroll);
-      });
-      bookmarks.append(button);
-    }
     const last = frames.findLast((frame) => frame.button && !frame.skip);
     if (!animated && last) await scroll(last.ranges, lines, last.to === 'top', 'instant');
     if (animated) {
@@ -396,7 +484,11 @@ export function connectFlow(
       if (!current()) return;
       const marks = [...example.querySelectorAll('.flow-mark')];
       marks.forEach((element) => element.classList.add('flow-soft'));
-      await wait(Promise.all(marks.flatMap((mark) => mark.getAnimations()).map((animation) => animation.finished)));
+      await wait(
+        Promise.all(
+          marks.flatMap((mark) => mark.getAnimations({ subtree: true })).map((animation) => animation.finished),
+        ),
+      );
     }
   };
 
@@ -419,16 +511,35 @@ export function connectFlow(
         ? document.activeElement
         : null;
     demo.inert = true;
-    animation.disabled = animatedRequests.size > 0;
+    for (const input of animations) input.disabled = animatedRequests.size > 0;
     bookmarks.replaceChildren();
+    if (!animated || !visible()) return;
+    try {
+      const path = new URL(event.detail.ctx.request.action, document.baseURI).pathname;
+      const branches = scenarios[path];
+      const steps = requestSteps(branches);
+      if (!steps.length) return;
+      const frames = framesFor(selectSteps(steps, []));
+      const player = begin(event.detail.ctx);
+      const complete = Object.values(branches).every((branch) => !branch || branch.length === steps.length);
+      const done = player.playFrames(frames, createDelivery([], swapBatch), complete).catch((error) => {
+        stop();
+        console.warn('Could not play the preview request.', error);
+      });
+      pendingPlayback = { player, steps, done };
+    } catch (error) {
+      console.warn('Could not select preview request steps.', error);
+    }
   });
   document.addEventListener('htmx:finally:request', (event) => {
     if (event.detail.ctx !== activeRequest) return;
+    stop();
+    pendingPlayback = undefined;
     animatedRequests.delete(event.detail.ctx);
     activeRequest = undefined;
     animated = animation.checked;
     demo.inert = false;
-    animation.disabled = animatedRequests.size > 0;
+    for (const input of animations) input.disabled = animatedRequests.size > 0;
     if (resetPending) clearPresentation();
     resetPending = false;
     if (focused?.isConnected && !example.hidden && !document.hidden && document.activeElement === document.body) {
@@ -454,10 +565,7 @@ export function connectFlow(
       const steps = selectSteps(scenarios[path]?.[ctx.response.status] ?? [], tasks);
       if (!steps.length) return;
       // Validate before preventing the normal swap; malformed scenarios can't lose it.
-      const frames = steps.map((step) => ({
-        ...step,
-        ranges: [step.range].flat().map((spec) => parseRange(spec, text)),
-      }));
+      const frames = framesFor(steps);
       event.preventDefault();
       const delivery = play(ctx, frames, [...tasks]).catch((error) =>
         console.warn('Could not play the preview flow.', error),

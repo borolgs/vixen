@@ -3,12 +3,10 @@ title = "vixen"
 default_language = "en"
 output_dir = "dist"
 
+[markdown]
+insert_anchor_links = "right"
+
 [translations]
 navigation = "Site navigation"
-api_reference = "API reference"
-
-[languages.ru]
-
-[languages.ru.translations]
-navigation = "Site navigation"
-api_reference = "API reference"
+locale = "en_US"
+social_image_alt = "vixen: server-driven UI with Rust, axum and htmx. Typed actions and page-local TypeScript and CSS."

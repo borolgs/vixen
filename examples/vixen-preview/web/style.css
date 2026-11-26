@@ -78,14 +78,6 @@
 }
 
 .vixen-preview code {
-  --sh-identifier: var(--vixen-text);
-  --sh-keyword: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-peach));
-  --sh-string: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-sea));
-  --sh-class: var(--vixen-link);
-  --sh-property: var(--vixen-link);
-  --sh-sign: var(--vixen-text-muted);
-  --sh-comment: var(--vixen-text-muted);
-  --sh-space: inherit;
   counter-reset: sh-line-number;
   color: inherit;
   background: none;

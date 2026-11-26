@@ -5,8 +5,10 @@ version.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/axum-vixen/latest/vixen/"
 publish.workspace = true
-description = "An axum-based library for rapid web development, currently focused on the view layer: axum + maud + htmx."
+description = "Server-driven UI with Rust, axum and htmx. Typed actions, HTML fragments, and page-local TypeScript and CSS bundling."
 keywords = ["axum", "htmx", "maud", "web", "ssr"]
 categories = ["web-programming", "web-programming::http-server"]
 

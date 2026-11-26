@@ -5,7 +5,7 @@
   "scripts": {
     "build": "bun run build:wasm && bun run build:web",
     "build:wasm": "wasm-pack build --target web --out-dir dist/pkg --out-name vixen_preview --release --locked",
-    "build:web": "bun run typecheck && mkdir -p dist && cp web/index.html ../../site/static/theme.css dist/ && bun build web/main.ts --target browser --external ./pkg/vixen_preview.js --outfile dist/main.js && bun build web/flow/flow.css --outfile dist/style.css && touch dist/.nojekyll",
+    "build:web": "bun run typecheck && mkdir -p dist && cp web/index.html ../../site/static/theme.css dist/ && bun build web/main.ts web/site-highlight.ts --target browser --external ./pkg/vixen_preview.js --outdir dist --splitting && bun build web/flow/flow.css --outfile dist/style.css && touch dist/.nojekyll",
     "typecheck": "tsc --noEmit",
     "serve": "bunx --bun serve dist --listen tcp://127.0.0.1:4007"
   },

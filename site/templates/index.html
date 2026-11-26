@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if section.title %}<h1>{{ section.title }}</h1>{% endif %}
+<div class="intro"><h1>{{ section.extra.heading }}</h1> {{ section.extra.tagline }}</div>
 {{ section.content | safe }}
 {% endblock content %}

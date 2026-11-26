@@ -26,6 +26,17 @@
   --vixen-disabled-text: var(--vixen-text-muted);
   --vixen-focus: var(--vixen-ink);
 
+  --sh-identifier: var(--vixen-text);
+  --sh-keyword: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-peach));
+  --sh-string: color-mix(in srgb, var(--vixen-ink) 65%, var(--vixen-sea));
+  --sh-class: var(--vixen-link);
+  --sh-property: var(--vixen-link);
+  --sh-entity: var(--vixen-link);
+  --sh-jsxliterals: var(--vixen-text);
+  --sh-sign: var(--vixen-text-muted);
+  --sh-comment: var(--vixen-text-muted);
+  --sh-space: inherit;
+
   --vixen-font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
   --vixen-font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "DejaVu Sans Mono", sans-serif;
   --vixen-text-xs: 0.75rem;

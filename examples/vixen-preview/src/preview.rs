@@ -27,12 +27,11 @@ enum CodeLanguage {
 }
 
 fn code_panel(title: &str, source: &str, language: CodeLanguage) -> Markup {
-    const SCROLL_PADDING_LINES: usize = 20;
-    let (language, padding_lines) = match language {
-        CodeLanguage::Rust => ("rust", SCROLL_PADDING_LINES),
-        CodeLanguage::Bash => ("bash", 0),
+    let language = match language {
+        CodeLanguage::Rust => "rust",
+        CodeLanguage::Bash => "bash",
     };
-    let line_digits = (source.split('\n').count() + padding_lines).ilog10() + 1;
+    let line_digits = source.split('\n').count().ilog10() + 1;
     let columns = source
         .lines()
         .map(|line| line.chars().count())
@@ -50,7 +49,7 @@ fn code_panel(title: &str, source: &str, language: CodeLanguage) -> Markup {
             }
             pre tabindex="0" {
                 code data-preview-code=(language) {
-                    (source) ("\n".repeat(padding_lines))
+                    (source)
                 }
             }
         }

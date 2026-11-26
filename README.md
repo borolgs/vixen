@@ -1,20 +1,19 @@
-#  vixen
+# vixen
 
-An axum-based library for rapid web development, currently focused on the view
-layer.
+Rapid server-driven UI development with axum and htmx. A concise, typed Rust API
+with full access to htmx and modern frontend tools.
 
-[![Try the interactive vixen demo](site/static/demo.gif)](https://borolgs.github.io/vixen/demo/)
-[Try the interactive demo](https://borolgs.github.io/vixen/demo/)
+[Website](https://borolgs.github.io/vixen/) · [API reference](https://docs.rs/axum-vixen/latest/vixen/)
 
-Conceived as a thin glue layer over [maud](https://github.com/lambda-fairy/maud)
-and the `axum-*` crates. Under active development: the API is unstable and large
-parts will still be reworked.
+[![Try the interactive vixen demo](https://borolgs.github.io/vixen/demo.gif)](https://borolgs.github.io/vixen/#try-it-out)
+[Try the interactive demo](https://borolgs.github.io/vixen/#try-it-out)
+
+Experimental and under active development. Expect API changes.
 
 ## The ideas behind vixen
 
-1. **Views are rendered right in the handlers.**
-    - Something JSX-like may come later — more flexible, more extensible. For
-      now, maud's simplicity and reliability win.
+1. **Views are rendered right in the handlers.** Write HTML in Rust with
+   [maud](https://github.com/lambda-fairy/maud).
     - vixen provides two helper macros: [`#[id]`][id] and [`#[fragment]`][fragment].
     - Optional [Basecoat](#basecoat) components are available under
       `vixen::ui::basecoatui` with the `basecoatui` feature.
@@ -25,13 +24,9 @@ parts will still be reworked.
       the markup that calls it.
     - [`partial!`][partial] combines a main swap, targeted parts, and
       client-side events in one response.
-    - Optional [agent instructions](#agents) under `vixen::agent`, with the
-      `agent` feature, hand the same endpoints to an agent with curl.
 
-3. **TS and CSS live next to the page they belong to.** The browser is a
-   JavaScript platform, and vixen embraces that boundary. When custom
-   client-side code is needed, it uses the JavaScript ecosystem directly — if
-   we have to write JS, we might as well do it properly.
+3. **TS and CSS live next to the page they belong to.** Server-driven UI
+   shouldn't mean managing frontend assets by hand.
     - [`vixen::build`][build] finds the entry points, bundles their TS and CSS
       with Bun, and passes the asset manifest to Rust.
     - [`assets!`][assets] emits the `<script>` and `<link>` tags for the current
@@ -39,8 +34,8 @@ parts will still be reworked.
     - [`asset!`][asset] resolves page-local static files to content-hashed URLs.
     - [`assets_router!`][assets_router] embeds the bundled files in the binary
       and returns an axum router that serves them.
-    - For now, that bundler is Bun: simple and fast. Later there may be an
-      option without an external runtime, possibly from the Oxc ecosystem.
+
+   Bun is needed to build the app, not to run it.
 
 The first two ideas fit in one file:
 
@@ -313,9 +308,22 @@ Router::new()
     .merge(pages::todos::router())
     .merge(SKILL.router()) // GET /llms.txt
 
-// src/shared.rs — the layout, so every page head carries the text
-head { (crate::SKILL.script()) (vixen::assets!()) }
+// src/pages/todos/mod.rs — inside the page handler, beside index.ts
+crate::shared::layout(vixen::assets!(), content)
+
+// src/shared.rs — every page head carries the skill
+pub fn layout(assets: Markup, content: Markup) -> Markup {
+    html! {
+        html {
+            head { (crate::SKILL.script()) (assets) }
+            body { (content) }
+        }
+    }
+}
 ```
+
+`assets!()` resolves assets relative to its Rust source file, so the call stays
+with the page rather than in the shared layout.
 
 The index lists each action's route and form fields, then the first line of the
 struct's doc comment as what it returns: `?` marks optional fields,

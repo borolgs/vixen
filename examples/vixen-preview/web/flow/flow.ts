@@ -148,8 +148,26 @@ export function connectFlow(
   const bookmarks = document.createElement('nav');
   bookmarks.className = 'flow-bookmarks';
   bookmarks.setAttribute('aria-label', 'Flow steps');
+  const scrollHint = document.createElement('span');
+  scrollHint.className = 'flow-scroll-hint';
+  scrollHint.textContent = 'Click to scroll code';
+  scrollHint.setAttribute('aria-hidden', 'true');
+  const scrollToggle = document.createElement('button');
+  scrollToggle.type = 'button';
+  scrollToggle.className = 'flow-scroll-toggle';
+  scrollToggle.textContent = 'Scroll code';
+  source.id ||= `${example.id}-source`;
+  scrollToggle.setAttribute('aria-controls', source.id);
+  source.classList.add('flow-source');
   header.classList.add('flow-header');
-  header.append(bookmarks);
+  header.append(bookmarks, scrollHint, scrollToggle);
+  const updateSourceHeight = () => {
+    if (example.hidden) return;
+    source.style.setProperty('--flow-source-height', `${source.clientHeight - header.offsetHeight}px`);
+  };
+  const resize = new ResizeObserver(updateSourceHeight);
+  resize.observe(source);
+  resize.observe(header);
   const { inputs: animations, animatedRequests } = animationControl(controls ?? example, animated);
   const animation = animations[0];
   animated = animation.checked;
@@ -195,12 +213,71 @@ export function connectFlow(
     motion.abort();
     stopScroll();
   };
-  for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+  const pauseFollowing = () => {
+    manualScroll = true;
+    stopScroll();
+  };
+  const explore = () => {
+    source.classList.add('flow-exploring');
+    scrollToggle.textContent = 'Done';
+    scrollToggle.setAttribute('aria-label', 'Done scrolling code');
+    pauseFollowing();
+  };
+  // Leaving the panel doesn't resume following; only the next demo action does.
+  const stopExploring = () => {
+    source.classList.remove('flow-exploring');
+    scrollToggle.textContent = 'Scroll code';
+    scrollToggle.removeAttribute('aria-label');
+  };
+  scrollToggle.addEventListener('click', (event) => {
+    if (source.classList.contains('flow-exploring')) stopExploring();
+    else {
+      explore();
+      if (event.detail === 0) listing.focus({ preventScroll: true });
+    }
+  });
+  let press: { x: number; y: number } | undefined;
+  listing.addEventListener('pointerdown', (event) => {
+    press = event.isPrimary && event.button === 0 ? { x: event.clientX, y: event.clientY } : undefined;
+  });
+  listing.addEventListener('pointermove', (event) => {
+    if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) press = undefined;
+  });
+  listing.addEventListener('pointercancel', () => {
+    press = undefined;
+  });
+  listing.addEventListener('click', (event) => {
+    const tapped = event.detail === 0 || press !== undefined;
+    press = undefined;
+    if (tapped && !window.getSelection()?.toString()) explore();
+  });
+  listing.addEventListener('focus', () => {
+    if (listing.matches(':focus-visible')) explore();
+  });
+  listing.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) explore();
+  });
+  source.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !source.classList.contains('flow-exploring')) return;
+    event.preventDefault();
+    stopExploring();
+    if (scrollToggle.checkVisibility()) scrollToggle.focus({ preventScroll: true });
+  });
+  source.addEventListener('pointerleave', (event) => {
+    // Touch pointers leave after each gesture; only a mouse can leave the reading mode this way.
+    if (event.pointerType === 'mouse') stopExploring();
+  });
+  source.addEventListener('focusout', (event) => {
+    if (!(event.relatedTarget instanceof Node) || !source.contains(event.relatedTarget)) stopExploring();
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!(event.target instanceof Node) || !source.contains(event.target)) stopExploring();
+  });
+  for (const type of ['wheel', 'touchstart']) {
     source.addEventListener(
       type,
       () => {
-        manualScroll = true;
-        stopScroll();
+        if (source.classList.contains('flow-exploring')) stopScroll();
       },
       { passive: true },
     );
@@ -219,6 +296,7 @@ export function connectFlow(
     { inset = 28, toleranceLines = 3 } = {},
   ) => {
     stopScroll();
+    updateSourceHeight();
     const first = lines[Math.min(...ranges.map((range) => range.start)) - 1].getBoundingClientRect();
     const last = lines[Math.max(...ranges.map((range) => range.end)) - 1].getBoundingClientRect();
     const viewport = source.getBoundingClientRect();
@@ -307,6 +385,7 @@ export function connectFlow(
   };
   const reset = () => {
     stop();
+    stopExploring();
     resetPending = !!activeRequest;
     focused = null;
     manualScroll = false;
@@ -369,7 +448,6 @@ export function connectFlow(
     const signal = motion.signal;
     const current = () => visible() && !signal.aborted;
     ctx.request.signal.addEventListener('abort', stop, { once: true, signal });
-    manualScroll = false;
     example.classList.toggle('flow-static', !animated);
     clearPresentation();
     const lines = [...code.querySelectorAll('.sh__line')];
@@ -397,6 +475,7 @@ export function connectFlow(
         button.inert = false;
         button.classList.add('flow-bookmark-visible');
         button.addEventListener('click', () => {
+          pauseFollowing();
           if (button.isConnected) void scroll(frame.ranges, lines, true, frame.scroll);
         });
       }
@@ -478,7 +557,7 @@ export function connectFlow(
     }
     if (!current()) return;
     const last = frames.findLast((frame) => frame.button && !frame.skip);
-    if (!animated && last) await scroll(last.ranges, lines, last.to === 'top', 'instant');
+    if (!animated && !manualScroll && last) await scroll(last.ranges, lines, last.to === 'top', 'instant');
     if (animated) {
       await pause(rest);
       if (!current()) return;
@@ -502,6 +581,8 @@ export function connectFlow(
       return;
     }
     stop();
+    stopExploring();
+    manualScroll = false;
     activeRequest = event.detail.ctx;
     resetPending = false;
     animated = animation.checked;

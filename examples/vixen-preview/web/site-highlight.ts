@@ -1,4 +1,4 @@
-import { parse, render, type ParseOptions } from 'sugar-high/core';
+import { type ParseOptions, parse, render } from 'sugar-high/core';
 import * as rust from 'sugar-high/lang/rust';
 import * as typescript from 'sugar-high/lang/typescript';
 

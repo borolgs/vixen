@@ -31,8 +31,6 @@
 //! - [`routing`] re-exports `axum_extra::routing` 0.12 for the `TypedPath`
 //!   derives used by [`#[route]`](macro@route) and [`#[action]`](macro@action).
 //!   Register handlers with [`RouterExt`].
-//! - `hx` re-exports `axum_htmx` 0.8 header types and `SwapOption`; see [htmx 4
-//!   compatibility](#htmx-4-compatibility) for caveats.
 //!
 //! [`build`] and [`Config`] come from `axum-vixen-bundler`, the `build.rs`
 //! half. To call them, list `axum-vixen` under `[build-dependencies]` as well.
@@ -52,6 +50,7 @@ mod action;
 pub mod agent;
 mod base_path;
 mod href;
+pub mod hx;
 mod id;
 mod paged;
 mod partial;
@@ -63,7 +62,6 @@ pub mod ui;
 // Keep their docs above. Depending on whether rustdoc inlines a re-export,
 // docs here are either hidden or appended to the original item's docs.
 pub use axum_extra::routing;
-pub use axum_htmx as hx;
 pub use href::{Asset, Href};
 pub use id::Id;
 pub use maud;

@@ -30,7 +30,6 @@ testing = ["dep:scraper"]
 axum-vixen-macros = { path = "../vixen-macros", version = "0.4.0" }
 axum-vixen-bundler = { path = "../vixen-bundler", version = "0.4.0" }
 
-axum-htmx = { workspace = true }
 axum-extra = { workspace = true }
 maud = { workspace = true }
 

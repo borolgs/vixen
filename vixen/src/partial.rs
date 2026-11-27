@@ -1,14 +1,12 @@
 use std::marker::PhantomData;
 
-use axum::{
-    http::{HeaderValue, StatusCode},
-    response::IntoResponse,
-};
-use axum_htmx::{HxEvent, HxResponseTrigger, SwapOption};
+use axum::{http::StatusCode, response::IntoResponse};
 use maud::{Markup, Render, html};
-use serde_json::{Value, json};
 
-use crate::Id;
+use crate::{
+    Id,
+    hx::{HX_TRIGGER, HxEvent, SwapOption, trigger_header},
+};
 
 /// An htmx response containing an optional swap for the request target,
 /// targeted `<hx-partial>` swaps, and client-side events.
@@ -381,8 +379,8 @@ impl<S, M> HxPartial<S, M> {
 
     /// Adds an event to the response's `HX-Trigger` header.
     ///
-    /// Missing or `null` event data is encoded as `{}` rather than the `null`
-    /// value that htmx 4 rejects.
+    /// Payloads are preserved. Missing data is sent as JSON `null`; this
+    /// requires htmx 4.0.1 or later.
     ///
     /// ```
     /// use axum::response::IntoResponse;
@@ -393,14 +391,10 @@ impl<S, M> HxPartial<S, M> {
     ///     .event("todos:refresh")
     ///     .into_response();
     ///
-    /// assert_eq!(response.headers()["hx-trigger"], r#"{"todos:refresh":{}}"#);
+    /// assert_eq!(response.headers()["hx-trigger"], r#"{"todos:refresh":null}"#);
     /// ```
     pub fn event(mut self, event: impl Into<HxEvent>) -> Self {
-        let mut event = event.into();
-        if event.data.as_ref().is_none_or(Value::is_null) {
-            event.data = Some(json!({}));
-        }
-        self.state.events.push(event);
+        self.state.events.push(event.into());
         self
     }
 
@@ -437,7 +431,7 @@ impl<M> HxPartial<Filled, M> {
                 (main)
             }
             @for Part { target, swap, content } in self.state.parts {
-                hx-partial hx-target=(target) hx-swap=[swap.map(swap_attr)] {
+                hx-partial hx-target=(target) hx-swap=[swap.map(SwapOption::as_str)] {
                     (content)
                 }
             }
@@ -448,12 +442,17 @@ impl<M> HxPartial<Filled, M> {
 impl<M> IntoResponse for HxPartial<Filled, M> {
     fn into_response(mut self) -> axum::response::Response {
         let events = std::mem::take(&mut self.state.events);
-        (
-            self.state.status,
-            HxResponseTrigger::normal(events),
-            self.render(),
-        )
-            .into_response()
+        let trigger = match trigger_header(events) {
+            Ok(trigger) => trigger,
+            Err(error) => {
+                return (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response();
+            }
+        };
+        let mut response = (self.state.status, self.render()).into_response();
+        if let Some(value) = trigger {
+            response.headers_mut().insert(HX_TRIGGER, value);
+        }
+        response
     }
 }
 
@@ -564,13 +563,6 @@ impl PartialEntry for Option<HxPartial<Filled>> {
     }
 }
 
-pub(crate) fn swap_attr(swap: SwapOption) -> String {
-    HeaderValue::from(swap)
-        .to_str()
-        .unwrap_or_default()
-        .to_owned()
-}
-
 /// Builds an [`HxPartial`] response.
 ///
 /// Each entry can be:
@@ -644,6 +636,8 @@ macro_rules! partial {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::{Value, json};
+
     use super::*;
 
     fn toast() -> Part {
@@ -754,7 +748,7 @@ mod tests {
         let response = partial!(close, toast(), HxEvent::new("rows:refresh"), nulled);
         assert_eq!(
             trigger(response),
-            Some(json!({ "dialog:close": { "id": "m" }, "rows:refresh": {}, "nulled": {} }))
+            Some(json!({ "dialog:close": { "id": "m" }, "rows:refresh": null, "nulled": null }))
         );
     }
 

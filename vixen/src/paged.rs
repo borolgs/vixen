@@ -6,12 +6,14 @@
 
 use std::{fmt::Display, str::FromStr};
 
-use axum_htmx::{HxEvent, HxReplaceUrl, SwapOption};
 use maud::{Markup, PreEscaped, Render, html};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
-use serde_json::json;
 
-use crate::{HxAction, Selector, SyncStrategy, replace_query};
+use crate::{
+    HxAction, Selector, SyncStrategy,
+    hx::{HxEvent, HxReplaceUrl, SwapOption},
+    replace_query,
+};
 
 // Radio inputs emit both `input` and `change`; text inputs emit `change` on blur.
 const SEARCH_TRIGGER: &str =
@@ -284,10 +286,7 @@ impl<PAction: PagedAction, Item> Paged<PAction, Item> {
 
     /// Returns an htmx event that repeats the form's search from the first page.
     pub fn refresh(&self) -> HxEvent {
-        HxEvent {
-            name: self.refresh_event(),
-            data: Some(json!({})),
-        }
+        HxEvent::new(self.refresh_event())
     }
 
     /// Renders the complete list for an initial page or rows for a subsequent page.

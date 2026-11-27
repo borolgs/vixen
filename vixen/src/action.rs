@@ -5,13 +5,12 @@ use axum::{
     http::{HeaderValue, header::CONTENT_TYPE},
 };
 use axum_extra::extract::{Form, FormRejection};
-use axum_htmx::SwapOption;
 use maud::{Escaper, Render};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 
 use crate::Selector;
-use crate::partial::swap_attr;
+use crate::hx::SwapOption;
 
 /// Attributes for an htmx action request.
 ///
@@ -149,7 +148,7 @@ impl Render for HxAction {
         }
         if let Some(swap) = self.swap {
             buffer.push_str("\" hx-swap=\"");
-            escape(buffer, &swap_attr(swap));
+            escape(buffer, swap.as_str());
         }
         if let Some(sync) = &self.sync {
             buffer.push_str("\" hx-sync=\"");

@@ -350,23 +350,13 @@ with agent instructions.
 
 ## htmx 4 compatibility
 
-vixen targets htmx 4, but `vixen::hx` re-exports
-[axum-htmx](https://github.com/robertwayne/axum-htmx) 0.8 until
-[v4 support][axum-htmx-v4] ships. vixen's own output already uses htmx 4.
-
-- Morph `SwapOption`s, `HxSource` and `HxRequestType` are unavailable; use raw
-  attributes and headers instead.
-- `HxTrigger`, `HxTriggerName` and usually `HxPrompt` extract `None`; `HxTarget`
-  contains `tag#id` or `tag` rather than a bare id.
-- Prefer `partial!` for response events. It serializes missing payloads as
-  `{}`. With `HxResponseTrigger`, mixing events with and without payloads
-  produces `null`, which htmx 4 rejects.
+vixen requires htmx **4.0.1 or later**.
 
 ## Crates
 
 | crate | what |
 |---|---|
-| [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — re-exports `maud`, `axum_extra::routing`, `axum_htmx` as `hx`, the bundler's `build` and `Config`, plus the macros |
+| [`axum-vixen`][vixen] | the facade crate, imported as `vixen` — provides `hx` for htmx 4 headers and types; re-exports `maud`, `axum_extra::routing`, the bundler's `build` and `Config`, plus the macros |
 | [`axum-vixen-macros`][vixen-macros] | [`#[action]`][action], [`#[route]`][route], [`#[id]`][id], [`#[fragment]`][fragment], [`#[derive(ReqCtx)]`][req-ctx], [`assets!`][assets], [`asset!`][asset], [`assets_router!`][assets_router] |
 | [`axum-vixen-bundler`][vixen-bundler] | the `build.rs` helper behind `vixen::build` and `vixen::Config`; bundles per-page TS and CSS with Bun and copies static files under hashed names |
 
@@ -421,7 +411,6 @@ cargo run -p backlog             # http://127.0.0.1:4006/
 [vixen]: https://docs.rs/axum-vixen/latest/vixen/
 [vixen-macros]: https://docs.rs/axum-vixen-macros/latest/vixen_macros/
 [vixen-bundler]: https://docs.rs/axum-vixen-bundler/latest/vixen_bundler/
-[axum-htmx-v4]: https://github.com/robertwayne/axum-htmx/pull/38
 [counter]: https://github.com/borolgs/vixen/tree/main/examples/counter
 [todos]: https://github.com/borolgs/vixen/tree/main/examples/todos
 [components]: https://github.com/borolgs/vixen/tree/main/examples/components

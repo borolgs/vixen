@@ -3,8 +3,9 @@ use axum::{
     http::{StatusCode, request::Parts},
     response::{IntoResponse, Response},
 };
-use axum_htmx::{HxCurrentUrl, HxReplaceUrl};
 use serde::{Serialize, de::DeserializeOwned};
+
+use crate::hx::{HxCurrentUrl, HxReplaceUrl};
 
 /// Deserializes query parameters from the URL in `HX-Current-URL`.
 ///
@@ -86,10 +87,10 @@ pub fn replace_query(query: &impl Serialize) -> Option<HxReplaceUrl> {
 #[cfg(test)]
 mod tests {
     use axum::{body::to_bytes, http::Request};
-    use axum_htmx::HX_CURRENT_URL;
     use serde::{Deserialize, Serialize};
 
     use super::*;
+    use crate::hx::HX_CURRENT_URL;
 
     #[derive(Debug, PartialEq, Deserialize)]
     struct Search {

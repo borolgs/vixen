@@ -14,12 +14,14 @@ Macros emit `::vixen::` paths, so the facade's lib name must stay `vixen`.
 
 ## Layout
 
-- `site/` — the RU/EN Zola site with an embedded WASM preview.
+- `site/` — the Zola site with an embedded WASM preview.
   Build and preview commands: `site/AGENTS.md`.
 - `vixen/` — the facade crate. Its own types (`HxPartial`, `HxAction`, …) and
-  the macros sit at the root. It re-exports `vixen::maud`, all of `axum_htmx`
-  as `vixen::hx`, `axum_extra::routing` as `vixen::routing`, and
-  `vixen_bundler::{build, Config}`. Runtime support for the macros lives here
+  the macros sit at the root. `vixen::hx` owns the htmx 4 header constants
+  and the types vixen uses; it doesn't add `Vary` automatically. The facade re-exports
+  `vixen::maud`, `axum_extra::routing` as `vixen::routing`, and
+  `vixen_bundler::{build, Config}`. Use htmx 4.0.1+ (examples pin 4.0.2).
+  Runtime support for the macros lives here
   (`action`, `fragment`, `partial`, `assets`, `base_path`); `agent` is the skill
   an agent needs to drive the app with curl: `Skill`, `SKILL` and `skill!`.
   Features: `agent` for `vixen::agent` and `Name::skill()`, `basecoatui` for

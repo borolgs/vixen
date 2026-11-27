@@ -13,7 +13,7 @@
       "name": "backlog",
       "dependencies": {
         "basecoat-css": "^1.0.2",
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
       "devDependencies": {
         "bun-plugin-tailwind": "^0.1.2",
@@ -24,7 +24,7 @@
       "name": "components",
       "dependencies": {
         "basecoat-css": "^1.0.2",
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
       "devDependencies": {
         "bun-plugin-tailwind": "^0.1.2",
@@ -34,20 +34,20 @@
     "examples/config": {
       "name": "config",
       "dependencies": {
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
     },
     "examples/counter": {
       "name": "counter",
       "dependencies": {
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
     },
     "examples/shop": {
       "name": "shop",
       "dependencies": {
         "basecoat-css": "^1.0.2",
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
       "devDependencies": {
         "bun-plugin-tailwind": "^0.1.2",
@@ -57,13 +57,13 @@
     "examples/todos": {
       "name": "todos",
       "dependencies": {
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
       },
     },
     "examples/vixen-preview": {
       "name": "vixen-preview",
       "dependencies": {
-        "htmx.org": "4.0.0",
+        "htmx.org": "4.0.2",
         "sugar-high": "2.7.0",
       },
       "devDependencies": {
@@ -174,7 +174,7 @@
 
     "counter": ["counter@workspace:examples/counter"],
 
-    "htmx.org": ["htmx.org@4.0.0", "", { "bin": { "upgrade-check": "dist/scripts/upgrade-check.js" } }, "sha512-T/171FUY93Kdfp8t+DnHdk45QvKRiBhVhhrwSzrXgUi4pHKvhp77dUA/qg8FAjsFWPIHNbmUuIdCrcVHuiZWng=="],
+    "htmx.org": ["htmx.org@4.0.2", "", { "bin": { "upgrade-check": "dist/scripts/upgrade-check.js" } }, "sha512-rt+yUQwgQXLhpMZQZmT97vP9wiThqfTyxsPy60WntlQHKyS0o4uBCbcdNWOTh6n5LCCPuI8WYSQedP1K7xaQlQ=="],
 
     "shop": ["shop@workspace:examples/shop"],
 

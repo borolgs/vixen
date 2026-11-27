@@ -1,8 +1,7 @@
-use axum_htmx::SwapOption;
 use maud::{Markup, PreEscaped, html};
 use serde::{Deserialize, Serialize};
 
-use crate::{Part, Selector};
+use crate::{Part, Selector, hx::SwapOption};
 
 /// A Basecoat toast container.
 ///

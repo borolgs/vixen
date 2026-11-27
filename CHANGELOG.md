@@ -4,6 +4,7 @@
 
 ### Added
 
+- All htmx 4 core header constants and `SwapOption::{TextContent, InnerMorph, OuterMorph, OuterSync}` in `hx`.
 - `partial!` accepts optional fragments (`Option<Fragment<T>>`), skipping `None`.
 - Added `HxPartial::extend` and nested `HxPartial<Filled>` or
   `Option<HxPartial<Filled>>` entries in `partial!`, preserving the outer
@@ -11,6 +12,17 @@
 - `examples/vixen-preview`: interactive examples running in the browser through
   a WASM-compiled axum router, with Rust source beside the UI and an optional
   animated walkthrough of the code and response swaps.
+
+### Changed
+
+- Replaced `axum-htmx` with vixen's own `hx` module. Kept `SwapOption`,
+  `HxEvent`, `HxCurrentUrl`, and `HxReplaceUrl`; removed the other re-exports.
+- Requires htmx 4.0.1+; examples use 4.0.2. Event payloads preserve `null`
+  instead of replacing it with `{}`.
+
+### Fixed
+
+- Unicode event names and payloads are escaped as ASCII JSON in `HX-Trigger`.
 
 ## 0.4.0 - 2026-10-21
 
@@ -48,7 +60,7 @@
 - `#[derive(ReqCtx)]` for request-local access to an axum extractor.
 - A `testing` feature with response body helpers.
 - `maybe_<field>(Option<T>)` setters on `#[action]` builders.
-- `partial!` accepts `HxEvent` entries, using `{}` for missing payloads as required by htmx 4.
+- `partial!` accepts `HxEvent` entries, using `{}` for missing payloads to work around htmx 4.0.0's null-detail bug.
 - `partial!` accepts optional parts (`Option<Part>`).
 - `HxPartial::event` and `HxPartial::entry`, the builder methods behind those entries.
 - `Dialog::cancel` and `Drawer::cancel`, an `onclick` script for a close button.
